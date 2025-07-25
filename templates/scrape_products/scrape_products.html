@@ -1,0 +1,16 @@
+{% extends '_base.html' %}
+
+{% block title %}Files{% endblock %}
+
+{% block content %}
+<h1>Files</h1>
+{#{{ result }}#}
+<p></p>
+    {% autoescape off %}
+    {{ html }}
+{% endautoescape %}
+<p></p>
+    {% for key, data in result.items %}
+        <li>{{ key }} : {{ data }}</li>
+    {% endfor %}
+{% endblock content %}

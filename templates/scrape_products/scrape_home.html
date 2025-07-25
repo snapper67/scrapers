@@ -1,0 +1,16 @@
+{% extends '_base.html' %}
+
+{% block title %}Files{% endblock %}
+
+{% block content %}
+<h1>Scrapers</h1>
+{#{{ result }}#}
+<p></p>
+<ul>
+<li><a href="{% url 'scrape_products' %}">Home</a></li>
+<li><a href="{% url 'usfoods' %}">US Foods</a></li>
+</ul>
+
+<p></p>
+
+{% endblock content %}

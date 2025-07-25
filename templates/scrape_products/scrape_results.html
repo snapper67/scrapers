@@ -1,0 +1,20 @@
+{% extends '_base.html' %}
+
+{% block title %}Files{% endblock %}
+
+{% block content %}
+<h1>Results</h1>
+{#{{ result }}#}
+<p></p>
+<p></p>
+<p></p>
+    {% autoescape off %}
+    {{ result }}
+
+{#    {% for response in responses %}#}
+{#        <div>{{ repsonse }}</div>#}
+{#    {% endfor %}#}
+{% endautoescape %}
+<p></p>
+
+{% endblock content %}
