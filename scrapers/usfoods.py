@@ -51,9 +51,9 @@ class USFoodsScraper(Scraper):
 		'unit_price': '',
 		'extra_data_1': '',
 		'extra_data_2': '',
+		'timestamp': '',
 
 		# Fields from US_FOODS_SPEC
-		'timestamp': '',
 		'pack_size': '',
 		'category': '',
 		'subcategory': '',
@@ -78,7 +78,7 @@ class USFoodsScraper(Scraper):
 	CSV_START_ROW = 0
 	TEST_TABS = 2
 	MAX_API_PRODUCTS = 999  # Maximum number to change the search request page size
-	DEFAULT_DIRECTORY = '/Users/mark/Downloads/scrapers/'
+	DEFAULT_DIRECTORY = '/Users/mark/Downloads/scrapers/usfoods'
 
 	CATEGORY_IDS = {
 		"BEEF": 15,
@@ -175,6 +175,22 @@ class USFoodsScraper(Scraper):
 	DATA_OUTPUT_FILE = DATA_FILE_NAMES[CHOSEN_CATEGORY]
 	DEDUP_INPUT_FILE = 'dedupe_product_data.csv'
 
+	DEFAULT_OPTIONS = {
+		'scrape_products': False,
+		'process_csv': False,
+		'reprocess_csv': False,
+		'dedupe_csv': False,
+		'count_csv': False,
+		'test_products': TEST_PRODUCTS,
+		'max_products': 999,
+		'csv_start_row': CSV_START_ROW,
+		'category_to_process': 0,
+		'test_categories': 100,
+		'chosen_category': '10001',  # Default to Meat
+		'url_output_file': URL_OUTPUT_FILE,
+		'data_output_file': DATA_OUTPUT_FILE,
+		'home_directory': DEFAULT_DIRECTORY
+	}
 
 	def __init__(self, options=None):
 		super().__init__(options)
@@ -212,6 +228,9 @@ class USFoodsScraper(Scraper):
 		except Exception as e:
 			return '', ''
 
+	# 	Product Scraping Functions
+	# ************************************************************************
+
 	def get_first_image_url(self, response_data):
 		"""
 		Extract the first available image URL from the product API response.
@@ -242,7 +261,7 @@ class USFoodsScraper(Scraper):
 
 		return None
 
-	def get_product_data(self, product_data, row_spec):
+	def process_product_detail(self, product_data, row_spec):
 		print("processing product data from response...")
 		# print(product_data)
 		if product_data:
@@ -262,7 +281,20 @@ class USFoodsScraper(Scraper):
 				row_spec["brand"] = product_brand
 				row_spec["image"] = product_image
 				# print(row_spec)
-				row_spec['extra_data_1'] = product_data
+				row_spec['extra_data_1'] = json.dumps(product_data)
+			except Exception as e:
+				print(f" ⛔️⛔️⛔️Error processing product data: {e}")
+
+		print("processing product additional data Complete...")
+		return row_spec
+
+	def get_product_data(self, data, row_spec):
+		print("processing product data from response...")
+		# print(data)
+		if data:
+			try:
+				# TODO implement
+				print("processing product data from response...")
 			except Exception as e:
 				print(f" ⛔️⛔️⛔️Error processing product data: {e}")
 
@@ -333,23 +365,6 @@ class USFoodsScraper(Scraper):
 		print("processing product manufacturer Complete...")
 		return row_spec
 
-	def get_additional_info(self, data, row_spec):
-		print("processing product additional data...")
-		if data:
-			try:
-				row_spec['standardComparisonUOM'] = data.get('standardComparisonUOM')
-				row_spec['standardComparisonValue'] = data.get('standardComparisonValue')
-				row_spec['volume'] = data.get('volume')
-				row_spec['volumeUnits'] = data.get('volumeUnits')
-				row_spec['yield'] = data.get('yield')
-				row_spec['yieldUOM'] = data.get('yieldUOM')
-				row_spec['extra_data_2'] = data
-			except Exception as e:
-				print(f"⛔️⛔️⛔️Error processing additional data: {e}")
-
-		print("processing product additional data Complete...")
-		return row_spec
-
 	def get_description(self, data, row_spec):
 		print("processing product overview...")
 		description = ''
@@ -393,152 +408,40 @@ class USFoodsScraper(Scraper):
 		print("processing product overview Complete...")
 		return row_spec
 
-	def process_product(self, url, row_spec=None):
-		#  Wait for the product name element on the product page detail page
-		if not row_spec: row_spec = self.PRODUCT_DATA_SPEC.copy()
-		print("processing product detail page")
+	def get_additional_info(self, data, row_spec):
+		"""
+				Processes the product's additional data from the API response and stores it into `row_spec`.
+				This function specifically handles the extra fields that are not present in the standard product spec .
 
-		self.driver.get(url)
-		self.driver.execute_script("document.body.style.zoom = '50%'")
-		print(f"Loading page...{url}")
-		data = ''
-		request = self.driver.wait_for_request('domain-api/v1/productdetail')
-		if request.response and "domain-api/v1/productdetail" in request.url:  # Filter for API requests
-			print(f"URL: {request.url}")
-			print(f"Status Code: {request.response.status_code}")
-			print(f"Content Type: {request.response.headers.get('Content-Type')}")
+				Args:
+					data (dict): The API response containing the product additional data
+					row_spec (dict): The dictionary containing the scraped product data
 
-			# Decode the response body (it's bytes by default)
+				Returns:
+					dict: The updated `row_spec` with the additional data
+		"""
+		print("processing product additional data...")
+		if data:
 			try:
-				# body = request.response.body.decode(request.response.headers.get('Content-Encoding', 'identity'))
-				body = decode(request.response.body, request.response.headers.get('Content-Encoding', 'identity'))
-
-				# If the body is JSON, parse it
-				if 'application/json' in request.response.headers.get('Content-Type', ''):
-					data = json.loads(body)
-				else:
-					print(f"Response Body (Text): {body}")
-
+				row_spec['standardComparisonUOM'] = data.get('standardComparisonUOM')
+				row_spec['standardComparisonValue'] = data.get('standardComparisonValue')
+				row_spec['volume'] = data.get('volume')
+				row_spec['volumeUnits'] = data.get('volumeUnits')
+				row_spec['yield'] = data.get('yield')
+				row_spec['yieldUOM'] = data.get('yieldUOM')
+				row_spec['extra_data_2'] = json.dumps(data)
 			except Exception as e:
-				print(f"⛔️⛔️⛔️Error decoding detail response body: {e}")
+				print(f"⛔️⛔️⛔️Error processing additional data: {e}")
 
-		# Check to see we got a product details response. This only populates part of the product detail page
-		product_data = ''
-		for request in self.driver.requests:
-			if data and product_data:
-				break
-			# https://panamax-api.ama.usfoods.com/product-domain-api/v1/search?worksWellWith=true
-			if request.response and "domain-api/v1/productdetail" in request.url:  # Filter for API requests
-				print(f"URL: {request.url}")
-				print(f"Status Code: {request.response.status_code}")
-				print(f"Content Type: {request.response.headers.get('Content-Type')}")
-
-				# Decode the response body (it's bytes by default)
-				try:
-					# body = request.response.body.decode(request.response.headers.get('Content-Encoding', 'identity'))
-					body = decode(request.response.body, request.response.headers.get('Content-Encoding', 'identity'))
-
-					# If the body is JSON, parse it
-					if 'application/json' in request.response.headers.get('Content-Type', ''):
-						data = json.loads(body)
-					else:
-						print(f"Response Body (Text): {body}")
-
-				except Exception as e:
-					print(f"⛔️⛔️⛔️Error decoding data from response body: {e}")
-			if request.response and "product-domain-api/v2/products" in request.url and not product_data:  # Filter for API requests
-				print(f"URL: {request.url}")
-				print(f"Status Code: {request.response.status_code}")
-				print(f"Content Type: {request.response.headers.get('Content-Type')}")
-
-				# Decode the response body (it's bytes by default)
-				try:
-					# body = request.response.body.decode(request.response.headers.get('Content-Encoding', 'identity'))
-					body = decode(request.response.body, request.response.headers.get('Content-Encoding', 'identity'))
-
-					# If the body is JSON, parse it
-					if 'application/json' in request.response.headers.get('Content-Type', ''):
-						response_data = json.loads(body)
-
-						# Check if the response contains items and it's a list
-						if 'items' in response_data and isinstance(response_data['items'], list):
-							# Find the product with matching SKU
-							target_sku = str(row_spec.get('sku', '')).strip()
-							for item in response_data['items']:
-								# Check both string and integer SKU matches
-								if (str(item.get('summary', {}).get('productNumber', '')) == target_sku or
-										str(item.get('summary', {}).get('productNumber')) == str(
-											int(target_sku) if target_sku.isdigit() else '')):
-									product_data = item
-									print(f"✅✅✅ Found matching product: {target_sku}")
-									# print(item)
-									break
-							else:
-								print(f"No matching product found for SKU: {target_sku}")
-						else:
-							print("❌ No items found in the API response")
-
-				except Exception as e:
-					print(f"⛔️⛔️⛔️Error decoding product data from response body: {e}")
-		print(f"Product Details Captured")
-
-		if product_data:
-			print(f"Product Data: {product_data}")
-			row_spec["content_url"] = url
-			row_spec = self.get_product_data(product_data, row_spec)
-		else:
-			# Let's scrape the product page
-			container = self.wait.until(
-				EC.presence_of_element_located((By.CSS_SELECTOR, 'ion-row.pdp-summary-info'))
-			)
-			product_brand = self.wait.until(
-				EC.presence_of_element_located((By.CSS_SELECTOR, 'div.pdp-summary-brand-text'))
-			).text.strip()
-			product_name = self.wait.until(
-				EC.presence_of_element_located((By.CSS_SELECTOR, 'div.pdp-summary-desc-text'))
-			)
-			# Scrape other information from the product page
-			product_name = product_name.text.strip()
-			print(product_name)
-
-			other_info = self.wait.until(
-				EC.presence_of_element_located((By.CSS_SELECTOR, 'div.pdp-summary-other-info-container'))
-			)
-
-			product_sku = other_info.find_element(By.TAG_NAME, 'p').text
-
-			product_ps = self.wait.until(
-				EC.presence_of_element_located((By.CSS_SELECTOR, 'p.ng-star-inserted'))
-			).text.strip()
-			product_sku = product_sku.replace("#", "").strip()
-			print(product_sku)
-			print(product_ps)
-
-			print("Getting image")
-			product_image = ""
-			try:
-				product_image = container.find_element(By.CSS_SELECTOR, "div.main-image-container img").get_attribute(
-					"src")
-			except Exception as e:
-				print(f"⛔️⛔️⛔️Error getting product image:")
-			row_spec["content_url"] = url
-			row_spec["name"] = product_name
-			row_spec["pack_size"] = product_ps
-			row_spec["brand"] = product_brand
-			row_spec["image"] = product_image
-
-		# These use the data if available, then try to scrape from the page
-		row_spec = self.get_classification(product_data, row_spec)
-		row_spec = self.get_description(data, row_spec)
-		row_spec = self.get_manufacturer(data, row_spec)
-		row_spec = self.get_additional_info(data, row_spec)
-
-		del self.driver.requests
+		print("processing product additional data Complete...")
 		return row_spec
+
+	# ************************************************************************
 
 	def process_product_list_search_api(self, main_window, html, category, sub_category, url_output_file):
 		# Build a list of product URLs
 		detail_urls = []
+		all_urls = []
 
 		product_wrappers = self.wait.until(
 			EC.presence_of_all_elements_located((By.CLASS_NAME, 'product-wrapper'))
@@ -564,12 +467,13 @@ class USFoodsScraper(Scraper):
 						self.save_urls_to_csv(detail_urls, category, sub_category)
 					else:
 						print(f"Response Body (Text): {body}")
+					all_urls.extend(detail_urls)
 
 				except Exception as e:
 					print(f"⛔️⛔️⛔️Error decoding response body: {e}")
-		print(f"========= Number of products: {len(detail_urls)}")
+		print(f"========= Number of products: {len(all_urls)}")
 		del self.driver.requests
-		return html, detail_urls
+		return html, all_urls
 
 	def process_product_list_search_p_api(self, main_window, html, category, sub_category, url_output_file):
 		# Build a list of product URLs
@@ -619,8 +523,6 @@ class USFoodsScraper(Scraper):
 				current_data = request.body.decode('utf-8')
 				print(f"Original POST data: {current_data}")
 
-				# Modify the POST data
-				# Example: change a value in a JSON payload
 				try:
 					payload = json.loads(current_data)
 					page = payload.get('page', {})
@@ -641,8 +543,6 @@ class USFoodsScraper(Scraper):
 				current_data = request.body.decode('utf-8')
 				print(f"Original POST data: {current_data}")
 
-				# Modify the POST data
-				# Example: change a value in a JSON payload
 				try:
 					payload = json.loads(current_data)
 					payload['recordsPerPage'] = max_api_products  # Replace 'key_to_change' and 'new_value'
@@ -661,79 +561,6 @@ class USFoodsScraper(Scraper):
 				print(f"Original POST data: {current_data}")
 
 		return interceptor
-
-	def process_products_from_csv(self):
-		"""
-		Read product URLs from a CSV file, process each product, and save results to a CSV file.
-
-		"""
-		print("process_products_from_csv()")
-		print(self.options)
-		start_row = self.options.get('csv_start_row', 0)
-		filename = self.options.get('url_output_file', '')
-		output_file = self.options.get('data_output_file', '')
-		test_products = self.options.get('test_products', 0)
-		home_dir = self.options.get('home_directory', '')
-
-		filename = self.get_file_path(filename, home_dir)
-		output_file = self.get_file_path(output_file, home_dir)
-
-		if not os.path.exists(filename):
-			print(f"Error: File {filename} not found")
-			return f"Error: File {filename} not found"
-
-		# Define output CSV file
-		output_filename = output_file
-		file_exists = os.path.exists(output_filename)
-		print(f"Output file exists: {file_exists}")  # Print the value of file_exists)
-
-		# First count total rows for progress tracking
-		with open(filename, 'r', encoding='utf-8') as csvfile:
-			reader = csv.DictReader(csvfile)
-			total_rows = sum(1 for _ in reader)
-			print(f"Total rows: {total_rows}")
-
-		# Now process the file
-		with open(filename, 'r', encoding='utf-8') as csvfile:
-			reader = csv.DictReader(csvfile)
-
-			# Skip to start_row
-			for _ in range(start_row):
-				next(reader, None)
-
-			for row_num, row in enumerate(reader, start=start_row):
-				row_spec = self.PRODUCT_DATA_SPEC.copy()
-				try:
-					url = row.get('URL', '')
-					if not url:
-						continue
-					if row_num < (start_row + test_products):
-						print(f"\nProcessing row {row_num + 1}/{total_rows} - {url}")
-
-						# Process the product
-						# Copy values from import file
-						row_spec['subcategory'] = row.get('Subcategory', '')
-						row_spec['timestamp'] = row.get('Timestamp', '')
-						row_spec['content_url'] = row.get('URL', '')
-						row_spec['sku'] = row.get('SKU', '')
-						row_spec['category'] = row.get('Category', '')
-						# Call the product processing function
-						row_spec = self.process_product(url, row_spec)
-
-						# Write to CSV
-						print(f"Saving product {row_spec['name']} to {output_filename}")
-						self.write_product_to_csv(row_spec, output_filename)
-
-						print(f"Saved product {row_spec['name']} to {output_filename}")
-
-						time.sleep(1)
-
-				except Exception as e:
-					print(f"⛔️⛔️⛔️Error processing row {row_num + 1}: {e}")
-					continue
-
-		print(f"\nProcessing complete. Results saved to {output_filename}")
-		return f"<p>Processing complete. Processed {total_rows - start_row} products. Results saved to {output_filename}</p>"
 
 	def build_products_list(self):
 		"""Scrape products from the website"""
@@ -871,3 +698,146 @@ class USFoodsScraper(Scraper):
 		html += html_table
 		print(f"Total products found: {len(all_urls)}")
 		return html
+
+	def process_product(self, url, row_spec=None):
+		#  Wait for the product name element on the product page detail page
+		if not row_spec: row_spec = self.PRODUCT_DATA_SPEC.copy()
+		print("processing product detail page")
+		del self.driver.requests
+		self.driver.get(url)
+		self.driver.execute_script("document.body.style.zoom = '50%'")
+		print(f"Loading page...{url}")
+		data = ''
+		request = self.driver.wait_for_request('domain-api/v1/productdetail')
+		if request.response and "domain-api/v1/productdetail" in request.url:  # Filter for API requests
+			print(f"URL: {request.url}")
+			print(f"Status Code: {request.response.status_code}")
+			print(f"Content Type: {request.response.headers.get('Content-Type')}")
+
+			# Decode the response body (it's bytes by default)
+			try:
+				# body = request.response.body.decode(request.response.headers.get('Content-Encoding', 'identity'))
+				body = decode(request.response.body, request.response.headers.get('Content-Encoding', 'identity'))
+
+				# If the body is JSON, parse it
+				if 'application/json' in request.response.headers.get('Content-Type', ''):
+					data = json.loads(body)
+				else:
+					print(f"Response Body (Text): {body}")
+
+			except Exception as e:
+				print(f"⛔️⛔️⛔️Error decoding detail response body: {e}")
+
+		# Check to see we got a product details response. This only populates part of the product detail page
+		product_data = ''
+		for request in self.driver.requests:
+			if data and product_data:
+				break
+			# https://panamax-api.ama.usfoods.com/product-domain-api/v1/search?worksWellWith=true
+			if request.response and "domain-api/v1/productdetail" in request.url:  # Filter for API requests
+				print(f"URL: {request.url}")
+				print(f"Status Code: {request.response.status_code}")
+				print(f"Content Type: {request.response.headers.get('Content-Type')}")
+
+				# Decode the response body (it's bytes by default)
+				try:
+					# body = request.response.body.decode(request.response.headers.get('Content-Encoding', 'identity'))
+					body = decode(request.response.body, request.response.headers.get('Content-Encoding', 'identity'))
+
+					# If the body is JSON, parse it
+					if 'application/json' in request.response.headers.get('Content-Type', ''):
+						data = json.loads(body)
+					else:
+						print(f"Response Body (Text): {body}")
+
+				except Exception as e:
+					print(f"⛔️⛔️⛔️Error decoding data from response body: {e}")
+			if request.response and "product-domain-api/v2/products" in request.url and not product_data:  # Filter for API requests
+				print(f"URL: {request.url}")
+				print(f"Status Code: {request.response.status_code}")
+				print(f"Content Type: {request.response.headers.get('Content-Type')}")
+
+				# Decode the response body (it's bytes by default)
+				try:
+					# body = request.response.body.decode(request.response.headers.get('Content-Encoding', 'identity'))
+					body = decode(request.response.body, request.response.headers.get('Content-Encoding', 'identity'))
+
+					# If the body is JSON, parse it
+					if 'application/json' in request.response.headers.get('Content-Type', ''):
+						response_data = json.loads(body)
+
+						# Check if the response contains items and it's a list
+						if 'items' in response_data and isinstance(response_data['items'], list):
+							# Find the product with matching SKU
+							target_sku = str(row_spec.get('sku', '')).strip()
+							for item in response_data['items']:
+								# Check both string and integer SKU matches
+								if (str(item.get('summary', {}).get('productNumber', '')) == target_sku or
+										str(item.get('summary', {}).get('productNumber')) == str(
+											int(target_sku) if target_sku.isdigit() else '')):
+									product_data = item
+									print(f"✅✅✅ Found matching product: {target_sku}")
+									# print(item)
+									break
+							else:
+								print(f"No matching product found for SKU: {target_sku}")
+						else:
+							print("❌ No items found in the API response")
+
+				except Exception as e:
+					print(f"⛔️⛔️⛔️Error decoding product data from response body: {e}")
+		print(f"Product Details Captured")
+
+		if product_data:
+			# print(f"Product Data: {product_data}")
+			row_spec["content_url"] = url
+			row_spec = self.process_product_detail(product_data, row_spec)
+		else:
+			# Let's scrape the product page
+			container = self.wait.until(
+				EC.presence_of_element_located((By.CSS_SELECTOR, 'ion-row.pdp-summary-info'))
+			)
+			product_brand = self.wait.until(
+				EC.presence_of_element_located((By.CSS_SELECTOR, 'div.pdp-summary-brand-text'))
+			).text.strip()
+			product_name = self.wait.until(
+				EC.presence_of_element_located((By.CSS_SELECTOR, 'div.pdp-summary-desc-text'))
+			)
+			# Scrape other information from the product page
+			product_name = product_name.text.strip()
+			print(product_name)
+
+			other_info = self.wait.until(
+				EC.presence_of_element_located((By.CSS_SELECTOR, 'div.pdp-summary-other-info-container'))
+			)
+
+			product_sku = other_info.find_element(By.TAG_NAME, 'p').text
+
+			product_ps = self.wait.until(
+				EC.presence_of_element_located((By.CSS_SELECTOR, 'p.ng-star-inserted'))
+			).text.strip()
+			product_sku = product_sku.replace("#", "").strip()
+			print(product_sku)
+			print(product_ps)
+
+			print("Getting image")
+			product_image = ""
+			try:
+				product_image = container.find_element(By.CSS_SELECTOR, "div.main-image-container img").get_attribute(
+					"src")
+			except Exception as e:
+				print(f"⛔️⛔️⛔️Error getting product image:")
+			row_spec["content_url"] = url
+			row_spec["name"] = product_name
+			row_spec["pack_size"] = product_ps
+			row_spec["brand"] = product_brand
+			row_spec["image"] = product_image
+
+		# These use the data if available, then try to scrape from the page
+		row_spec = self.get_classification(product_data, row_spec)
+		row_spec = self.get_description(data, row_spec)
+		row_spec = self.get_manufacturer(data, row_spec)
+		row_spec = self.get_additional_info(data, row_spec)
+
+		del self.driver.requests
+		return row_spec

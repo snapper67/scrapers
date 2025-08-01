@@ -37,8 +37,11 @@
             <a class="nav-link" href="{% url 'about' %}">About</a>
           </li>
             <li class="nav-item">
-            <a class="nav-link" href="{% url 'usfoods' %}">US Foods</a>
-          </li>
+                <a class="nav-link" href="{% url 'usfoods' %}">US Foods</a>
+              </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'scrape_products' %}">Scrapers</a>
+              </li>
         </ul>
         {% if user.is_authenticated %}
         <div class="mr-auto">
