@@ -145,8 +145,8 @@
 const fileMappings = {
     {% for category in categories %}
     "{{ category.id }}": {
-        "url_file": "{{ category.id|lower }}_product_urls.csv",
-        "data_file": "{{ category.id|lower }}_product_data.csv"
+        "url_file": "{{ category.name|lower }}_product_urls.csv",
+        "data_file": "{{ category.name|lower }}_product_data.csv"
     }{% if not forloop.last %},{% endif %}
     {% endfor %}
 };

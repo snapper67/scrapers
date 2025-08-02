@@ -433,11 +433,16 @@ class Scraper:
 		"""Scrape products from the website"""
 		raise NotImplementedError("build_categories_list method not implemented")
 
+	def scraping_setup(self):
+		"""Scrape products from the website"""
+		raise NotImplementedError("scraping_setup method not implemented")
+
 	def process_products_from_csv(self):
 		"""
 		Read product URLs from a CSV file, process each product, and save results to a CSV file.
 
 		"""
+		self.scraping_setup()
 		print("process_products_from_csv()")
 		print(self.options)
 		start_row = self.options.get('csv_start_row', 0)
@@ -476,7 +481,7 @@ class Scraper:
 					url = row.get('URL', '')
 					if not url:
 						continue
-					if row_num < (start_row + test_products):
+					if row_num + 1< (start_row + test_products):
 						print(f"\nProcessing row {row_num + 1}/{total_rows} - {url}")
 
 						# Process the product
@@ -487,24 +492,22 @@ class Scraper:
 						row_spec['sku'] = row.get('SKU', '')
 						row_spec['category'] = row.get('Category', '')
 						# Call the product processing function
-						row_spec = self.process_product(url, row_spec)
+						row_spec = self.get_product_details(url, row_spec)
 
 						# Write to CSV
 						print(f"Saving product {row_spec['name']} to {output_filename}")
 						self.write_product_to_csv(row_spec, output_filename)
 
 						print(f"Saved product {row_spec['name']} to {output_filename}")
-
+						# adjust this if we are making requests too fast
 						time.sleep(1)
 
 				except Exception as e:
 					print(f"⛔️⛔️⛔️Error processing row {row_num + 1}: {e}")
 					continue
-
+		self.driver.quit()
 		print(f"\nProcessing complete. Results saved to {output_filename}")
 		return f"<p>Processing complete. Processed {total_rows - start_row} products. Results saved to {output_filename}</p>"
-		"""Process products from a CSV file"""
-		raise NotImplementedError("process_products_from_csv method not implemented")
 
 	def process_extra_data_from_csv(self):
 		"""
@@ -632,7 +635,7 @@ class Scraper:
 								row_spec['content_url'] = row['URL']
 								row_spec['sku'] = row['SKU']
 								row_spec['category'] = row['Category']
-								row_spec = self.process_product(row['URL'], row_spec)
+								row_spec = self.get_product_details(row['URL'], row_spec)
 								processed_skus.append(row['SKU'])
 
 								# Write to CSV
@@ -795,7 +798,7 @@ class Scraper:
 		"""
 		raise NotImplementedError("get_product_data method not implemented")
 
-	def process_product(self, url, row_spec=None):
+	def get_product_details(self, url, row_spec=None):
 		"""Process a product single product. This could be from an api call or by scraping the website"""
 		"""
 		This method gets the product data from the page or the api

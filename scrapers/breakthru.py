@@ -212,6 +212,10 @@ class BreakthruScraper(Scraper):
 	def get_category_urls(self):
 		return self.CATEGORY_URLS
 
+	def scraping_setup(self):
+		"""Scrape products from the website"""
+		return
+
 	# ************************************************************************
 
 	# 	Product Scraping Functions
@@ -568,7 +572,7 @@ class BreakthruScraper(Scraper):
 		print(f"Total products found: {len(all_urls)}")
 		return html
 
-	def process_product(self, url, row_spec=None):
+	def get_product_details(self, url, row_spec=None):
 		#  Wait for the product name element on the product page detail page
 		if not row_spec: row_spec = self.PRODUCT_DATA_SPEC.copy()
 		print("processing product detail page")

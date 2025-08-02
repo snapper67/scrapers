@@ -869,28 +869,6 @@ class SouthernGlazierScraper(Scraper):
 	def get_category_urls(self):
 		return self.CATEGORY_URLS
 
-	def bypass_age_gate(self, url):
-		try:
-			self.driver.get(url)
-			# time.sleep(2)
-			select = self.wait.until(
-				EC.presence_of_element_located((By.CSS_SELECTOR, '.modal-box div.verify-select div.form-select'))
-			)
-			select = self.driver.find_element(By.CSS_SELECTOR, '.modal-box select.verify-select-input')
-
-			select.click()
-			select = Select(select)
-			# print(select.options)
-			select.select_by_value("91")
-			# select.select_by_visible_text("NY - Metro")
-			# self.print_element(select)
-			self.driver.find_element(By.CSS_SELECTOR, '.modal-box .verify-trigger-yes').click()
-			# time.sleep(2)
-			# self.driver.get(url)
-			print("Bypassed age gate")
-		except Exception as e:
-			print(f"Error: {e}")
-
 	def process_product_list_search_api(self, html, category, sub_category, url_output_file):
 		# Build a list of product URLs
 		detail_urls = []
@@ -977,6 +955,47 @@ class SouthernGlazierScraper(Scraper):
 
 		del self.driver.requests
 		return subcategories, category_name
+
+	def bypass_age_gate(self, url):
+		try:
+			self.driver.get(url)
+			# time.sleep(2)
+			select = self.wait.until(
+				EC.presence_of_element_located((By.CSS_SELECTOR, '.modal-box div.verify-select div.form-select'))
+			)
+			select = self.driver.find_element(By.CSS_SELECTOR, '.modal-box select.verify-select-input')
+
+			select.click()
+			select = Select(select)
+			select.select_by_value("91")
+			self.driver.find_element(By.CSS_SELECTOR, '.modal-box .verify-trigger-yes').click()
+
+			print("Bypassed age gate")
+		except Exception as e:
+			print(f"Error: {e}")
+
+	def bypass_age_gate2(self, url):
+		try:
+			self.driver.get(url)
+			# time.sleep(2)
+			select = self.wait.until(
+				EC.presence_of_element_located((By.CSS_SELECTOR, '#ageGatemodal'))
+			)
+			select = self.driver.find_element(By.CSS_SELECTOR, '#stateSelect')
+
+			select.click()
+			select = Select(select)
+			select.select_by_value("91")
+			self.driver.find_element(By.CSS_SELECTOR, '#ageGatemodal .verify-trigger-yes').click()
+
+			print("Bypassed age gate")
+		except Exception as e:
+			print(f"Error: {e}")
+
+	def scraping_setup(self):
+		"""Scrape products from the website"""
+		self.bypass_age_gate2("https://shop.sgproof.com/")
+		return
 
 	# ************************************************************************
 
@@ -1228,51 +1247,56 @@ class SouthernGlazierScraper(Scraper):
 		print(f"Total products found: {len(all_urls)}")
 		return html
 
-	def process_product(self, url, row_spec=None):
+	def get_additional_packages(self):
+		"""
+		Product have a dropsown selector for chosing different versions
+		"""
+		# Get item list from item-variant-menu-list
+		variation_list = self.wait.until(
+			EC.presence_of_element_located((By.CSS_SELECTOR, '.item-variant-menu-list'))
+		)
+		anchor_list = variation_list.find_elements(By.TAG_NAME, 'a')
+
+		for anchor in anchor_list:
+			href_value = anchor.get_attribute("href")
+			print(f"href_value: {href_value}")
+
+		return
+
+
+	def get_product_details(self, url, row_spec=None):
+		"""
+		Product detail pages are rendered server-side. Page must be mannually scraped.
+		Additianal packages also need to be pulled or visited from the dropdown
+		"""
 		#  Wait for the product name element on the product page detail page
 		if not row_spec: row_spec = self.PRODUCT_DATA_SPEC.copy()
 		print("processing product detail page")
-		print(f"Loading page...{url}")
 
 		data = ''
 		sku = row_spec['sku']
 		url = f"https://shop.sgproof.com/sgws/en/usd/p/{sku}"
-		request_filter_escaped = sku + "/\?expand"
-		request_filter = sku + "/?expand"
 		# https://shop.sgproof.com/sgws/en/usd/p/{sku}
+		print(f"Loading page...{url}")
+		del self.driver.requests
 		self.driver.get(url)
-		print(f"Sent Request")
+		# product-viewer-box
 		try:
-			request = self.driver.wait_for_request(request_filter_escaped)
-			if request.response and request_filter in request.url:  # Filter for API requests
-				print(f"URL: {request.url}")
-				print(f"Status Code: {request.response.status_code}")
-				print(f"Content Type: {request.response.headers.get('Content-Type')}")
+			print("here")
+			container = self.wait.until(
+				EC.presence_of_element_located((By.CSS_SELECTOR, '.marketplace-product-detail'))
+			)
+			print("here2")
+			name = container.find_element(By.CSS_SELECTOR, 'div.product-card-title h3').text.strip()
+			print(f"name: {name}")
+			row_spec['name'] = name
 
-				# Decode the response body (it's bytes by default)
-				try:
-					# body = request.response.body.decode(request.response.headers.get('Content-Encoding', 'identity'))
-					body = decode(request.response.body, request.response.headers.get('Content-Encoding', 'identity'))
+			self.get_additional_packages()
 
-					# If the body is JSON, parse it
-					if 'application/json' in request.response.headers.get('Content-Type', ''):
-						data = json.loads(body)
-					else:
-						print(f"Response Body (Text): {body}")
-
-				except Exception as e:
-					print(f"⛔️⛔️⛔️Error decoding detail response body: {e}")
-
-			# These use the data if available, then try to scrape from the page
-			row_spec = self.get_product_data(data, row_spec)
 
 		except Exception as e:
-			print(f"⛔️⛔️⛔️Error waiting for request: {e}")
-
-			# for request in self.driver.requests:
-			# 	print(request.url)
-
-		del self.driver.requests
+			print(f"⛔️⛔️⛔️Error processing product detail page: {e}")
+		time.sleep(5)
 		return row_spec
 
 	def build_categories_list(self):
