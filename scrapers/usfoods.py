@@ -708,9 +708,16 @@ class USFoodsScraper(Scraper):
 		if not row_spec: row_spec = self.PRODUCT_DATA_SPEC.copy()
 		print("processing product detail page")
 		del self.driver.requests
-		self.driver.get(url)
-		self.driver.execute_script("document.body.style.zoom = '50%'")
 		print(f"Loading page...{url}")
+		start_time = time.perf_counter()
+		self.driver.get(url)
+		end_time = time.perf_counter()
+
+		elapsed_time = end_time - start_time
+		print(f"Elapsed time: {elapsed_time} seconds")
+
+		self.driver.execute_script("document.body.style.zoom = '50%'")
+		print(f"Loaded page...{self.driver.title}")
 		data = ''
 		request = self.driver.wait_for_request('domain-api/v1/productdetail')
 		if request.response and "domain-api/v1/productdetail" in request.url:  # Filter for API requests

@@ -7,6 +7,7 @@ import string
 
 from bs4 import BeautifulSoup
 from pathlib import Path
+import seleniumwire.undetected_chromedriver as uc
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
@@ -99,7 +100,7 @@ class Scraper:
 
 	# Default options
 	DEFAULT_OPTIONS = {
-		'scrape_products': True,
+		'scrape_products': False,
 		'process_csv': False,
 		'reprocess_csv': False,
 		'dedupe_csv': False,
@@ -138,9 +139,9 @@ class Scraper:
 		self.options = {**self.DEFAULT_OPTIONS, **(options or {})}
 		# self.options['home_directory'] = self.DEFAULT_DIRECTORY
 		# Initialize Chrome options
-		self.chrome_options = Options()
+		self.chrome_options = uc.ChromeOptions()
 		# Uncomment for headless mode
-		# self.chrome_options.add_argument('--headless')
+		self.chrome_options.add_argument('--headless')
 		self.chrome_options.add_argument('--disable-gpu')
 		self.chrome_options.add_argument('--no-sandbox')
 		prefs = {"profile.managed_default_content_settings.images": 2}  # 2 blocks images

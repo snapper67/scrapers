@@ -1,0 +1,185 @@
+{% extends '../_base.html' %}
+
+{% block content %}
+    {% block scrape_content %}
+        {% block common %}
+            <div class="container mt-4">
+                <h2>{% block name %}{% endblock name %}</h2>
+                <form method="post" class="mt-4" id="scraperForm">
+                    {% csrf_token %}
+                    <h5 class="mt-3">Scraping Functions</h5>
+                    <div class="form-group mb-3">
+                        <label for="category_id" title="Select a product category to scrape">Category:</label>
+                        <select class="form-control" id="category_id" name="category_id" required
+                                onchange="updateFilenames(this.value)">
+                            {% for category in categories %}
+                            <option value="{{ category.id }}">{{ category.name }} ({{ category.id }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="get_categories" name="get_categories"
+                                       {% if defaults.get_categories %}checked{% endif %}>
+                                <label class="form-check-label" for="get_categories" title="Check to enable scraping of product URLs from the selected category">1. Get Categories List</label>
+                            </div>
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="scrape_products" name="scrape_products"
+                                       {% if defaults.scrape_products %}checked{% endif %}>
+                                <label class="form-check-label" for="scrape_products" title="Check to enable scraping of product URLs from the selected category">2. Get Product URLs</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="process_csv" name="process_csv"
+                                       {% if defaults.process_csv %}checked{% endif %}>
+                                <label class="form-check-label" for="process_csv" title="Process the URLs in the specified CSV file to extract product data">3. Process URLs</label>
+                            </div>
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="reprocess_csv" name="reprocess_csv"
+                                       {% if defaults.reprocess_csv %}checked{% endif %}>
+                                <label class="form-check-label" for="reprocess_csv" title="Only process URLs that haven't been processed yet (not found in results)">4. Processes URLS not in Results</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="url_file" title="Name of the CSV file containing product URLs (will be auto-filled based on category)">URLs CSV File:</label>
+                                <input type="text" class="form-control" id="url_file" name="url_file"
+                                       value="{{ defaults.url_file }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="data_file" title="Name of the CSV file where product data will be saved (will be auto-filled based on category)">Data CSV File:</label>
+                                <input type="text" class="form-control" id="data_file" name="data_file"
+                                       value="{{ defaults.data_file }}">
+                            </div>
+                        </div>
+                    </div>
+                    <h5 class="mt-3">CSV Functions</h5>
+                    <div class="row">
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="count_csv" name="count_csv"
+                                   {% if defaults.count_csv %}checked{% endif %}>
+                            <label class="form-check-label" for="count_csv" title="Count the number of rows in all CSV files in the specified directory">Count rows in a CSV folder (Uses path in home directory field)</label>
+                        </div>
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="dedupe_csv" name="dedupe_csv"
+                                   {% if defaults.dedupe_csv %}checked{% endif %}>
+                            <label class="form-check-label" for="dedupe_csv" title="Remove duplicate entries from the specified CSV file (use URL Filename field)">Dedupe a CSV (Place file name in URL Filename field)</label>
+                        </div>
+                    </div>
+                    <h5 class="mt-3">General Configuration</h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="home_directory" title="Base directory where files will be saved (defaults to current directory)">Home Directory:</label>
+                                <input type="text" class="form-control" id="home_directory" name="home_directory"
+                                       value="{{ defaults.home_directory|default:'.' }}" placeholder="Enter home directory path">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="max_products" title="Maximum number of products to request from the API in a single call">Max Products to Process:</label>
+                                <input type="number" class="form-control" id="max_products" name="max_products"
+                                       value="{{ defaults.max_products }}" min="1">
+                            </div>
+                        </div>
+                    </div>
+                    <h5 class="mt-3">Search Requests</h5>
+                    <div class="row">
+                        <div class="col-md-2">
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="search_requests" name="search_requests"
+                                       {% if defaults.search_requests %}checked{% endif %}>
+                                <label class="form-check-label" for="search_requests" title="Count the number of rows in all CSV files in the specified directory">Search Requests</label>
+                            </div>
+                        </div>
+                        <div class="col-md-5">
+                            <div class="form-group">
+                                <label for="url" title="URL to search the responses)">URL to test:</label>
+                                <input type="text" class="form-control" id="url" name="url"
+                                       value="{{ defaults.url }}">
+                            </div>
+                        </div>
+                        <div class="col-md-5">
+                            <div class="form-group">
+                                <label for="search_term" title="What are we looking for">Search term:</label>
+                                <input type="text" class="form-control" id="search_term" name="search_term"
+                                       value="{{ defaults.search_term }}">
+                            </div>
+                        </div>
+                    </div>
+                    <h5 class="mt-3">Target a specific category or row</h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="start_row" title="Start processing from this row number (0-based index)">Start Row:</label>
+                                <input type="number" class="form-control" id="start_row" name="start_row"
+                                       value="{{ defaults.start_row }}" min="0">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="category_to_process" title="Process only this specific category (0 = process all categories)">Category to Process: </label>
+                                <input type="number" class="form-control" id="category_to_process" name="category_to_process"
+                                       value="{{ defaults.category_to_process }}" min="0">
+                            </div>
+                        </div>
+                    </div>
+                    <h5 class="mt-3">For Testing Limit the number of things scraped</h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="test_products" title="Maximum number of products to scrape (for testing purposes)">Number of Products to Scrape:</label>
+                                <input type="number" class="form-control" id="test_products" name="test_products"
+                                       value="{{ defaults.test_products }}" min="1">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="test_categories" title="Maximum number of categories to process (for testing purposes)">Number of Categories to Scrape:</label>
+                                <input type="number" class="form-control" id="test_categories" name="test_categories"
+                                       value="{{ defaults.test_categories }}" min="1">
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary mt-3">Run</button>
+                </form>
+            </div>
+        {% endblock common %}
+        {% block scripts %}
+        <script>
+        // Define the file name mappings
+        const fileMappings = {
+            {% for category in categories %}
+            "{{ category.id }}": {
+                "url_file": "{{ category.name|lower }}_product_urls.csv",
+                "data_file": "{{ category.name|lower }}_product_data.csv"
+            }{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        };
+
+        // Function to update file names based on selected category
+        function updateFilenames(categoryId) {
+            const mapping = fileMappings[categoryId];
+            if (mapping) {
+                document.getElementById('url_file').value = mapping.url_file;
+                document.getElementById('data_file').value = mapping.data_file;
+            }
+        }
+
+        // Initialize file names on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const initialCategory = document.getElementById('category_id').value;
+            updateFilenames(initialCategory);
+        });
+        </script>
+    {% endblock scripts %}
+    {% endblock scrape_content %}
+{% endblock content %}

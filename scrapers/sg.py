@@ -1,24 +1,16 @@
-import csv
+
 import json
-import re
-import requests
 import time
 
-from bs4 import BeautifulSoup
-from pathlib import Path
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.options import PageLoadStrategy
 from selenium.webdriver.support.select import Select
-from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-
-from seleniumwire import webdriver as seleniumwire_webdriver
 from seleniumwire.utils import decode
+from typing import List, Dict, Any, Optional
 
 from scrapers.scraper import Scraper
-from typing import List, Dict, Any, Optional
+
 
 def get_category_facets(json_data):
 	"""
@@ -83,14 +75,20 @@ class SouthernGlazierScraper(Scraper):
 		'description': '',
 		'unit_price': '',
 		'extra_data_1': '',
-		'extra_data_2': '',
-
-		# Fields from US_FOODS_SPEC
 		'timestamp': '',
+		# Fields from Southern Glazier
+		'extra_data_2': '',
 		'pack_size': '',
 		'category': '',
 		'subcategory': '',
-		'pricingUnitOfMeasure': '',
+		'bpc': '',
+		'supplier': '',
+		'producer': '',
+		'region': '',
+		'country_of_origin': '',
+		'alcohol_proof': '',
+		'sub-type': '',
+		'producer_description': '',
 	}
 
 	TEST_CATEGORIES = 100
@@ -759,76 +757,10 @@ class SouthernGlazierScraper(Scraper):
 				    ]
 				  }
 				]
-	CATEGORY_IDS = {
-		"MEAT": 1,
-		"SEAFOOD": 2,
-		"CHEESE": 3,
-		"OIL": 4,
-		"BAKING": 5,
-		"PANTRY": 6,
-		"PRODUCE": 7,
-		"FROZEN": 8,
-		"BEVERAGE": 9,
-		"SUPPLIES": 10,
-		"DAIRY": 21,
-	}
+	CATEGORY_IDS = {}
+	CATEGORY_NAMES = {}
+	CATEGORY_URLS = {}
 	# Category Names (can use category ID as key)
-	CATEGORY_NAMES = {
-		1: "Meat & Poultry",
-		2: "Seafood",
-		3: "cheese-and-charcuterie/",
-		4: "oil-and-vinegar",
-		5: "baking-and-pastry",
-		6: "pantry-staples",
-		7: "fresh-produce",
-		8: "frozen-grocery",
-		9: "beverages",
-		10: "supplies",
-		21: "dairy-and-eggs",
-	}
-	CATEGORY_URLS = {
-		1: "meat-and-poultry",
-		2: "Seafood",
-		3: "cheese-and-charcuterie",
-		4: "oil-and-vinegar",
-		5: "baking-and-pastry",
-		6: "pantry-staples",
-		7: "fresh-produce",
-		8: "frozen-grocery",
-		9: "beverages",
-		10: "supplies",
-		21: "dairy-and-eggs",
-	}
-	URL_FILE_NAMES = {
-		1: "meat_product_urls.csv",
-		2: "seafood_product_urls.csv",
-		3: "cheese_product_urls.csv",
-		4: "oil_product_urls.csv",
-		5: "bakery_product_urls.csv",
-		6: "pantry_product_urls.csv",
-		7: "produce_product_urls.csv",
-		8: "frozen_product_urls.csv",
-		9: "beverage_product_urls.csv",
-		10: "supplies_product_urls.csv",
-		21: "dairy_product_urls.csv",
-	}
-	DATA_FILE_NAMES = {
-		1: "meat_product_data.csv",
-		2: "seafood_product_data.csv",
-		3: "cheese_product_data.csv",
-		4: "oil_product_datas.csv",
-		5: "bakery_product_data.csv",
-		6: "pantry_product_data.csv",
-		7: "produce_product_data.csv",
-		8: "frozen_product_data.csv",
-		9: "beverage_product_data.csv",
-		10: "supplies_product_data.csv",
-		21: "dairy_product_data.csv",
-	}
-	CHOSEN_CATEGORY = CATEGORY_IDS["DAIRY"]
-	CATEGORY_NAME = CATEGORY_NAMES[CHOSEN_CATEGORY]
-	URL_OUTPUT_FILE = URL_FILE_NAMES[CHOSEN_CATEGORY]
-	DATA_OUTPUT_FILE = DATA_FILE_NAMES[CHOSEN_CATEGORY]
 	DEDUP_INPUT_FILE = 'dedupe_product_data.csv'
 
 	DEFAULT_OPTIONS = {
@@ -840,14 +772,14 @@ class SouthernGlazierScraper(Scraper):
 		'count_csv': False,
 		'process_extra': False,
 		'search_requests': False,
-		'test_products': 20000,
-		'max_products': 30,
+		'test_products': 2,
+		'max_products': 2,
 		'csv_start_row': 0,
 		'category_to_process': 0,
 		'test_categories': 100,
 		'chosen_category': '10001',  # Default to Meat
-		'url_output_file': URL_OUTPUT_FILE,
-		'data_output_file': DATA_OUTPUT_FILE,
+		'url_output_file': '',
+		'data_output_file': '',
 		'home_directory': DEFAULT_DIRECTORY,
 		'url': 'https://shop.sgproof.com/search',
 		'search_term': 'Miscellaneous',
@@ -974,18 +906,18 @@ class SouthernGlazierScraper(Scraper):
 		except Exception as e:
 			print(f"Error: {e}")
 
-	def bypass_age_gate2(self, url):
+	def bypass_age_gate_home_page(self, url):
+		print("bypass_age_gate_home_page()")
 		try:
 			self.driver.get(url)
-			# time.sleep(2)
 			select = self.wait.until(
 				EC.presence_of_element_located((By.CSS_SELECTOR, '#ageGatemodal'))
 			)
 			select = self.driver.find_element(By.CSS_SELECTOR, '#stateSelect')
-
 			select.click()
 			select = Select(select)
 			select.select_by_value("91")
+			# Yes button should be activated so click it
 			self.driver.find_element(By.CSS_SELECTOR, '#ageGatemodal .verify-trigger-yes').click()
 
 			print("Bypassed age gate")
@@ -994,7 +926,8 @@ class SouthernGlazierScraper(Scraper):
 
 	def scraping_setup(self):
 		"""Scrape products from the website"""
-		self.bypass_age_gate2("https://shop.sgproof.com/")
+		print("scraping_setup()")
+		self.bypass_age_gate_home_page("https://shop.sgproof.com/")
 		return
 
 	# ************************************************************************
@@ -1002,7 +935,7 @@ class SouthernGlazierScraper(Scraper):
 	# 	Product Scraping Functions
 	# ************************************************************************
 
-	def get_first_image_url(self, response_data):
+	def get_first_image_url(self, row_spec):
 		"""
 		Extract the first available image URL from the product API response.
 
@@ -1012,21 +945,20 @@ class SouthernGlazierScraper(Scraper):
 		Returns:
 			str: URL of the first available image, or None if no image found
 		"""
+		print("get_first_image_url()")
 		try:
-			view_model = response_data.get('viewModel', {})
-			assets = view_model.get('assets', [])
-
-			# If there are assets, get the first one's URL
-			if assets and isinstance(assets, list) and len(assets) > 0:
-				# Get the first asset and extract the URL
-				first_asset = assets[0]
-				if isinstance(first_asset, dict):
-					return self.BASE_URL + first_asset.get('featuredSrc', '')
+			# product-viewer-image
+			image_url = self.driver.find_element(By.CSS_SELECTOR, 'img.product-viewer-image').get_attribute("src")
+			if image_url:
+				try:
+					row_spec["image"] = image_url
+				except Exception as e:
+					print(f"⛔️️ Error processing product overview from data: {e}")
 
 		except Exception as e:
-			print(f"Error extracting image from viewModel.assets: {str(e)}")
+			print(f"Error extracting image from page: {str(e)}")
 
-		return ''
+		return row_spec
 
 	def get_product_data(self, data, row_spec):
 		print("processing product data from response...")
@@ -1060,25 +992,49 @@ class SouthernGlazierScraper(Scraper):
 			row_spec["level_3"] = product_data.get("subsubcategory", "")
 		return row_spec
 
-	def get_manufacturer(self, data, row_spec):
+	def get_table_section(self, row_spec):
 		# Scrape the section that contains the manufacturer information. It is in an unordered list
-		if data:
-			try:
-				row_spec["manufacturer_sku"] = data.get("manufacturerItemNumber", "")
-				row_spec["manufacturer_name"] = data.get("manufacturerDisplayName", "")
-			except Exception as e:
-				print(f"⛔️⛔️⛔️Error processing manufacturer data: {e}")
+		print("get_table_section()")
+		#product-info-table-container
+		details = self.driver.find_element(By.CSS_SELECTOR, 'div.product-info-table-container')
+		print(details)
+		hidden_element = self.driver.find_element(By.CSS_SELECTOR, '.product-info-table-container div.product-info-hide')
+		self.driver.execute_script("arguments[0].style.display = 'block';", hidden_element)
+		try:
+			rows = details.find_elements(By.CSS_SELECTOR, 'div.g-row')
+			print(rows)
+			for row in rows:
+				key = row.find_element(By.CSS_SELECTOR, '.product-info-table-left').text.strip()
+				print(key)
+				key = key.lower().replace(' ', '_')
+				value = row.find_element(By.CSS_SELECTOR, '.product-info-table-right').text.strip()
+				if key in self.PRODUCT_DATA_SPEC.keys():
+					row_spec[key] = value
+
+		except Exception as e:
+			print(f"⛔️⛔️⛔️Error processing table data: {e}")
 		return row_spec
 
-	def get_description(self, data, row_spec):
-		print("processing product overview...")
+	def get_description(self, row_spec):
+		print("get_description()")
 		description = ''
-		if data:
+		# product-info-about-container
+		self.driver.execute_script("document.body.style.zoom = '20%'")
+
+		producer_description = self.driver.find_element(By.CSS_SELECTOR, 'div.product-info-full').text.strip()
+		if producer_description:
 			try:
-				row_spec["description"]  = data.get('description', description)
+				row_spec["producer_description"]  = producer_description
 			except Exception as e:
 				print(f"⛔️️ Error processing product overview from data: {e}")
 
+		# product-card-pdp-desc
+		description = self.driver.find_element(By.CSS_SELECTOR, 'div.product-card-pdp-desc').text.strip()
+		if description:
+			try:
+				row_spec["description"]  = description
+			except Exception as e:
+				print(f"⛔️️ Error processing product overview from data: {e}")
 		print("processing product overview Complete...")
 		return row_spec
 
@@ -1104,6 +1060,26 @@ class SouthernGlazierScraper(Scraper):
 
 		print("processing product additional data Complete...")
 		return row_spec
+
+	def get_additional_packages(self):
+		"""
+		Product have a dropsown selector for chosing different versions
+		"""
+		print("get_additional_packages()")
+		package_list = []
+		# Get item list from item-variant-menu-list
+		variation_list = self.wait.until(
+			EC.presence_of_element_located((By.CSS_SELECTOR, '.item-variant-menu-list'))
+		)
+		anchor_list = variation_list.find_elements(By.TAG_NAME, 'a')
+		print(f"anchor_list: {anchor_list}")
+		for anchor in anchor_list:
+			href_value = anchor.get_attribute("href")
+			print(f"href_value: {href_value}")
+			package_list.append(href_value)
+
+		print(f"anchor_list: {package_list}")
+		return package_list
 
 	@staticmethod
 	def create_interceptor(max_api_products=MAX_API_PRODUCTS):
@@ -1247,38 +1223,11 @@ class SouthernGlazierScraper(Scraper):
 		print(f"Total products found: {len(all_urls)}")
 		return html
 
-	def get_additional_packages(self):
-		"""
-		Product have a dropsown selector for chosing different versions
-		"""
-		# Get item list from item-variant-menu-list
-		variation_list = self.wait.until(
-			EC.presence_of_element_located((By.CSS_SELECTOR, '.item-variant-menu-list'))
-		)
-		anchor_list = variation_list.find_elements(By.TAG_NAME, 'a')
-
-		for anchor in anchor_list:
-			href_value = anchor.get_attribute("href")
-			print(f"href_value: {href_value}")
-
-		return
-
-
-	def get_product_details(self, url, row_spec=None):
-		"""
-		Product detail pages are rendered server-side. Page must be mannually scraped.
-		Additianal packages also need to be pulled or visited from the dropdown
-		"""
-		#  Wait for the product name element on the product page detail page
-		if not row_spec: row_spec = self.PRODUCT_DATA_SPEC.copy()
-		print("processing product detail page")
-
-		data = ''
-		sku = row_spec['sku']
-		url = f"https://shop.sgproof.com/sgws/en/usd/p/{sku}"
-		# https://shop.sgproof.com/sgws/en/usd/p/{sku}
-		print(f"Loading page...{url}")
+	def process_details_from_html(self, url, follow_anchors=False, row_spec=None):
+		print(f"process_details_from_html()")
+		additional_packages = []
 		del self.driver.requests
+		# self.driver.navigate().to(url)
 		self.driver.get(url)
 		# product-viewer-box
 		try:
@@ -1291,12 +1240,58 @@ class SouthernGlazierScraper(Scraper):
 			print(f"name: {name}")
 			row_spec['name'] = name
 
-			self.get_additional_packages()
-
-
+			#item-variant-select-text
+			variant_info = container.find_element(By.CSS_SELECTOR, '.item-variant-select-text')
+			# pack = variant_info.find_element(By.CSS_SELECTOR, '[data-at-size]').text.strip()
+			# print(f"pack: {pack}")
+			# row_spec['pack'] = pack
+			# bpc = variant_info.find_element(By.CSS_SELECTOR, '[data-at-bpc]').text.strip()
+			# print(f"bpc: {bpc}")
+			# row_spec['bpc'] = bpc
+			row_spec = self.get_description(row_spec)
+			row_spec = self.get_table_section(row_spec)
+			row_spec = self.get_first_image_url(row_spec)
+			# page has a deropdwon to select additional packages
+			if follow_anchors:
+				additional_packages = self.get_additional_packages()
+			else:
+				sku = variant_info.find_element(By.CSS_SELECTOR, '[data-at-product-id]').text.strip()
+				row_spec['sku'] = sku
 		except Exception as e:
-			print(f"⛔️⛔️⛔️Error processing product detail page: {e}")
-		time.sleep(5)
+			print(f"⛔️⛔️⛔️Error processing process_details_from_html: {e}")
+		return row_spec, additional_packages
+
+	def get_product_details(self, url, row_spec=None):
+		"""
+		Product detail pages are rendered server-side. Page must be manually scraped.
+		Additional packages also need to be pulled or visited from the dropdown
+		To get the product detail page, visit the product detail page and then pull the additional packages
+		"""
+		# The initial row_spec contains the information from the product list page
+		initial_row_spec = row_spec
+		#  Wait for the product name element on the product page detail page
+		if not row_spec: row_spec = self.PRODUCT_DATA_SPEC.copy()
+		print("processing product detail page")
+
+		data = ''
+		sku = row_spec['sku']
+		url = f"https://shop.sgproof.com/sgws/en/usd/p/{sku}"
+		# https://shop.sgproof.com/sgws/en/usd/p/{sku}
+		print(f"Loading page...{url}")
+		try:
+			row_spec, additional_packages = self.process_details_from_html(url, row_spec=row_spec, follow_anchors=True)
+
+			# The method that called this handles saving the row the row for the product. Now we
+			# need to process the other packages and save them
+
+			for package in additional_packages:
+				package_spec = initial_row_spec.copy()
+				# process the product but do not process its packages
+				package_spec, additional_packages = self.process_details_from_html(package, row_spec=package_spec, follow_anchors=False)
+				self.write_product_to_csv(package_spec)
+		except Exception as e:
+			print(f"⛔️⛔️⛔️Error processing get_product_details: {e}")
+
 		return row_spec
 
 	def build_categories_list(self):
