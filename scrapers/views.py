@@ -410,6 +410,7 @@ def update_sg_options(post_data, current_options):
         current_options['url_output_file'] = current_options['home_directory']
         current_options['data_output_file'] = ''
     current_options['category_name'] = category_name
+    current_options['direct_category_to_process'] = str(post_data.get('direct_category_to_process', ''))
 
     print(current_options)
     return current_options

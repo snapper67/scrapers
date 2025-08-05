@@ -772,8 +772,8 @@ class SouthernGlazierScraper(Scraper):
 		'count_csv': False,
 		'process_extra': False,
 		'search_requests': False,
-		'test_products': 2,
-		'max_products': 2,
+		'test_products': 20000,
+		'max_products': 99,
 		'csv_start_row': 0,
 		'category_to_process': 0,
 		'test_categories': 100,
@@ -913,9 +913,12 @@ class SouthernGlazierScraper(Scraper):
 			select = self.wait.until(
 				EC.presence_of_element_located((By.CSS_SELECTOR, '#ageGatemodal'))
 			)
-			select = self.driver.find_element(By.CSS_SELECTOR, '#stateSelect')
+			print(f"select: {select}")
+			select = select.find_element(By.ID, 'stateSelect')
+			print(f"select: {select}")
 			select.click()
 			select = Select(select)
+			print(f"select: {select}")
 			select.select_by_value("91")
 			# Yes button should be activated so click it
 			self.driver.find_element(By.CSS_SELECTOR, '#ageGatemodal .verify-trigger-yes').click()
@@ -923,6 +926,7 @@ class SouthernGlazierScraper(Scraper):
 			print("Bypassed age gate")
 		except Exception as e:
 			print(f"Error: {e}")
+			time.sleep(200)
 
 	def scraping_setup(self):
 		"""Scrape products from the website"""
@@ -962,34 +966,6 @@ class SouthernGlazierScraper(Scraper):
 
 	def get_product_data(self, data, row_spec):
 		print("processing product data from response...")
-		# print(data)
-		if data:
-			try:
-				row_spec["name"] = data.get("name", "")
-				row_spec["brand"] = data.get("displayBrand", "")
-
-				view_model = data.get('viewModel', {})
-				row_spec["pack_size"] = view_model.get('size', {})
-
-				row_spec["image"] = self.get_first_image_url(data)
-				row_spec = self.get_classification(view_model, row_spec)
-				row_spec = self.get_description(view_model, row_spec)
-				row_spec = self.get_manufacturer(data, row_spec)
-				row_spec = self.get_additional_info(data, row_spec)
-				row_spec["extra_data_1"] = json.dumps(data)
-
-			except Exception as e:
-				print(f" ⛔️⛔️⛔️Error processing product data: {e}")
-
-		print("processing get_product_data Complete...")
-		return row_spec
-
-	def get_classification(self, product_data, row_spec):
-		print("processing product classification...")
-		if product_data:
-			row_spec["level_1"] = product_data.get("category", "").get('text', '')
-			row_spec["level_2"] = product_data.get("subcategory", "")
-			row_spec["level_3"] = product_data.get("subsubcategory", "")
 		return row_spec
 
 	def get_table_section(self, row_spec):
@@ -998,8 +974,11 @@ class SouthernGlazierScraper(Scraper):
 		#product-info-table-container
 		details = self.driver.find_element(By.CSS_SELECTOR, 'div.product-info-table-container')
 		print(details)
-		hidden_element = self.driver.find_element(By.CSS_SELECTOR, '.product-info-table-container div.product-info-hide')
-		self.driver.execute_script("arguments[0].style.display = 'block';", hidden_element)
+		try:
+			hidden_element = self.driver.find_element(By.CSS_SELECTOR, '.product-info-table-container div.product-info-hide')
+			self.driver.execute_script("arguments[0].style.display = 'block';", hidden_element)
+		except Exception as e:
+			print(f"No hidden element: {type(e)}")
 		try:
 			rows = details.find_elements(By.CSS_SELECTOR, 'div.g-row')
 			print(rows)
@@ -1012,7 +991,7 @@ class SouthernGlazierScraper(Scraper):
 					row_spec[key] = value
 
 		except Exception as e:
-			print(f"⛔️⛔️⛔️Error processing table data: {e}")
+			print(f"⛔️⛔️⛔️Error processing table data: {type(e)}")
 		return row_spec
 
 	def get_description(self, row_spec):
@@ -1020,45 +999,21 @@ class SouthernGlazierScraper(Scraper):
 		description = ''
 		# product-info-about-container
 		self.driver.execute_script("document.body.style.zoom = '20%'")
-
-		producer_description = self.driver.find_element(By.CSS_SELECTOR, 'div.product-info-full').text.strip()
-		if producer_description:
-			try:
+		try:
+			producer_description = self.driver.find_element(By.CSS_SELECTOR, 'div.product-info-full').text.strip()
+			if producer_description:
 				row_spec["producer_description"]  = producer_description
-			except Exception as e:
-				print(f"⛔️️ Error processing product overview from data: {e}")
+		except Exception as e:
+			print(f"⛔️️ Error processing product producer description: {type(e)}")
 
 		# product-card-pdp-desc
-		description = self.driver.find_element(By.CSS_SELECTOR, 'div.product-card-pdp-desc').text.strip()
-		if description:
-			try:
+		try:
+			description = self.driver.find_element(By.CSS_SELECTOR, 'div.product-card-pdp-desc').text.strip()
+			if description:
 				row_spec["description"]  = description
-			except Exception as e:
-				print(f"⛔️️ Error processing product overview from data: {e}")
+		except Exception as e:
+			print(f"⛔️️ Error processing product description: {type(e)}")
 		print("processing product overview Complete...")
-		return row_spec
-
-	def get_additional_info(self, data, row_spec):
-		"""
-		Processes the product additional data from the API response and stores it into `row_spec`.
-		This function specifically handles the extra fields that are not present in the standard product spec .
-
-		Args:
-			data (dict): The API response containing the product additional data
-			row_spec (dict): The dictionary containing the scraped product data
-
-		Returns:
-			dict: The updated `row_spec` with the additional data
-		"""
-		print("processing product additional data...")
-		if data:
-			try:
-				view_model = data.get('viewModel', {})
-				row_spec["pricingUnitOfMeasure"] = view_model.get("pricingUnitOfMeasure", "")
-			except Exception as e:
-				print(f"⛔️⛔️⛔️Error processing additional data: {e}")
-
-		print("processing product additional data Complete...")
 		return row_spec
 
 	def get_additional_packages(self):
@@ -1085,16 +1040,19 @@ class SouthernGlazierScraper(Scraper):
 	def create_interceptor(max_api_products=MAX_API_PRODUCTS):
 		def interceptor(request):
 			# southernglazerswinespiritsproduction78xh7hnm.org.coveo.com/rest/search/v2
-			if request.method == 'POST' and 'southernglazerswinespiritsproduction78xh7hnm.org.coveo.com/rest/search/v2' in request.url:  # Replace 'your_target_url'
+			if request.method == 'POST' and 'southernglazerswinespiritsproduction78xh7hnm.org.coveo.com/rest/search/v2' in request.url:
 				print(f"👽👽👽Intercepting request: {request.url}")
 				# Get the current POST data
 				current_data = request.body.decode('utf-8')
 				# print(f"Original POST data: {current_data}")
 
-				# Modify the POST data
-				# Example: change a value in a JSON payload
 				try:
 					payload = json.loads(current_data)
+					if 'facets' in payload and payload['facets']:
+						for facet in payload['facets']:
+							if facet.get('field') == 'ec_prd_category' and (not facet.get('currentValues') or len(facet.get('currentValues', [])) == 0):
+								print("Exiting interceptor: ec_prd_category has no current values")
+								return
 					# search = payload.get('search', {})
 					print(f"Incoming number of results: {payload['numberOfResults']}")
 					payload['numberOfResults'] = max_api_products  # Replace 'key_to_change' and 'new_value'
@@ -1147,7 +1105,10 @@ class SouthernGlazierScraper(Scraper):
 					if i > test_products:
 						break
 					url = f"https://shop.sgproof.com/search?text={category_filter_string}{class_filter_string}{subclass_filter_string}"
-
+					if len(self.options['direct_category_to_process']) > 0 and self.options[
+						'direct_category_to_process'] != url:
+						print(f"Skipping category {category['name']} as it is not the direct category to process")
+						continue
 					still_looking = True
 					while still_looking and i < self.options['max_products']:
 						i = i + 1
@@ -1158,56 +1119,76 @@ class SouthernGlazierScraper(Scraper):
 						print(f"category_name : {category_name}")
 						print(f"class_name : {class_name}")
 						print(f"subclass_name : {subclass_name}")
+						print(f"Loading page...{url}")
+
 						del self.driver.requests
 						self.driver.get(url)
-						print(f"URL : {url}")
+						print(f"URL Loaded")
 						print(f"Page : {i}")
+						continue_on = True
 						filter_criteria = "southernglazerswinespiritsproduction78xh7hnm.org.coveo.com/rest/search"
 						# request_filter2 = f"page={i}"
 						# https://app.salsify.com/catalogs/api/catalogs/a256467d-fc0a-4bce-8971-1d14466fd28f/products?filter=%3D%27Product%20Category%27%3A%27Beer%27&page=1&per_page=36&product_identifier_collection_id=&query=
-						request = self.driver.wait_for_request(filter_criteria, 40)
+						try:
+							request = self.driver.wait_for_request(filter_criteria, 50)
+						except Exception as e:
+							print(f"⛔️⛔️⛔️Request failed: {e}")
+							html += f"<h2>{category_name} -> {class_['name']} -> {subclass['category']}</h2>"
+							html += "<div>TIme Out </div>"
+							break
 						if request.response and filter_criteria in request.url:  # Filter for API requests
 							print(f"URL: {request.url}")
 							print(f"Status Code: {request.response.status_code}")
 							print(f"Content Type: {request.response.headers.get('Content-Type')}")
+							current_data = request.body.decode('utf-8')
+							# print(f"current_data: {current_data}")
+							payload = json.loads(current_data)
+							if 'facets' in payload and payload['facets']:
+								for facet in payload['facets']:
+									if facet.get('field') == 'ec_prd_category':
+										print(facet)
+										print(f"Number of results: {payload['numberOfResults']}")
+									if facet.get('field') == 'ec_prd_category' and (
+											not facet.get('currentValues') or len(
+										facet.get('currentValues', [])) == 0):
+										print("This is not the request you are looking for")
+										continue_on = False
 
-							# Decode the response body (it's bytes by default)
-							try:
-								# body = request.response.body.decode(request.response.headers.get('Content-Encoding', 'identity'))
-								body = decode(request.response.body,
+							if continue_on:
+								try:
+									body = decode(request.response.body,
 								              request.response.headers.get('Content-Encoding', 'identity'))
 
-								# If the body is JSON, parse it
-								if 'application/json' in request.response.headers.get('Content-Type', ''):
-									data = json.loads(body)
-									# https://app.salsify.com/catalogs/a256467d-fc0a-4bce-8971-1d14466fd28f/products/9258080
-									if 'results' in data:
-										detail_urls = [
-											product['clickUri']
-											for product in data['results']]
-										print(f"== Number of products: {len(detail_urls)}")
-										all_urls.extend(detail_urls)
-										html += f"<h2>{category_name} -> {class_['name']} -> {subclass['category']}</h2>"
-										html += "<div>Products found: " + str(len(detail_urls)) + "</div>"
-										self.save_urls_to_csv(detail_urls, category_name, class_['name'], subclass['category'])
-										print(f"=== Number of products: {len(detail_urls)}")
-										# for url in detail_urls:
-										# 	self.process_product(url, {})
-										# 	time.sleep(1)
-										if len(detail_urls) < 250:
-											still_looking = False
-										# still_looking = False
+									# If the body is JSON, parse it
+									if 'application/json' in request.response.headers.get('Content-Type', ''):
+										data = json.loads(body)
+										# https://app.salsify.com/catalogs/a256467d-fc0a-4bce-8971-1d14466fd28f/products/9258080
+										if 'results' in data:
+											detail_urls = [
+												product['clickUri']
+												for product in data['results']]
+											print(f"== Number of products: {len(detail_urls)}")
+											all_urls.extend(detail_urls)
+											html += f"<h2>{category_name} -> {class_['name']} -> {subclass['category']}</h2>"
+											html += "<div>Products found: " + str(len(detail_urls)) + "</div>"
+											self.save_urls_to_csv(detail_urls, category_name, class_['name'], subclass['category'])
+											print(f"=== Number of products: {len(detail_urls)}")
+											# for url in detail_urls:
+											# 	self.process_product(url, {})
+											# 	time.sleep(1)
+											if len(detail_urls) < self.MAX_API_PRODUCTS:
+												still_looking = False
+											# still_looking = False
+										else:
+											print(f"Response products missing: {'products' in data} ")
+											print(f"data: {data} ")
+
 									else:
-										print(f"Response products missing: {'products' in data} ")
-										print(f"data: {data} ")
+										print(f"Response Body (Text): ")
+										print(f"Response not JSON  ")
 
-								else:
-									print(f"Response Body (Text): ")
-									print(f"Response not JSON  ")
-
-
-							except Exception as e:
-								print(f"⛔️⛔️⛔️Error decoding detail response body: {e}")
+								except Exception as e:
+									print(f"⛔️⛔️⛔️Error decoding detail response body: {e}")
 
 						# del self.driver.request_interceptor
 						del self.driver.requests
@@ -1276,6 +1257,7 @@ class SouthernGlazierScraper(Scraper):
 		data = ''
 		sku = row_spec['sku']
 		url = f"https://shop.sgproof.com/sgws/en/usd/p/{sku}"
+		row_spec['content_url'] = url
 		# https://shop.sgproof.com/sgws/en/usd/p/{sku}
 		print(f"Loading page...{url}")
 		try:
@@ -1284,13 +1266,16 @@ class SouthernGlazierScraper(Scraper):
 			# The method that called this handles saving the row the row for the product. Now we
 			# need to process the other packages and save them
 
-			for package in additional_packages:
+			for index, package in additional_packages:
+				if index == 0:
+					print(f"Skipping first package: {package}")
+					continue
 				package_spec = initial_row_spec.copy()
 				# process the product but do not process its packages
 				package_spec, additional_packages = self.process_details_from_html(package, row_spec=package_spec, follow_anchors=False)
 				self.write_product_to_csv(package_spec)
 		except Exception as e:
-			print(f"⛔️⛔️⛔️Error processing get_product_details: {e}")
+			print(f"⛔️⛔️⛔️Error processing get_product_details: {type(e)}")
 
 		return row_spec
 

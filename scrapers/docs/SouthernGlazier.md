@@ -1,3 +1,16 @@
+# Failed Scrapes
+https://shop.sgproof.com/search?text=&f-category=Spirits&f-class=Whiskey-American&f-subclass=Flavored+Whiskey-American
+https://shop.sgproof.com/search?text=&f-category=Spirits&f-class=Whiskey-American&f-subclass=Blended+American+Whiskey
+https://shop.sgproof.com/search?text=&f-category=Spirits&f-class=Whiskey-American&f-subclass=Blended+Bourbon
+https://shop.sgproof.com/search?text=&f-category=Spirits&f-class=Liqueur&f-subclass=Liqueur-Other
+https://shop.sgproof.com/search?text=&f-category=Spirits&f-class=Liqueur&f-subclass=Cream+Liqueur
+https://shop.sgproof.com/search?text=&f-category=Spirits&f-class=Rum&f-subclass=Gold+Rum
+https://shop.sgproof.com/search?text=&f-category=Spirits&f-class=Rum&f-subclass=Dark+Rum
+https://shop.sgproof.com/search?text=&f-category=Spirits&f-class=Whiskey-Irish&f-subclass=Single+Pot+Still+Irish+Whiskey
+
+
+https://shop.sgproof.com/search?text=&f-category=Wine&f-class=Rose+Wine&f-subclass=Rose+Wine-Pinot+Noir
+
 # Process
 1. Run the proces to look for the categories
    1.1. This will open a window and you will need to pick a location and confirm age before it reloads the page
