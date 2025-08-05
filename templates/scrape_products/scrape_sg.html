@@ -1,2 +1,13 @@
 {% extends "./_scrape_base.html" %}
 {% block name %}Southern Glazier Scraper{% endblock name %}
+
+{% block custom %}
+    <div class="col-md-6">
+        <div class="form-group">
+            <label for="direct_category_to_process" title="Process only this specific category (0 = process all categories)">Category URL to Process: </label>
+            <input type="url" class="form-control" id="direct_category_to_process" name="direct_category_to_process"
+                   value="" >
+        </div>
+    </div>
+
+{% endblock custom %}
