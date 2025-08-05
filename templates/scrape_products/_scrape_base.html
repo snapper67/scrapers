@@ -42,6 +42,11 @@
                                        {% if defaults.reprocess_csv %}checked{% endif %}>
                                 <label class="form-check-label" for="reprocess_csv" title="Only process URLs that haven't been processed yet (not found in results)">4. Processes URLS not in Results</label>
                             </div>
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="process_extra" name="process_extra"
+                                       {% if defaults.process_csv %}checked{% endif %}>
+                                <label class="form-check-label" for="process_extra" title="Reprocess the data file to extract extra data">Process Extra Data</label>
+                            </div>
                         </div>
                     </div>
                     <div class="row">

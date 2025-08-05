@@ -365,7 +365,7 @@ class USFoodsScraper(Scraper):
 				row_spec['manufacturer_name'] = level_1
 				row_spec['manufacturer_sku'] = level_2
 			except Exception as e:
-				print(f"⛔️⛔️⛔️Error processing product manufacturer: {e}")
+				print(f"⛔️⛔️⛔️Error processing product manufacturer from scrape:")
 		print("processing product manufacturer Complete...")
 		return row_spec
 
@@ -407,7 +407,7 @@ class USFoodsScraper(Scraper):
 				row_spec['countryOfOriginGrownHarvested'] = level_2
 				row_spec['countryOfOriginProcessed'] = level_3
 			except Exception as e:
-				print(f"⛔️️ Error processing product overview: {e}")
+				print(f"⛔️️ Error processing product overview from scrape:")
 
 		print("processing product overview Complete...")
 		return row_spec
@@ -719,7 +719,7 @@ class USFoodsScraper(Scraper):
 		self.driver.execute_script("document.body.style.zoom = '50%'")
 		print(f"Loaded page...{self.driver.title}")
 		data = ''
-		request = self.driver.wait_for_request('domain-api/v1/productdetail')
+		request = self.driver.wait_for_request('domain-api/v1/productdetail', 30)
 		if request.response and "domain-api/v1/productdetail" in request.url:  # Filter for API requests
 			print(f"URL: {request.url}")
 			print(f"Status Code: {request.response.status_code}")

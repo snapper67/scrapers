@@ -331,6 +331,30 @@ def scrape_breakthru(request):
             # 'data_file': f"{usfoods_options.get('category_name').lower()}_product_data.csv"
         }
     })
+def update_common_options(post_data, current_options):
+    # Update boolean flags
+    current_options['get_categories'] = 'get_categories' in post_data
+    current_options['scrape_products'] = 'scrape_products' in post_data
+    current_options['process_csv'] = 'process_csv' in post_data
+    current_options['reprocess_csv'] = 'reprocess_csv' in post_data
+    current_options['process_extra'] = 'process_extra' in post_data
+    current_options['search_requests'] = 'search_requests' in post_data
+    current_options['dedupe_csv'] = 'dedupe_csv' in post_data
+    current_options['count_csv'] = 'count_csv' in post_data
+
+
+    current_options['test_products'] = int(post_data.get('test_products', current_options.get('test_products', 10)))
+    current_options['test_categories'] = int(
+        post_data.get('test_categories', current_options.get('test_categories', 10)))
+    current_options['max_products'] = int(post_data.get('max_products', current_options.get('max_products', 500)))
+    current_options['csv_start_row'] = int(post_data.get('start_row', current_options.get('csv_start_row', 0)))
+    current_options['category_to_process'] = int(
+        post_data.get('category_to_process', current_options.get('category_to_process', 0)))
+    current_options['home_directory'] = str(post_data.get('home_directory', current_options.get('home_directory', '')))
+    # Search Requests options
+    current_options['url'] = str(post_data.get('url', ''))
+    current_options['search_term'] = str(post_data.get('search_term', ''))
+    return current_options
 
 def update_sg_options(post_data, current_options):
     """
@@ -344,40 +368,37 @@ def update_sg_options(post_data, current_options):
         Updated usfoods_options dictionary
     """
     # Update boolean flags
-    scraper = BreakthruScraper()
-    category_ids = scraper.get_category_ids()
-    category_names = scraper.get_category_names()
-    category_urls = scraper.get_category_urls()
-    print(post_data)
-    current_options['scrape_products'] = 'scrape_products' in post_data
-    current_options['process_csv'] = 'process_csv' in post_data
-    current_options['process_extra'] = 'process_extra' in post_data
-    current_options['reprocess_csv'] = 'reprocess_csv' in post_data
-    current_options['search_requests'] = 'search_requests' in post_data
-    current_options['dedupe_csv'] = 'dedupe_csv' in post_data
-    current_options['count_csv'] = 'count_csv' in post_data
-    current_options['get_categories'] = 'get_categories' in post_data
+    scraper = SouthernGlazierScraper()
+
+    # current_options['scrape_products'] = 'scrape_products' in post_data
+    # current_options['process_csv'] = 'process_csv' in post_data
+    # current_options['process_extra'] = 'process_extra' in post_data
+    # current_options['reprocess_csv'] = 'reprocess_csv' in post_data
+    # current_options['search_requests'] = 'search_requests' in post_data
+    # current_options['dedupe_csv'] = 'dedupe_csv' in post_data
+    # current_options['count_csv'] = 'count_csv' in post_data
+    # current_options['get_categories'] = 'get_categories' in post_data
 
     # Update numerical values with defaults
-    current_options['test_products'] = int(post_data.get('test_products', current_options.get('test_products', 10)))
-    current_options['test_categories'] = int(post_data.get('test_categories', current_options.get('test_categories', 10)))
-    current_options['max_products'] = int(post_data.get('max_products', current_options.get('max_products', 500)))
-    current_options['csv_start_row'] = int(post_data.get('start_row', current_options.get('csv_start_row', 0)))
-    current_options['category_to_process'] = int(
-        post_data.get('category_to_process', current_options.get('category_to_process', 0)))
-    current_options['home_directory'] = str(post_data.get('home_directory', current_options.get('home_directory', '')))
-
-    current_options['url'] = str(post_data.get('url', ''))
-    current_options['search_term'] = str(post_data.get('search_term', ''))
+    # current_options['test_products'] = int(post_data.get('test_products', current_options.get('test_products', 10)))
+    # current_options['test_categories'] = int(post_data.get('test_categories', current_options.get('test_categories', 10)))
+    # current_options['max_products'] = int(post_data.get('max_products', current_options.get('max_products', 500)))
+    # current_options['csv_start_row'] = int(post_data.get('start_row', current_options.get('csv_start_row', 0)))
+    # current_options['category_to_process'] = int(
+    #     post_data.get('category_to_process', current_options.get('category_to_process', 0)))
+    # current_options['home_directory'] = str(post_data.get('home_directory', current_options.get('home_directory', '')))
+    #
+    # current_options['url'] = str(post_data.get('url', ''))
+    # current_options['search_term'] = str(post_data.get('search_term', ''))
 
     # Update category and file names if category changes
     category_id = post_data.get('category_id')
     if category_id and int(category_id) != 0:
         categories = scraper.get_categories()
-        for category in categories:
-            if category['id'] == int(category_id):
-                category_name = category['name']
-                break
+        # for category in categories:
+        #     if category['id'] == int(category_id):
+        #         category_name = category['name']
+        #         break
         current_options['chosen_category'] = category_id
         category_name = ''
         current_options['category_url'] = ''
@@ -390,7 +411,6 @@ def update_sg_options(post_data, current_options):
         current_options['data_output_file'] = ''
     current_options['category_name'] = category_name
 
-
     print(current_options)
     return current_options
 def scrape_sg(request):
@@ -398,13 +418,17 @@ def scrape_sg(request):
 
     if request.method == 'POST':
         with SouthernGlazierScraper(options) as scraper:
+            print(request.POST)
             distributor_options = scraper.get_options()
-            # Create a copy of options for this request
-            options = update_sg_options(request.POST, distributor_options)
 
+            options = update_sg_options(request.POST, distributor_options)
+            options = update_common_options(request.POST, options)
+
+            # This is not implemented yet
             skus_to_check = request.POST.get('skus', '').split(',')  # Get SKUs from form input
             skus_to_check = [sku.strip() for sku in skus_to_check if sku.strip()]
             options['skus_to_check'] = skus_to_check
+
             # Run the scraper
             scraper.set_options(options)
             result = scraper.run()
