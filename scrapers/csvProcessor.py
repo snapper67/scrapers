@@ -10,7 +10,7 @@ class CSVProcessor:
 	"""
 
 	@staticmethod
-	def remove_duplicate_skus(input_file, output_file=None):
+	def remove_duplicates(input_file, output_file=None, column='sku'):
 		"""
 		Remove duplicate rows from a CSV file based on the SKU column.
 
@@ -34,13 +34,13 @@ class CSVProcessor:
 			return None
 
 		# Check if 'sku' column exists
-		if 'sku' not in df.columns:
+		if column not in df.columns:
 			print("Error: 'sku' column not found in the input file")
 			return None
 
 		# Remove duplicates based on 'sku' column
 		initial_count = len(df)
-		df_deduped = df.drop_duplicates(subset=['sku'], keep='first')
+		df_deduped = df.drop_duplicates(subset=[column], keep='first')
 		final_count = len(df_deduped)
 
 		# Save the deduplicated data
