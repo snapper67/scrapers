@@ -158,14 +158,15 @@
                 </form>
             </div>
         {% endblock common %}
-        {% block scripts %}
+    {% endblock scrape_content %}
+    {% block scripts %}
         <script>
         // Define the file name mappings
         const fileMappings = {
             {% for category in categories %}
             "{{ category.id }}": {
-                "url_file": "{{ category.name|lower }}_product_urls.csv",
-                "data_file": "{{ category.name|lower }}_product_data.csv"
+                "url_file": "{{ category.url_file }}",
+                "data_file": "{{ category.data_file }}"
             }{% if not forloop.last %},{% endif %}
             {% endfor %}
         };
@@ -186,5 +187,4 @@
         });
         </script>
     {% endblock scripts %}
-    {% endblock scrape_content %}
 {% endblock content %}
