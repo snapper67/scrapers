@@ -45,6 +45,25 @@ class SkuNotFound(Exception):
 			return f"{self.message}: {self.product_identifier}"
 		return self.message
 
+class ProductNotFound(Exception):
+	"""Exception raised when a product cannot be found during scraping.
+
+	Attributes:
+		message -- explanation of the error
+		product_identifier -- identifier of the product that was not found (e.g., URL, SKU, name)
+	"""
+
+	def __init__(self, message="Product not found", product_identifier=None):
+		self.message = message
+		self.product_identifier = product_identifier
+		super().__init__(self.message)
+
+	def __str__(self):
+		if self.product_identifier:
+			return f"{self.message}: {self.product_identifier}"
+		return self.message
+
+
 class Scraper:
 	# Class variables for default values
 	PRODUCT_DATA_SPEC = {}
@@ -178,7 +197,7 @@ class Scraper:
 	def get_options(self):
 		return self.options
 
-	def save_urls_to_csv(self ,urls, category_name="", subcategory_name="", subsubcategory_name=""):
+	def save_urls_to_csv(self ,urls, category_name="", subcategory_name=""):
 		"""
 		Save a list of URLs to a CSV file. If the file exists, it will append to it.
 
@@ -210,14 +229,14 @@ class Scraper:
 
 				# Write header only if file is new
 				if not file_exists:
-					writer.writerow(['SKU', 'URL', 'Timestamp', 'Category', 'Subcategory', 'Subsubcategory'])
+					writer.writerow(['SKU', 'URL', 'Timestamp', 'Category', 'Subcategory'])
 
 				# Write each URL with timestamp
 				for url in urls:
 					clean_url = url.rstrip('/')
 					sku = clean_url.split('/')[-1].split('?')[0]  # Remove any query parameters
 					writer.writerow(
-						[sku, url, datetime.now().strftime('%Y-%m-%d %H:%M:%S'), category_name, subcategory_name, subsubcategory_name])
+						[sku, url, datetime.now().strftime('%Y-%m-%d %H:%M:%S'), category_name, subcategory_name])
 
 			mode = "Appended to" if file_exists else "Created new"
 			print(f"Successfully {mode} {len(urls)} URLs to {filename}")

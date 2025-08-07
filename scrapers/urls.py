@@ -11,5 +11,6 @@ urlpatterns = [
     path("cw/", views.scrape_cw, name="cw"),
     path("breakthru/", views.scrape_breakthru, name="breakthru"),
     path("sg/", views.scrape_sg, name="sg"),
+    path("birite/", views.scrape_birite, name="birite"),
 
 ]
