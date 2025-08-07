@@ -83,13 +83,13 @@ def scrape_home(request):
     usfoods_options = scraper.get_options()
     category_ids = scraper.get_category_ids()
     categories = []
-    for category_id, category_name in category_ids.items():
-        categories.append({
-            'id': category_id,
-            'name': category_name,
-            'url_file': f"{category_id.lower()}_urls.csv",
-            'data_file': f"{category_id.lower()}_data.csv"
-        })
+    # for category_id, category_name in category_ids.items():
+    #     categories.append({
+    #         'id': category_id,
+    #         'name': category_name,
+    #         'url_file': f"{category_name.lower()}_urls.csv",
+    #         'data_file': f"{category_name.lower()}_data.csv"
+    #     })
 
     categories = [{'id': k, 'name': v} for k, v in category_ids.items()]
 
@@ -331,6 +331,7 @@ def scrape_breakthru(request):
             # 'data_file': f"{usfoods_options.get('category_name').lower()}_product_data.csv"
         }
     })
+
 def update_common_options(post_data, current_options):
     # Update boolean flags
     current_options['get_categories'] = 'get_categories' in post_data
@@ -415,6 +416,73 @@ def update_sg_options(post_data, current_options):
     print(current_options)
     return current_options
 def scrape_sg(request):
+    options = {}
+
+    if request.method == 'POST':
+        with SouthernGlazierScraper(options) as scraper:
+            print(request.POST)
+            distributor_options = scraper.get_options()
+
+            options = update_sg_options(request.POST, distributor_options)
+            options = update_common_options(request.POST, options)
+
+            # This is not implemented yet
+            skus_to_check = request.POST.get('skus', '').split(',')  # Get SKUs from form input
+            skus_to_check = [sku.strip() for sku in skus_to_check if sku.strip()]
+            options['skus_to_check'] = skus_to_check
+
+            # Run the scraper
+            scraper.set_options(options)
+            result = scraper.run()
+            return render(request, 'scrape_products/scrape_results.html', {'result': result})
+
+    # GET request - show form
+    scraper = SouthernGlazierScraper()
+    distributor_options = scraper.get_options()
+    category_ids = scraper.get_category_ids()
+    categories_scraped = scraper.get_categories()
+    categories = []
+    categories.append({
+        'id': 0,
+        'name': 'All',
+        'url_file': f"product_urls.csv",
+        'data_file': f"product_data.csv"
+      })
+    for category in categories_scraped:
+        categories.append({
+            'id': category['number'],
+            'name': category['name'],
+            'url_file': f"{scraper.make_filename_safe(category['name'])}_product_urls.csv",
+            'data_file': f"{scraper.make_filename_safe(category['name'])}_product_data.csv"
+        })
+
+    # categories = [{'id': k, 'name': v} for k, v in category_ids.items()]
+
+    return render(request, 'scrape_products/scrape_sg.html', {
+        'categories': categories,
+        'defaults': {
+            'home_directory': distributor_options.get('home_directory', '.'),
+            'get_categories': distributor_options.get('get_categories'),
+            'scrape_products': distributor_options.get('scrape_products'),
+            'process_csv': distributor_options.get('process_csv'),
+            'process_extra': distributor_options.get('process_extra'),
+            'reprocess_csv': distributor_options.get('reprocess_csv'),
+            'dedupe_csv': distributor_options.get('dedupe_csv'),
+            'count_csv': distributor_options.get('count_csv'),
+            'start_row': distributor_options.get('csv_start_row'),
+            'max_products': distributor_options.get('max_products'),
+            'test_products': distributor_options.get('test_products'),
+            'test_categories': distributor_options.get('test_categories'),
+            'category_to_process': distributor_options.get('category_to_process'),
+            'search_requests': distributor_options.get('search_requests'),
+            'url': distributor_options.get('url'),
+            'search_term': distributor_options.get('search_term'),
+            # 'url_file': f"{usfoods_options.get('category_name').lower()}_product_urls.csv",
+            # 'data_file': f"{usfoods_options.get('category_name').lower()}_product_data.csv"
+        }
+    })
+
+def scrape_view(request):
     options = {}
 
     if request.method == 'POST':

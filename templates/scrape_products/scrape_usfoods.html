@@ -1,2 +1,30 @@
 {% extends "./_scrape_base.html" %}
 {% block name %}US Foods{% endblock name %}
+{% block scripts %}
+<script>
+// Define the file name mappings
+const fileMappings = {
+    {% for category in categories %}
+    "{{ category.id }}": {
+        "url_file": "{{ category.id|lower }}_product_urls.csv",
+        "data_file": "{{ category.id|lower }}_product_data.csv"
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+};
+
+// Function to update file names based on selected category
+function updateFilenames(categoryId) {
+    const mapping = fileMappings[categoryId];
+    if (mapping) {
+        document.getElementById('url_file').value = mapping.url_file;
+        document.getElementById('data_file').value = mapping.data_file;
+    }
+}
+
+// Initialize file names on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const initialCategory = document.getElementById('category_id').value;
+    updateFilenames(initialCategory);
+});
+</script>
+{% endblock scripts  %}
