@@ -27,56 +27,27 @@ import sys
 import glob
 import pandas as pd
 
+class SkuNotFound(Exception):
+	"""Exception raised when a product cannot be found during scraping.
+
+	Attributes:
+		message -- explanation of the error
+		product_identifier -- identifier of the product that was not found (e.g., URL, SKU, name)
+	"""
+
+	def __init__(self, message="SKU not found for product", product_identifier=None):
+		self.message = message
+		self.product_identifier = product_identifier
+		super().__init__(self.message)
+
+	def __str__(self):
+		if self.product_identifier:
+			return f"{self.message}: {self.product_identifier}"
+		return self.message
 
 class Scraper:
 	# Class variables for default values
-	PRODUCT_DATA_SPEC = {
-		# Fields from IMPORT_SPEC
-		'name': '',
-		'sku': '',
-		'gtin': '',
-		'image': '',
-		'pack': '',
-		'size': '',
-		'retail_price': '',
-		'ordering_unit': '',
-		'is_catch_weight': '',
-		'is_broken_case': '',
-		'average_case_weight': '',
-		'brand': '',
-		'taxonomy': '',
-		'level_1': '',
-		'level_2': '',
-		'level_3': '',
-		'manufacturer_name': '',
-		'manufacturer_sku': '',
-		'distributor_name': '',
-		'content_url': '',
-		'description': '',
-		'unit_price': '',
-		'extra_data_1': '',
-		'extra_data_2': '',
-
-		# Fields from US_FOODS_SPEC
-		'timestamp': '',
-		'pack_size': '',
-		'category': '',
-		'subcategory': '',
-		'classCode': '',
-		'classDescription': '',
-		'groupCode': '',
-		'groupDescription': '',
-		'categoryCode': '',
-		'categoryDescription': '',
-		'standardComparisonUOM': '',
-		'standardComparisonValue': '',
-		'volume': '',
-		'volumeUnits': '',
-		'yield': '',
-		'yieldUOM': '',
-		'countryOfOriginGrownHarvested': '',
-		'countryOfOriginProcessed': ''
-	}
+	PRODUCT_DATA_SPEC = {}
 
 	TEST_CATEGORIES = 100
 	TEST_PRODUCTS = 20000
@@ -170,6 +141,9 @@ class Scraper:
 		"""Context manager exit - ensure driver is closed"""
 		self.cleanup()
 
+	def get_product_spec(self):
+		return self.PRODUCT_DATA_SPEC.copy
+
 	def setup_driver(self):
 		"""Initialize the WebDriver"""
 		if not self.driver:
@@ -183,7 +157,8 @@ class Scraper:
 				options=self.chrome_options,
 				seleniumwire_options=self.seleniumwire_options
 			)
-		self.wait = WebDriverWait(self.driver, 15)
+		self.driver.command_executor.set_timeout(1000)
+		self.wait = WebDriverWait(self.driver, 30)
 
 	def cleanup(self):
 		"""Clean up resources"""
@@ -482,7 +457,7 @@ class Scraper:
 					url = row.get('URL', '')
 					if not url:
 						continue
-					if row_num + 1< (start_row + test_products):
+					if (row_num + 1) < (start_row + test_products):
 						print(f"\nProcessing row {row_num + 1}/{total_rows} - {url}")
 
 						# Process the product
@@ -501,7 +476,7 @@ class Scraper:
 
 						print(f"Saved product {row_spec['name']} to {output_filename}")
 						# adjust this if we are making requests too fast
-						time.sleep(1)
+						# time.sleep(1)
 
 				except Exception as e:
 					print(f"⛔️⛔️⛔️Error processing row {row_num + 1}: {e}")
@@ -589,9 +564,9 @@ class Scraper:
 		                         home_dir=DEFAULT_DIRECTORY):
 
 		print("Starting Processing missing SKUs")
+		self.scraping_setup()
 		print(self.options)
 		skus_to_check = self.options.get('skus_to_check', [])
-
 		specified_skus = len(skus_to_check) > 0
 
 		url_file = self.options.get('url_output_file', url_file)
@@ -626,8 +601,9 @@ class Scraper:
 					print("Here 3")
 					for row in reader:
 						sku = row['SKU']
+						print(f"SKU: {sku}")
 						if (sku in skus_to_check or not specified_skus) and sku not in existing_skus:
-							row_spec = self.PRODUCT_DATA_SPEC.copy()
+							row_spec = self.get_product_spec()
 							try:
 								print(f"Processing missing SKU: {sku}")
 								# Copy values from import file

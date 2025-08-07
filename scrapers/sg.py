@@ -9,7 +9,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from seleniumwire.utils import decode
 from typing import List, Dict, Any, Optional
 
-from scrapers.scraper import Scraper
+from scrapers.scraper import Scraper, SkuNotFound
 
 
 def get_category_facets(json_data):
@@ -78,6 +78,9 @@ class SouthernGlazierScraper(Scraper):
 		'timestamp': '',
 		# Fields from Southern Glazier
 		'extra_data_2': '',
+		'vintage': '',
+		'varietal': '',
+		'appellation': '',
 		'pack_size': '',
 		'category': '',
 		'subcategory': '',
@@ -87,8 +90,15 @@ class SouthernGlazierScraper(Scraper):
 		'region': '',
 		'country_of_origin': '',
 		'alcohol_proof': '',
+		'alcohol_by_volume': '',
 		'sub-type': '',
 		'producer_description': '',
+		'container_type': '',
+		'closure_type': '',
+		'units_per_case': '',
+		'packs_per_case': '',
+		'units_per_pack': '',
+		'outer_pkg': '',
 	}
 
 	TEST_CATEGORIES = 100
@@ -892,7 +902,7 @@ class SouthernGlazierScraper(Scraper):
 		try:
 			self.driver.get(url)
 			# time.sleep(2)
-			select = self.wait.until(
+			modal = self.wait.until(
 				EC.presence_of_element_located((By.CSS_SELECTOR, '.modal-box div.verify-select div.form-select'))
 			)
 			select = self.driver.find_element(By.CSS_SELECTOR, '.modal-box select.verify-select-input')
@@ -910,23 +920,23 @@ class SouthernGlazierScraper(Scraper):
 		print("bypass_age_gate_home_page()")
 		try:
 			self.driver.get(url)
-			select = self.wait.until(
-				EC.presence_of_element_located((By.CSS_SELECTOR, '#ageGatemodal'))
+			modal = self.wait.until(
+				EC.visibility_of_element_located((By.CSS_SELECTOR, '#ageGatemodal'))
 			)
+			print(f"select: {modal}")
+			select = modal.find_element(By.CSS_SELECTOR, '#stateSelect')
 			print(f"select: {select}")
-			select = select.find_element(By.ID, 'stateSelect')
-			print(f"select: {select}")
-			select.click()
+			# select.click()
 			select = Select(select)
 			print(f"select: {select}")
 			select.select_by_value("91")
 			# Yes button should be activated so click it
-			self.driver.find_element(By.CSS_SELECTOR, '#ageGatemodal .verify-trigger-yes').click()
+			modal.find_element(By.CSS_SELECTOR, '#ageGatemodal .verify-trigger-yes').click()
 
 			print("Bypassed age gate")
 		except Exception as e:
 			print(f"Error: {e}")
-			time.sleep(200)
+			# time.sleep(200)
 
 	def scraping_setup(self):
 		"""Scrape products from the website"""
@@ -956,6 +966,7 @@ class SouthernGlazierScraper(Scraper):
 			if image_url:
 				try:
 					row_spec["image"] = image_url
+					print("Image captured")
 				except Exception as e:
 					print(f"⛔️️ Error processing product overview from data: {e}")
 
@@ -984,14 +995,44 @@ class SouthernGlazierScraper(Scraper):
 			print(rows)
 			for row in rows:
 				key = row.find_element(By.CSS_SELECTOR, '.product-info-table-left').text.strip()
+				key = key.lower().replace(' ', '_').replace('_(%)', '')
 				print(key)
-				key = key.lower().replace(' ', '_')
 				value = row.find_element(By.CSS_SELECTOR, '.product-info-table-right').text.strip()
 				if key in self.PRODUCT_DATA_SPEC.keys():
 					row_spec[key] = value
 
 		except Exception as e:
 			print(f"⛔️⛔️⛔️Error processing table data: {type(e)}")
+		return row_spec
+
+	def get_variant_section(self, container, row_spec):
+		# Scrape the section that contains the manufacturer information. It is in an unordered list
+		print("get_variant_section()")
+		hidden_element = self.driver.find_element(By.CSS_SELECTOR, 'div.item-variant-menu')
+		self.driver.execute_script("arguments[0].style.display = 'block';", hidden_element)
+		variant_info = container.find_element(By.CSS_SELECTOR, 'div.item-variant-menu-list')
+		try:
+			rows = variant_info.find_elements(By.CSS_SELECTOR, 'a.item-variant-list-menu-item')
+			print(rows)
+			for row in rows:
+				row_dict = {}
+				columns = row.find_elements(By.CSS_SELECTOR, 'div.item-variant')
+				print(columns)
+				for column in columns:
+					key = column.find_element(By.CSS_SELECTOR, 'span.item-variant-list-mobile-header').text.strip()
+					key = key.lower().replace(' ', '_').replace(':', '')
+					print(f"key: {key}")
+					value = column.find_element(By.CSS_SELECTOR, 'span.item-variant-list').text.strip()
+					value = '' if value == '—' else value
+					print(f"value: {value}")
+					if key in self.PRODUCT_DATA_SPEC.keys() or key == 'item_id':
+						row_dict.update({key: value})
+				if row_dict['item_id'] == row_spec['sku']:
+					for key, value in row_dict.items():
+						if key in self.PRODUCT_DATA_SPEC.keys():
+							row_spec[key] = value
+		except Exception as e:
+			print(f"⛔️⛔️⛔️Error processing variant data: {type(e)}")
 		return row_spec
 
 	def get_description(self, row_spec):
@@ -1208,38 +1249,40 @@ class SouthernGlazierScraper(Scraper):
 		print(f"process_details_from_html()")
 		additional_packages = []
 		del self.driver.requests
-		# self.driver.navigate().to(url)
 		self.driver.get(url)
 		# product-viewer-box
 		try:
 			print("here")
 			container = self.wait.until(
-				EC.presence_of_element_located((By.CSS_SELECTOR, '.marketplace-product-detail'))
+				EC.presence_of_element_located((By.CSS_SELECTOR, '.marketplace-product-card'))
 			)
+		except Exception as e:
+			print(f"⛔️⛔️⛔️Error processing process_details_from_html: {type(e)}")
+			raise
+		try:
+			row_spec['content_url'] = self.driver.current_url
 			print("here2")
 			name = container.find_element(By.CSS_SELECTOR, 'div.product-card-title h3').text.strip()
 			print(f"name: {name}")
 			row_spec['name'] = name
 
-			#item-variant-select-text
-			variant_info = container.find_element(By.CSS_SELECTOR, '.item-variant-select-text')
-			# pack = variant_info.find_element(By.CSS_SELECTOR, '[data-at-size]').text.strip()
-			# print(f"pack: {pack}")
-			# row_spec['pack'] = pack
-			# bpc = variant_info.find_element(By.CSS_SELECTOR, '[data-at-bpc]').text.strip()
-			# print(f"bpc: {bpc}")
-			# row_spec['bpc'] = bpc
 			row_spec = self.get_description(row_spec)
 			row_spec = self.get_table_section(row_spec)
 			row_spec = self.get_first_image_url(row_spec)
-			# page has a deropdwon to select additional packages
+			# page has a dropdown to select additional packages
 			if follow_anchors:
 				additional_packages = self.get_additional_packages()
 			else:
-				sku = variant_info.find_element(By.CSS_SELECTOR, '[data-at-product-id]').text.strip()
-				row_spec['sku'] = sku
+				try:
+					variant_info = container.find_element(By.CSS_SELECTOR, '.item-variant-select-text')
+					sku = variant_info.find_element(By.CSS_SELECTOR, '[data-at-product-id]').text.strip()
+					row_spec['sku'] = sku
+					row_spec = self.get_variant_section(container, row_spec)
+				except Exception as e:
+					print(f"⛔️Error finding variant info: {type(e)}")
+					raise SkuNotFound
 		except Exception as e:
-			print(f"⛔️⛔️⛔️Error processing process_details_from_html: {e}")
+			print(f"⛔️⛔️⛔️Error processing process_details_from_html: {type(e)}")
 		return row_spec, additional_packages
 
 	def get_product_details(self, url, row_spec=None):
@@ -1261,21 +1304,11 @@ class SouthernGlazierScraper(Scraper):
 		# https://shop.sgproof.com/sgws/en/usd/p/{sku}
 		print(f"Loading page...{url}")
 		try:
-			row_spec, additional_packages = self.process_details_from_html(url, row_spec=row_spec, follow_anchors=True)
-
-			# The method that called this handles saving the row the row for the product. Now we
-			# need to process the other packages and save them
-
-			for index, package in additional_packages:
-				if index == 0:
-					print(f"Skipping first package: {package}")
-					continue
-				package_spec = initial_row_spec.copy()
-				# process the product but do not process its packages
-				package_spec, additional_packages = self.process_details_from_html(package, row_spec=package_spec, follow_anchors=False)
-				self.write_product_to_csv(package_spec)
+			row_spec, additional_packages = self.process_details_from_html(url, row_spec=row_spec, follow_anchors=False)
+			# self.write_product_to_csv(row_spec)
 		except Exception as e:
 			print(f"⛔️⛔️⛔️Error processing get_product_details: {type(e)}")
+			raise
 
 		return row_spec
 
