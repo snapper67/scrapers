@@ -67,11 +67,68 @@
                     </div>
                     <h5 class="mt-3">CSV Functions</h5>
                     <div class="row">
+                        <div class="col-md-12">
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    <h5>CSV Row Counter</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-8">
+                                            <div class="form-group">
+                                                <label for="csv_dir" class="form-label">Directory to Scan:</label>
+                                                <div class="input-group">
+                                                    <input type="text" class="form-control" id="csv_dir" name="csv_dir" 
+                                                           placeholder="Enter directory path" value="{{ defaults.home_directory|default:'.' }}">
+                                                    <button type="button" class="btn btn-primary" id="count_csv_btn">
+                                                        <i class="bi bi-calculator"></i> Count Rows
+                                                    </button>
+                                                </div>
+                                                <small class="form-text text-muted">
+                                                    Will scan all subdirectories for CSV files containing 'data' in their names.
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div id="csv_results" class="mt-3" style="display: none;">
+                                        <div class="table-responsive">
+                                            <table class="table table-sm table-striped">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th>Directory</th>
+                                                        <th>File</th>
+                                                        <th class="text-end">Rows</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="csv_results_body">
+                                                    <!-- Results will be inserted here by JavaScript -->
+                                                </tbody>
+                                                <tfoot>
+                                                    <tr class="table-active">
+                                                        <td colspan="2" class="text-end fw-bold">Total Rows:</td>
+                                                        <td class="text-end fw-bold" id="total_rows">0</td>
+                                                    </tr>
+                                                </tfoot>
+                                            </table>
+                                        </div>
+                                    </div>
+                                    <div id="csv_loading" class="text-center my-3" style="display: none;">
+                                        <div class="spinner-border text-primary" role="status">
+                                            <span class="visually-hidden">Loading...</span>
+                                        </div>
+                                        <p class="mt-2">Counting rows, please wait...</p>
+                                    </div>
+                                    <div id="csv_error" class="alert alert-danger mt-3" style="display: none;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
                         <div class="col-md-6">
                             <div class="form-check mb-3">
-                                <input class="form-check-input" type="checkbox" id="count_csv" name="count_csv"
-                                       {% if defaults.count_csv %}checked{% endif %}>
-                                <label class="form-check-label" for="count_csv" title="Count the number of rows in all CSV files in the specified directory">Count rows in a CSV folder</label>
+                                <input class="form-check-input" type="checkbox" id="dedupe_csv" name="dedupe_csv"
+                                       {% if defaults.dedupe_csv %}checked{% endif %}>
+                                <label class="form-check-label" for="dedupe_csv" title="Remove duplicate entries from the specified CSV file (use URL Filename field)">Dedupe a CSV</label>
                             </div>
                             <div class="form-check mb-3">
                                 <input class="form-check-input" type="checkbox" id="dedupe_csv" name="dedupe_csv"
@@ -187,6 +244,97 @@
         document.addEventListener('DOMContentLoaded', function() {
             const initialCategory = document.getElementById('category_id').value;
             updateFilenames(initialCategory);
+            
+            // Add event listener for the count CSV rows button
+            document.getElementById('count_csv_btn').addEventListener('click', function() {
+                const directory = document.getElementById('csv_dir').value.trim();
+                const resultsDiv = document.getElementById('csv_results');
+                const resultsBody = document.getElementById('csv_results_body');
+                const loadingDiv = document.getElementById('csv_loading');
+                const errorDiv = document.getElementById('csv_error');
+                const totalRowsCell = document.getElementById('total_rows');
+                
+                if (!directory) {
+                    errorDiv.textContent = 'Please enter a directory path';
+                    errorDiv.style.display = 'block';
+                    return;
+                }
+                
+                // Show loading, hide results and error
+                loadingDiv.style.display = 'block';
+                resultsDiv.style.display = 'none';
+                errorDiv.style.display = 'none';
+                
+                // Make AJAX request
+                fetch('/scrapers/count-csv-rows/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: `directory=${encodeURIComponent(directory)}`
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+                    
+                    // Clear previous results
+                    resultsBody.innerHTML = '';
+                    let totalRows = 0;
+                    
+                    // Process results
+                    for (const [dirPath, dirData] of Object.entries(data.results)) {
+                        let isFirstFile = true;
+                        
+                        dirData.files.forEach(file => {
+                            const row = document.createElement('tr');
+                            
+                            // Directory column (only show on first row for each directory)
+                            const dirCell = document.createElement('td');
+                            if (isFirstFile) {
+                                dirCell.textContent = dirPath || '.';
+                                dirCell.rowSpan = dirData.files.length;
+                                isFirstFile = false;
+                            }
+                            
+                            // File name column
+                            const fileCell = document.createElement('td');
+                            fileCell.textContent = file.file_name;
+                            
+                            // Row count column
+                            const countCell = document.createElement('td');
+                            countCell.textContent = file.row_count.toLocaleString();
+                            countCell.className = 'text-end';
+                            
+                            // Add cells to row
+                            if (dirCell.textContent) {
+                                row.appendChild(dirCell);
+                            }
+                            row.appendChild(fileCell);
+                            row.appendChild(countCell);
+                            
+                            resultsBody.appendChild(row);
+                        });
+                        
+                        totalRows += dirData.total_rows;
+                    }
+                    
+                    // Update total rows
+                    totalRowsCell.textContent = totalRows.toLocaleString();
+                    
+                    // Show results
+                    resultsDiv.style.display = 'block';
+                })
+                .catch(error => {
+                    errorDiv.textContent = `Error: ${error.message}`;
+                    errorDiv.style.display = 'block';
+                })
+                .finally(() => {
+                    loadingDiv.style.display = 'none';
+                });
+            });
         });
         </script>
     {% endblock scripts %}

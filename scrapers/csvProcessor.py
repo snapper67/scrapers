@@ -3,6 +3,8 @@ import glob
 import os
 import pandas as pd
 from bs4 import BeautifulSoup
+from pathlib import Path
+from typing import Dict, List, Tuple
 
 class CSVProcessor:
 	"""
@@ -52,6 +54,53 @@ class CSVProcessor:
 		except Exception as e:
 			print(f"Error writing output file: {e}")
 			return None
+
+	@staticmethod
+	def count_rows_in_data_csvs(directory: str) -> Dict[str, List[Tuple[str, int]]]:
+		"""
+		Count rows in all CSV files containing 'data' in their filenames across all subdirectories.
+		
+		Args:
+			directory (str): Root directory to search for CSV files
+			
+		Returns:
+			Dict[str, List[Tuple[str, int]]]: A dictionary where keys are subdirectory paths
+				and values are lists of tuples containing (filename, row_count)
+		"""
+		print(f"Scanning directory: {directory}")
+		results = {}
+		
+		try:
+			# Convert to Path object for easier path handling
+			root_dir = Path(directory)
+			
+			# Find all CSV files with 'data' in the name
+			for csv_file in root_dir.rglob('*data*.csv'):
+				try:
+					# Get relative path from root directory
+					rel_path = csv_file.relative_to(root_dir)
+					parent_dir = str(rel_path.parent)
+					
+					# Read the CSV file to count rows (excluding header)
+					with open(csv_file, 'r', encoding='utf-8') as f:
+						# Subtract 1 to exclude header row
+						row_count = sum(1 for _ in f) - 1
+					
+					# Initialize subdirectory in results if not exists
+					if parent_dir not in results:
+						results[parent_dir] = []
+					
+					# Add file and row count to results
+					results[parent_dir].append((csv_file.name, row_count))
+					
+				except Exception as e:
+					print(f"Error processing {csv_file}: {e}")
+					continue
+					
+		except Exception as e:
+			print(f"Error scanning directory {directory}: {e}")
+			
+		return results
 
 	@staticmethod
 	def html_table_to_csv(html_content, output_file='products_export.csv'):

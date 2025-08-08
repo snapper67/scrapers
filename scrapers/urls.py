@@ -12,5 +12,6 @@ urlpatterns = [
     path("breakthru/", views.scrape_breakthru, name="breakthru"),
     path("sg/", views.scrape_sg, name="sg"),
     path("birite/", views.scrape_birite, name="birite"),
+    path("scrapers/count-csv-rows/", views.count_csv_rows, name="count_csv_rows"),
 
 ]

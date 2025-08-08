@@ -6,6 +6,9 @@ from .usfoods import USFoodsScraper
 from .chefswarehouse import ChefWarehouseScraper
 from .breakthru import BreakthruScraper
 from .sg import SouthernGlazierScraper
+from .csvProcessor import CSVProcessor
+import os
+from django.http import JsonResponse
 
 class ScrapeProductsPageView(TemplateView):
     template_name = "scrape_products/scrape_home.html"
@@ -43,8 +46,68 @@ def update_common_options(post_data, current_options):
     skus_to_check = post_data.get('skus', '').split(',')  # Get SKUs from form input
     skus_to_check = [sku.strip() for sku in skus_to_check if sku.strip()]
     current_options['skus_to_check'] = skus_to_check
-
+    
+    # Add directory for CSV row counting
+    csv_dir = post_data.get('csv_dir', '')
+    if csv_dir and os.path.isdir(csv_dir):
+        current_options['csv_dir'] = csv_dir
+    
     return current_options
+
+def count_csv_rows(request):
+    """
+    Count rows in all CSV files with 'data' in their names across subdirectories.
+    Returns JSON response with the results.
+    """
+    if request.method == 'POST':
+        directory = request.POST.get('directory', '')
+        if not directory or not os.path.isdir(directory):
+            return JsonResponse(
+                {'error': 'Invalid or missing directory'}, 
+                status=400
+            )
+        
+        try:
+            # Get row counts using CSVProcessor
+            results = CSVProcessor.count_rows_in_data_csvs(directory)
+            
+            # Convert Path objects to strings for JSON serialization
+            formatted_results = {}
+            total_rows = 0
+            
+            for dir_path, files in results.items():
+                dir_rows = 0
+                dir_files = []
+                
+                for file_name, row_count in files:
+                    dir_files.append({
+                        'file_name': file_name,
+                        'row_count': row_count
+                    })
+                    dir_rows += row_count
+                
+                formatted_results[str(dir_path)] = {
+                    'files': dir_files,
+                    'total_rows': dir_rows
+                }
+                total_rows += dir_rows
+            
+            return JsonResponse({
+                'results': formatted_results,
+                'total_rows': total_rows,
+                'status': 'success'
+            })
+            
+        except Exception as e:
+            return JsonResponse(
+                {'error': f'Error counting CSV rows: {str(e)}'}, 
+                status=500
+            )
+    
+    return JsonResponse(
+        {'error': 'Only POST method is allowed'}, 
+        status=405
+    )
 
 def set_defaults(distributor_options):
     # Update boolean flags
