@@ -7,243 +7,181 @@
                 <h2>{% block name %}{% endblock name %}</h2>
                 <form method="post" class="mt-4" id="scraperForm">
                     {% csrf_token %}
-                    <h5 class="mt-3">Scraping Functions</h5>
-                    <div class="form-group mb-3">
-                        <label for="category_id" title="Select a product category to scrape">Category:</label>
-                        <select class="form-control" id="category_id" name="category_id" required
-                                onchange="updateFilenames(this.value)">
-                            {% for category in categories %}
-                            <option value="{{ category.id }}">{{ category.name }} ({{ category.id }})</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-check mb-3">
-                                <input class="form-check-input" type="checkbox" id="get_categories" name="get_categories"
-                                       {% if defaults.get_categories %}checked{% endif %}>
-                                <label class="form-check-label" for="get_categories" title="Check to enable scraping of product URLs from the selected category">1. Get Categories List</label>
-                            </div>
-                            <div class="form-check mb-3">
-                                <input class="form-check-input" type="checkbox" id="scrape_products" name="scrape_products"
-                                       {% if defaults.scrape_products %}checked{% endif %}>
-                                <label class="form-check-label" for="scrape_products" title="Check to enable scraping of product URLs from the selected category">2. Get Product URLs</label>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-check mb-3">
-                                <input class="form-check-input" type="checkbox" id="process_csv" name="process_csv"
-                                       {% if defaults.process_csv %}checked{% endif %}>
-                                <label class="form-check-label" for="process_csv" title="Process the URLs in the specified CSV file to extract product data">3. Process URLs</label>
-                            </div>
-                            <div class="form-check mb-3">
-                                <input class="form-check-input" type="checkbox" id="reprocess_csv" name="reprocess_csv"
-                                       {% if defaults.reprocess_csv %}checked{% endif %}>
-                                <label class="form-check-label" for="reprocess_csv" title="Only process URLs that haven't been processed yet (not found in results)">4. Processes URLS not in Results</label>
-                            </div>
-                            <div class="form-check mb-3">
-                                <input class="form-check-input" type="checkbox" id="process_extra" name="process_extra"
-                                       {% if defaults.process_csv %}checked{% endif %}>
-                                <label class="form-check-label" for="process_extra" title="Reprocess the data file to extract extra data">Process Extra Data</label>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="url_file" title="Name of the CSV file containing product URLs (will be auto-filled based on category)">URLs CSV File:</label>
-                                <input type="text" class="form-control" id="url_file" name="url_file"
-                                       value="{{ defaults.url_file }}">
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="data_file" title="Name of the CSV file where product data will be saved (will be auto-filled based on category)">Data CSV File:</label>
-                                <input type="text" class="form-control" id="data_file" name="data_file"
-                                       value="{{ defaults.data_file }}">
-                            </div>
-                        </div>
-                    </div>
-                    <h5 class="mt-3">CSV Functions</h5>
-
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-check mb-3">
-                                <input class="form-check-input" type="checkbox" id="dedupe_csv" name="dedupe_csv"
-                                       {% if defaults.dedupe_csv %}checked{% endif %}>
-                                <label class="form-check-label" for="dedupe_csv" title="Remove duplicate entries from the specified CSV file (use URL Filename field)">Dedupe a CSV</label>
-                            </div>
-                            <div class="form-check mb-3">
-                                <input class="form-check-input" type="checkbox" id="dedupe_csv" name="dedupe_csv"
-                                       {% if defaults.dedupe_csv %}checked{% endif %}>
-                                <label class="form-check-label" for="dedupe_csv" title="Remove duplicate entries from the specified CSV file (use URL Filename field)">Dedupe a CSV</label>
-                            </div>
-                        </div>
-                    <div class="row mb-4">
+                    <!-- Scraping Functions Card -->
+                    <div class="row mt-1">
                         <div class="col-md-12">
                             <div class="card">
                                 <div class="card-header">
-                                    <h5>Update Distributor Name</h5>
+                                    <div>Scraping Options</div>
                                 </div>
                                 <div class="card-body">
                                     <div class="row">
-                                        <div class="col-md-8">
+                                        <div class="form-group mb-3">
+                                            <label for="category_id" title="Select a product category to scrape">Category:</label>
+                                            <select class="form-control" id="category_id" name="category_id" required
+                                                    onchange="updateFilenames(this.value)">
+                                                {% for category in categories %}
+                                                <option value="{{ category.id }}">{{ category.name }} ({{ category.id }})</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-check mb-3">
+                                                <input class="form-check-input" type="checkbox" id="get_categories" name="get_categories"
+                                                       {% if defaults.get_categories %}checked{% endif %}>
+                                                <label class="form-check-label" for="get_categories" title="Check to enable scraping of product URLs from the selected category">1. Get Categories List</label>
+                                            </div>
+                                            <div class="form-check mb-3">
+                                                <input class="form-check-input" type="checkbox" id="scrape_products" name="scrape_products"
+                                                       {% if defaults.scrape_products %}checked{% endif %}>
+                                                <label class="form-check-label" for="scrape_products" title="Check to enable scraping of product URLs from the selected category">2. Get Product URLs</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-check mb-3">
+                                                <input class="form-check-input" type="checkbox" id="process_csv" name="process_csv"
+                                                       {% if defaults.process_csv %}checked{% endif %}>
+                                                <label class="form-check-label" for="process_csv" title="Process the URLs in the specified CSV file to extract product data">3. Process URLs</label>
+                                            </div>
+                                            <div class="form-check mb-3">
+                                                <input class="form-check-input" type="checkbox" id="reprocess_csv" name="reprocess_csv"
+                                                       {% if defaults.reprocess_csv %}checked{% endif %}>
+                                                <label class="form-check-label" for="reprocess_csv" title="Only process URLs that haven't been processed yet (not found in results)">4. Processes URLS not in Results</label>
+                                            </div>
+                                            <div class="form-check mb-3">
+                                                <input class="form-check-input" type="checkbox" id="process_extra" name="process_extra"
+                                                       {% if defaults.process_csv %}checked{% endif %}>
+                                                <label class="form-check-label" for="process_extra" title="Reprocess the data file to extract extra data">Process Extra Data</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6">
                                             <div class="form-group">
-                                                <label for="distributor_name" class="form-label">Distributor Name:</label>
-                                                <div class="input-group">
-                                                    <input type="text" class="form-control" id="distributor_name"
-                                                           placeholder="Enter distributor name">
-                                                    <button type="button" class="btn btn-primary" id="update_distributor_btn">
-                                                        <i class="bi bi-tag"></i> Update Distributor
-                                                    </button>
-                                                </div>
-                                                <small class="form-text text-muted">
-                                                    This will update/add the 'distributor_name' column in all CSV files in the home directory.
-                                                </small>
+                                                <label for="url_file" title="Name of the CSV file containing product URLs (will be auto-filled based on category)">URLs CSV File:</label>
+                                                <input type="text" class="form-control" id="url_file" name="url_file"
+                                                       value="{{ defaults.url_file }}">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="data_file" title="Name of the CSV file where product data will be saved (will be auto-filled based on category)">Data CSV File:</label>
+                                                <input type="text" class="form-control" id="data_file" name="data_file"
+                                                       value="{{ defaults.data_file }}">
                                             </div>
                                         </div>
                                     </div>
-                                    <div id="distributor_results" class="mt-3" style="display: none;">
-                                        <div class="alert alert-success" id="distributor_success" style="display: none;"></div>
-                                        <div class="alert alert-danger" id="distributor_error" style="display: none;"></div>
-                                        <div id="distributor_details" style="display: none;">
-                                            <p class="mb-1"><strong>Updated files:</strong> <span id="updated_files_count">0</span></p>
-                                            <p class="mb-1"><strong>Total files processed:</strong> <span id="total_files_count">0</span></p>
-                                            <div id="distributor_errors" class="mt-2" style="display: none;">
-                                                <h6>Errors:</h6>
-                                                <ul id="error_list" class="text-danger small"></ul>
-                                            </div>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <button type="submit" class="btn btn-primary mt-3">Run</button>
                                         </div>
-                                    </div>
-                                    <div id="distributor_loading" class="text-center my-3" style="display: none;">
-                                        <div class="spinner-border text-primary" role="status">
-                                            <span class="visually-hidden">Loading...</span>
-                                        </div>
-                                        <p class="mt-2">Updating distributor names, please wait...</p>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="row">
+                    <!-- CSV Functions Card -->
+                    <div class="row mt-1">
                         <div class="col-md-12">
-                            <div class="card mb-4">
+                            <div class="card">
                                 <div class="card-header">
-                                    <h5>CSV Row Counter</h5>
+                                    <div>CSV Functions</div>
                                 </div>
                                 <div class="card-body">
                                     <div class="row">
-                                        <div class="col-md-8">
-                                            <div class="form-group">
-                                                <label for="csv_dir" class="form-label">Directory to Scan:</label>
-                                                <div class="input-group">
-                                                    <input type="text" class="form-control" id="csv_dir" name="csv_dir"
-                                                           placeholder="Enter directory path" value="{{ defaults.home_directory|default:'.' }}">
-                                                    <button type="button" class="btn btn-primary" id="count_csv_btn">
-                                                        <i class="bi bi-calculator"></i> Count Rows
-                                                    </button>
-                                                </div>
-                                                <small class="form-text text-muted">
-                                                    Will scan all subdirectories for CSV files containing 'data' in their names.
-                                                </small>
+                                        <div class="col-md-6">
+                                            <div class="form-check mb-3">
+                                                <input class="form-check-input" type="checkbox" id="dedupe_csv" name="dedupe_csv"
+                                                       {% if defaults.dedupe_csv %}checked{% endif %}>
+                                                <label class="form-check-label" for="dedupe_csv"
+                                                       title="Remove duplicate entries from the specified CSV file (use URL Filename field)">
+                                                    Dedupe a CSV
+                                                </label>
                                             </div>
+                                            <div class="form-check mb-3">
+                                                <input class="form-check-input" type="checkbox" id="count_csv" name="count_csv"
+                                                       {% if defaults.count_csv %}checked{% endif %}>
+                                                <label class="form-check-label" for="count_csv"
+                                                       title="Count rows in all  CSV files in the specified directory">
+                                                    Count Rows in All CSVs in home directory
+                                                </label>
+                                            </div>
+                                            <button type="submit" class="btn btn-primary mt-3">Run</button>
+                                        </div>
+                                        <div class="col-md-6">
+{#                                            <div class="form-group">#}
+{#                                                <label for="distributor_name" class="form-label">Distributor Name:</label>#}
+{#                                                <div class="input-group">#}
+{#                                                    <input type="text" class="form-control" id="distributor_name"#}
+{#                                                           placeholder="Enter distributor name">#}
+{#                                                    <button class="btn btn-outline-secondary" type="button"#}
+{#                                                            id="#test">#}
+{#                                                        Update All CSVs#}
+{#                                                    </button>#}
+{#                                                </div>#}
+{#                                                <small class="form-text text-muted">#}
+{#                                                    Updates the 'distributor_name' column in all CSV files in the home directory.#}
+{#                                                </small>#}
+{#                                            </div>#}
                                         </div>
                                     </div>
-                                    <div id="csv_results" class="mt-3" style="display: none;">
-                                        <div class="table-responsive">
-                                            <table class="table table-sm table-striped">
-                                                <thead class="table-light">
-                                                    <tr>
-                                                        <th>Directory</th>
-                                                        <th>File</th>
-                                                        <th class="text-end">Rows</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody id="csv_results_body">
-                                                    <!-- Results will be inserted here by JavaScript -->
-                                                </tbody>
-                                                <tfoot>
-                                                    <tr class="table-active">
-                                                        <td colspan="2" class="text-end fw-bold">Total Rows:</td>
-                                                        <td class="text-end fw-bold" id="total_rows">0</td>
-                                                    </tr>
-                                                </tfoot>
-                                            </table>
-                                        </div>
-                                    </div>
-                                    <div id="csv_loading" class="text-center my-3" style="display: none;">
-                                        <div class="spinner-border text-primary" role="status">
-                                            <span class="visually-hidden">Loading...</span>
-                                        </div>
-                                        <p class="mt-2">Counting rows, please wait...</p>
-                                    </div>
-                                    <div id="csv_error" class="alert alert-danger mt-3" style="display: none;"></div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    </div>
-                    <h5 class="mt-3">General Configuration</h5>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="home_directory" title="Base directory where files will be saved (defaults to current directory)">Home Directory:</label>
-                                <input type="text" class="form-control" id="home_directory" name="home_directory"
-                                       value="{{ defaults.home_directory|default:'.' }}" placeholder="Enter home directory path">
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="max_products" title="Maximum number of products to request from the API in a single call">Max Products to Force in API Call:</label>
-                                <input type="number" class="form-control" id="max_products" name="max_products"
-                                       value="{{ defaults.max_products }}" min="1">
-                            </div>
-                        </div>
-                    </div>
-                    <h5 class="mt-3">Search Requests</h5>
-                    <div class="row">
-                        <div class="col-md-2">
-                            <div class="form-check mb-3">
-                                <input class="form-check-input" type="checkbox" id="search_requests" name="search_requests"
-                                       {% if defaults.search_requests %}checked{% endif %}>
-                                <label class="form-check-label" for="search_requests" title="Count the number of rows in all CSV files in the specified directory">Search Requests</label>
-                            </div>
-                        </div>
-                        <div class="col-md-5">
-                            <div class="form-group">
-                                <label for="url" title="URL to search the responses)">URL to test:</label>
-                                <input type="text" class="form-control" id="url" name="url"
-                                       value="{{ defaults.url }}">
-                            </div>
-                        </div>
-                        <div class="col-md-5">
-                            <div class="form-group">
-                                <label for="search_term" title="What are we looking for">Search term:</label>
-                                <input type="text" class="form-control" id="search_term" name="search_term"
-                                       value="{{ defaults.search_term }}">
+                    <!-- General Configuration Card -->
+                    <div class="row mt-1">
+                        <div class="col-md-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <div>General Configuration</div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="home_directory" title="Base directory where files will be saved (defaults to current directory)">Home Directory:</label>
+                                                <input type="text" class="form-control" id="home_directory" name="home_directory"
+                                                       value="{{ defaults.home_directory|default:'.' }}" placeholder="Enter home directory path">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="max_products" title="Maximum number of products to request from the API in a single call">Max Products to Force in API Call:</label>
+                                                <input type="number" class="form-control" id="max_products" name="max_products"
+                                                       value="{{ defaults.max_products }}" min="1">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
-                    <h5 class="mt-3">Target a specific category or row</h5>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="start_row" title="Start processing from this row number (0-based index)">Start Row:</label>
-                                <input type="number" class="form-control" id="start_row" name="start_row"
-                                       value="{{ defaults.start_row }}" min="0">
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="category_to_process" title="Process only this specific category (0 = process all categories)">Category to Process: </label>
-                                <input type="number" class="form-control" id="category_to_process" name="category_to_process"
-                                       value="{{ defaults.category_to_process }}" min="0">
-                            </div>
-                        </div>
-                    </div>
-                    <h5 class="mt-3">For Testing Limit the number of things scraped</h5>
-                    <div class="row">
+                    <!-- Testing Card -->
+                    <div class="row mt-1">
+                        <div class="col-md-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <div>Target a specific category or row</div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="start_row" title="Start processing from this row number (0-based index)">Start Row:</label>
+                                                <input type="number" class="form-control" id="start_row" name="start_row"
+                                                       value="{{ defaults.start_row }}" min="0">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="category_to_process" title="Process only this specific category (0 = process all categories)">Category to Process: </label>
+                                                <input type="number" class="form-control" id="category_to_process" name="category_to_process"
+                                                       value="{{ defaults.category_to_process }}" min="0">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label for="test_products" title="Maximum number of products to scrape (for testing purposes)">Number of Products to Scrape:</label>
@@ -259,6 +197,187 @@
                             </div>
                         </div>
                     </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Utilities Card -->
+                    <div class="row mt-1">
+                        <div class="col-md-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <div>Utilities</div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="row mb-4">
+                                            <div class="col-md-12">
+                                                <div class="card">
+                                                    <div class="card-header">
+                                                        <div>Update Distributor Name</div>
+                                                    </div>
+                                                    <div class="card-body">
+                                                        <div class="row">
+                                                            <div class="col-md-8">
+                                                                <div class="form-group">
+                                                                    <label for="distributor_name" class="form-label">Distributor Name:</label>
+                                                                    <div class="input-group">
+                                                                        <input type="text" class="form-control" id="distributor_name"
+                                                                               placeholder="Enter distributor name">
+                                                                        <button type="button" class="btn btn-primary" id="update_distributor_btn">
+                                                                            <i class="bi bi-tag"></i> Update Distributor
+                                                                        </button>
+                                                                    </div>
+                                                                    <small class="form-text text-muted">
+                                                                        This will update/add the 'distributor_name' column in all CSV files in the home directory.
+                                                                    </small>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div id="distributor_results" class="mt-3" style="display: none;">
+                                                            <div class="alert alert-success" id="distributor_success" style="display: none;"></div>
+                                                            <div class="alert alert-danger" id="distributor_error" style="display: none;"></div>
+                                                            <div id="distributor_details" style="display: none;">
+                                                                <p class="mb-1"><strong>Updated files:</strong> <span id="updated_files_count">0</span></p>
+                                                                <p class="mb-1"><strong>Total files processed:</strong> <span id="total_files_count">0</span></p>
+                                                                <div id="distributor_errors" class="mt-2" style="display: none;">
+                                                                    <h6>Errors:</h6>
+                                                                    <ul id="error_list" class="text-danger small"></ul>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div id="distributor_loading" class="text-center my-3" style="display: none;">
+                                                            <div class="spinner-border text-primary" role="status">
+                                                                <span class="visually-hidden">Loading...</span>
+                                                            </div>
+                                                            <p class="mt-2">Updating distributor names, please wait...</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                        <div class="col-md-12">
+                                            <div class="card mb-4">
+                                                <div class="card-header">
+                                                    <div>CSV Row Counter</div>
+                                                </div>
+                                                <div class="card-body">
+                                                    <div class="row">
+                                                        <div class="col-md-8">
+                                                            <div class="form-group">
+                                                                <label for="csv_dir" class="form-label">Directory to Scan:</label>
+                                                                <div class="input-group">
+                                                                    <input type="text" class="form-control" id="csv_dir" name="csv_dir"
+                                                                           placeholder="Enter directory path" value="{{ defaults.home_directory|default:'.' }}">
+                                                                    <button type="button" class="btn btn-primary" id="count_csv_btn">
+                                                                        <i class="bi bi-calculator"></i> Count Rows</button>
+                                                                </div>
+                                                                <small class="form-text text-muted">
+                                                                    Will scan all subdirectories for CSV files containing 'data' in their names.
+                                                                </small>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div id="csv_results" class="mt-3" style="display: none;">
+                                                        <div class="table-responsive">
+                                                            <table class="table table-sm table-striped">
+                                                                <thead class="table-light">
+                                                                    <tr>
+                                                                        <th>Directory</th>
+                                                                        <th>File</th>
+                                                                        <th class="text-end">Rows</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody id="csv_results_body">
+                                                                    <!-- Results will be inserted here by JavaScript -->
+                                                                </tbody>
+                                                                <tfoot>
+                                                                    <tr class="table-active">
+                                                                        <td colspan="2" class="text-end fw-bold">Total Rows:</td>
+                                                                        <td class="text-end fw-bold" id="total_rows">0</td>
+                                                                    </tr>
+                                                                </tfoot>
+                                                            </table>
+                                                        </div>
+                                                    </div>
+                                                    <div id="csv_loading" class="text-center my-3" style="display: none;">
+                                                        <div class="spinner-border text-primary" role="status">
+                                                            <span class="visually-hidden">Loading...</span>
+                                                        </div>
+                                                        <p class="mt-2">Counting rows, please wait...</p>
+                                                    </div>
+                                                    <div id="csv_error" class="alert alert-danger mt-3" style="display: none;"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="row mb-4">
+                                            <div class="col-md-12">
+                                                <div class="card">
+                                                    <div class="card-header">
+                                                        <div>Search Requests</div>
+                                                    </div>
+                                                    <div class="card-body">
+                                                        <div class="row">
+                                                            <div class="col-md-5">
+                                                                <div class="form-group">
+                                                                    <label for="url" class="form-label">URL to test:</label>
+                                                                    <input type="text" class="form-control" id="url" name="url"
+                                                                           placeholder="Enter URL to search" value="{{ defaults.url }}">
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-md-5">
+                                                                <div class="form-group">
+                                                                    <label for="search_term" class="form-label">Search term:</label>
+                                                                    <div class="input-group">
+                                                                        <input type="text" class="form-control" id="search_term" name="search_term"
+                                                                               placeholder="Enter search term" value="{{ defaults.search_term }}">
+                                                                        <button type="button" class="btn btn-primary" id="search_requests_btn">
+                                                                            <i class="bi bi-search"></i> Search
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        <!-- Search Results -->
+                                                        <div id="search_results" class="mt-4" style="display: none;">
+                                                            <div class="alert alert-success" id="search_success" style="display: none;"></div>
+                                                            <div class="alert alert-danger" id="search_error" style="display: none;"></div>
+                                                            <div id="search_details" class="mt-3">
+                                                                <p><strong>URL:</strong> <span id="searched_url"></span></p>
+                                                                <p><strong>Status Code:</strong> <span id="status_code"></span></p>
+                                                                <p><strong>Content Length:</strong> <span id="content_length"></span> bytes</p>
+                                                                <p><strong>Term Found:</strong> <span id="term_found"></span></p>
+                                                                <p><strong>Occurrences:</strong> <span id="occurrences"></span></p>
+                                                                <div id="sample_container" class="mt-3" style="display: none;">
+                                                                    <h6>List of URLs:</h6>
+                                                                    <div class="p-3 bg-light rounded" id="sample_content">
+                                                                        <!-- Sample content will be inserted here -->
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        <!-- Loading Indicator -->
+                                                        <div id="search_loading" class="text-center my-3" style="display: none;">
+                                                            <div class="spinner-border text-primary" role="status">
+                                                                <span class="visually-hidden">Loading...</span>
+                                                            </div>
+                                                            <p class="mt-2">Searching, please wait...</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     {% block custom %}{% endblock custom %}
                     <button type="submit" class="btn btn-primary mt-3">Run</button>
                 </form>
@@ -267,6 +386,7 @@
     {% endblock scrape_content %}
     {% block scripts %}
         <script>
+            {% block file_mapping %}
         // Define the file name mappings
         const fileMappings = {
             {% for category in categories %}
@@ -275,8 +395,7 @@
                 "data_file": "{{ category.data_file }}"
             }{% if not forloop.last %},{% endif %}
             {% endfor %}
-        };
-
+        };{% endblock file_mapping %}
         // Function to update file names based on selected category
         function updateFilenames(categoryId) {
             const mapping = fileMappings[categoryId];
@@ -290,27 +409,32 @@
         document.addEventListener('DOMContentLoaded', function() {
             const initialCategory = document.getElementById('category_id').value;
             updateFilenames(initialCategory);
-            
-            // Add event listener for the count CSV rows button
-            document.getElementById('count_csv_btn').addEventListener('click', function() {
+
+            // Use event delegation for the count CSV rows button
+            document.addEventListener('click', function(event) {
+                // Check if the clicked element is the button or a child of the button
+                const countBtn = event.target.closest('#count_csv_btn');
+                if (!countBtn) return;
+
+                console.log('Count CSV Rows button clicked');
                 const directory = document.getElementById('csv_dir').value.trim();
                 const resultsDiv = document.getElementById('csv_results');
                 const resultsBody = document.getElementById('csv_results_body');
                 const loadingDiv = document.getElementById('csv_loading');
                 const errorDiv = document.getElementById('csv_error');
                 const totalRowsCell = document.getElementById('total_rows');
-                
+
                 if (!directory) {
                     errorDiv.textContent = 'Please enter a directory path';
                     errorDiv.style.display = 'block';
                     return;
                 }
-                
+
                 // Show loading, hide results and error
                 loadingDiv.style.display = 'block';
                 resultsDiv.style.display = 'none';
                 errorDiv.style.display = 'none';
-                
+
                 // Make AJAX request
                 fetch('/scrapers/count-csv-rows/', {
                     method: 'POST',
@@ -325,18 +449,18 @@
                     if (data.error) {
                         throw new Error(data.error);
                     }
-                    
+
                     // Clear previous results
                     resultsBody.innerHTML = '';
                     let totalRows = 0;
-                    
+
                     // Process results
                     for (const [dirPath, dirData] of Object.entries(data.results)) {
                         let isFirstFile = true;
-                        
+
                         dirData.files.forEach(file => {
                             const row = document.createElement('tr');
-                            
+
                             // Directory column (only show on first row for each directory)
                             const dirCell = document.createElement('td');
                             if (isFirstFile) {
@@ -344,32 +468,32 @@
                                 dirCell.rowSpan = dirData.files.length;
                                 isFirstFile = false;
                             }
-                            
+
                             // File name column
                             const fileCell = document.createElement('td');
                             fileCell.textContent = file.file_name;
-                            
+
                             // Row count column
                             const countCell = document.createElement('td');
                             countCell.textContent = file.row_count.toLocaleString();
                             countCell.className = 'text-end';
-                            
+
                             // Add cells to row
                             if (dirCell.textContent) {
                                 row.appendChild(dirCell);
                             }
                             row.appendChild(fileCell);
                             row.appendChild(countCell);
-                            
+
                             resultsBody.appendChild(row);
                         });
-                        
+
                         totalRows += dirData.total_rows;
                     }
-                    
+
                     // Update total rows
                     totalRowsCell.textContent = totalRows.toLocaleString();
-                    
+
                     // Show results
                     resultsDiv.style.display = 'block';
                 })
@@ -381,7 +505,95 @@
                     loadingDiv.style.display = 'none';
                 });
             });
-            
+
+            // Add event listener for the update distributor button
+            // Add event listener for the search requests button
+            document.getElementById('search_requests_btn').addEventListener('click', function() {
+                const url = document.getElementById('url').value.trim();
+                const searchTerm = document.getElementById('search_term').value.trim();
+                const resultsDiv = document.getElementById('search_results');
+                const successDiv = document.getElementById('search_success');
+                const errorDiv = document.getElementById('search_error');
+                const loadingDiv = document.getElementById('search_loading');
+                const detailsDiv = document.getElementById('search_details');
+
+                // Validate inputs
+                if (!url) {
+                    errorDiv.textContent = 'Please enter a URL to search';
+                    errorDiv.style.display = 'block';
+                    successDiv.style.display = 'none';
+                    resultsDiv.style.display = 'block';
+                    return;
+                }
+
+                if (!searchTerm) {
+                    errorDiv.textContent = 'Please enter a search term';
+                    errorDiv.style.display = 'block';
+                    successDiv.style.display = 'none';
+                    resultsDiv.style.display = 'block';
+                    return;
+                }
+
+                // Show loading, hide results and error
+                loadingDiv.style.display = 'block';
+                resultsDiv.style.display = 'none';
+                errorDiv.style.display = 'none';
+                successDiv.style.display = 'none';
+
+                // Make AJAX request
+                fetch('/scrapers/search-requests/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: `url=${encodeURIComponent(url)}&search_term=${encodeURIComponent(searchTerm)}`
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // Show results
+                    resultsDiv.style.display = 'block';
+                    loadingDiv.style.display = 'none';
+
+                    if (data.success) {
+                        // Update UI with results
+                        document.getElementById('searched_url').textContent = data.url;
+                        document.getElementById('status_code').textContent = data.status_code;
+                        document.getElementById('content_length').textContent = data.content_length;
+                        document.getElementById('term_found').textContent = data.found ? 'Yes' : 'No';
+                        document.getElementById('occurrences').textContent = data.count;
+
+                        // Show sample if available
+                        const sampleContainer = document.getElementById('sample_container');
+                        const sampleContent = document.getElementById('sample_content');
+                        if (data.found && data.sample) {
+                            sampleContent.innerHTML = data.sample;
+                            sampleContainer.style.display = 'block';
+                        } else {
+                            sampleContainer.style.display = 'none';
+                        }
+
+                        // Show success message
+                        successDiv.textContent = `Search completed successfully.`;
+                        successDiv.style.display = 'block';
+                        errorDiv.style.display = 'none';
+                    } else {
+                        // Show error message
+                        errorDiv.textContent = data.error || 'An unknown error occurred';
+                        errorDiv.style.display = 'block';
+                        successDiv.style.display = 'none';
+                    }
+                })
+                .catch(error => {
+                    // Show error
+                    resultsDiv.style.display = 'block';
+                    loadingDiv.style.display = 'none';
+                    errorDiv.textContent = `Error: ${error.message}`;
+                    errorDiv.style.display = 'block';
+                    successDiv.style.display = 'none';
+                });
+            });
+
             // Add event listener for the update distributor button
             document.getElementById('update_distributor_btn').addEventListener('click', function() {
                 const distributorName = document.getElementById('distributor_name').value.trim();
