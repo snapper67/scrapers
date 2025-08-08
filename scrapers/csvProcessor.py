@@ -56,7 +56,7 @@ class CSVProcessor:
 			return None
 
 	@staticmethod
-	def count_rows_in_data_csvs(directory: str) -> Dict[str, List[Tuple[str, int]]]:
+	def count_rows_in_data_csvs(directory: str) -> Dict[str, Dict]:
 		"""
 		Count rows in all CSV files containing 'data' in their filenames across all subdirectories.
 		
@@ -64,8 +64,8 @@ class CSVProcessor:
 			directory (str): Root directory to search for CSV files
 			
 		Returns:
-			Dict[str, List[Tuple[str, int]]]: A dictionary where keys are subdirectory paths
-				and values are lists of tuples containing (filename, row_count)
+			Dict[str, Dict]: A dictionary where keys are subdirectory paths and values are
+			    dictionaries with 'files' (list of dicts with file info) and 'total_rows' (int)
 		"""
 		print(f"Scanning directory: {directory}")
 		results = {}
@@ -295,7 +295,7 @@ class CSVProcessor:
 				'message': f"Error: '{directory}' is not a valid directory."
 			}
 
-		csv_files = list(Path(directory).rglob('*.csv'))
+		csv_files = list(Path(directory).rglob('*data*.csv'))
 		
 		if not csv_files:
 			return {

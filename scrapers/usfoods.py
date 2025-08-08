@@ -189,7 +189,9 @@ class USFoodsScraper(Scraper):
 		'chosen_category': '10001',  # Default to Meat
 		'url_output_file': URL_OUTPUT_FILE,
 		'data_output_file': DATA_OUTPUT_FILE,
-		'home_directory': DEFAULT_DIRECTORY
+		'home_directory': DEFAULT_DIRECTORY,
+		'url': 'https://order.usfoods.com/desktop/search/browse',
+		'search_term': 'Spices',
 	}
 
 	def __init__(self, options=None):

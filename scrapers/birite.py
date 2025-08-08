@@ -1932,8 +1932,8 @@ class BiRiteScraper(Scraper):
 		'url_output_file': '',
 		'data_output_file': '',
 		'home_directory': DEFAULT_DIRECTORY,
-		'url': 'https://shop.sgproof.com/search',
-		'search_term': 'Miscellaneous',
+		'url': 'https://app.cutanddry.com/catalog/BiRite%20Foodservice%20Distributors?verifiedVendorId=120984264&categoryId=1&page=1',
+		'search_term': 'Spices',
 		'attempts': '40',
 	}
 

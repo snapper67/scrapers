@@ -813,6 +813,7 @@ class Scraper:
 		self.driver.get(url)
 		time.sleep(10)
 		html = "<ul>"
+		found = False
 		for request in self.driver.requests: # Filter for API requests
 			# print(f"URL: {request.url}")
 			# print(f"Status Code: {request.response.status_code}")
@@ -825,15 +826,15 @@ class Scraper:
 
 				if search_term in str(request.response.body):
 					print(f"Request URL: {request.url}")
-					print(f"Response Body (Text): {request.response.body}")
+					# print(f"Response Body (Text): {request.response.body}")
+					found = True
 					html = html + "<li>" + request.url + "</li>"
 
-
 			except Exception as e:
-				print(f"⛔️⛔️⛔️Error decoding detail response body: {e}")
+				print(f"⛔️Error decoding detail response body: {e}")
 
 		del self.driver.requests
 		html = html + "</ul>"
-		return html
+		return html, found
 
 

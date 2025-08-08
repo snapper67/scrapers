@@ -2,13 +2,17 @@ from django.shortcuts import render
 from django.views.generic import TemplateView
 
 from .birite import BiRiteScraper
+from .scraper import Scraper
 from .usfoods import USFoodsScraper
 from .chefswarehouse import ChefWarehouseScraper
 from .breakthru import BreakthruScraper
 from .sg import SouthernGlazierScraper
 from .csvProcessor import CSVProcessor
 import os
-from django.http import JsonResponse, HttpResponseBadRequest
+from django.http import JsonResponse, HttpResponseBadRequest, HttpResponse
+import requests
+from bs4 import BeautifulSoup
+import re
 
 class ScrapeProductsPageView(TemplateView):
     template_name = "scrape_products/scrape_home.html"
@@ -113,6 +117,8 @@ def update_distributor(request):
     """
     Update distributor name in all CSV files in the specified directory
     """
+    print("update_distributor()")
+    print(request.POST)
     if request.method == 'POST':
         directory = request.POST.get('directory', '').strip()
         distributor_name = request.POST.get('distributor_name', '').strip()
@@ -138,6 +144,48 @@ def update_distributor(request):
         {'success': False, 'error': 'Only POST method is allowed'},
         status=405
     )
+
+def search_requests(request):
+    """
+    Handle search requests via AJAX
+    """
+    if request.method == 'POST':
+        url = request.POST.get('url', '').strip()
+        search_term = request.POST.get('search_term', '').strip()
+        
+        if not url or not search_term:
+            return JsonResponse({
+                'success': False,
+                'error': 'Both URL and search term are required'
+            }, status=400)
+        
+        try:
+
+            with Scraper() as scraper:
+                scraper.options['search_term'] = search_term
+                scraper.options['url'] = url
+                result, found = scraper.search_requests()
+
+            return JsonResponse({
+                'success': True,
+                'found': found,
+                'sample': result,
+                'url': url,
+                'search_term': search_term
+            })
+            
+        except requests.RequestException as e:
+            return JsonResponse({
+                'success': False,
+                'error': f'Error making request: {str(e)}',
+                'url': url,
+                'search_term': search_term
+            }, status=500)
+    
+    return JsonResponse({
+        'success': False,
+        'error': 'Only POST method is allowed'
+    }, status=405)
 
 def set_defaults(distributor_options):
     # Update boolean flags
