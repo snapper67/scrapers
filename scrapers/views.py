@@ -353,16 +353,15 @@ def scrape_sg(request):
 
 def update_birite_options(post_data, current_options):
     """
-    Update usfoods_options based on form POST data.
+    Update birite_options based on form POST data.
 
     Args:
         post_data: request.POST dictionary
-        current_options: Current usfoods_options to update
+        current_options: Current birite_options to update
 
     Returns:
-        Updated usfoods_options dictionary
+        Updated birite_options dictionary
     """
-
     # Update category and file names if category changes
     category_id = post_data.get('category_id')
     if category_id and int(category_id) != 0:
@@ -376,8 +375,12 @@ def update_birite_options(post_data, current_options):
         current_options['chosen_category'] = 0
         current_options['url_output_file'] = current_options['home_directory']
         current_options['data_output_file'] = ''
+    
+    # Update clean_urls option
+    current_options['clean_urls'] = post_data.get('clean_urls') == 'on'
     current_options['category_name'] = category_name
     current_options['direct_category_to_process'] = str(post_data.get('direct_category_to_process', ''))
+    current_options['attempts'] = int(post_data.get('attempts', 40))
 
     print(current_options)
     return current_options
@@ -390,9 +393,20 @@ def scrape_birite(request):
             print(request.POST)
             distributor_options = scraper.get_options()
 
-            options = update_sg_options(request.POST, distributor_options)
+            # Update options from form data
+            options = update_birite_options(request.POST, distributor_options)
             options = update_common_options(request.POST, options)
-            # Run the scraper
+            
+            # Handle clean_urls option
+            if options.get('clean_urls'):
+                success, message = scraper.clean_url_file()
+                if success:
+                    result = f"<div class='alert alert-success'>{message}</div>"
+                else:
+                    result = f"<div class='alert alert-danger'>{message}</div>"
+                return render(request, 'scrape_products/scrape_results.html', {'result': result})
+            
+            # Run the scraper if not just cleaning URLs
             scraper.set_options(options)
             result = scraper.run()
             return render(request, 'scrape_products/scrape_results.html', {'result': result})
@@ -417,6 +431,7 @@ def scrape_birite(request):
         })
 
     defaults = set_defaults(distributor_options)
+    defaults.update({'attempts': 40})
 
     return render(request, 'scrape_products/scrape_birite.html', {
         'categories': categories,

@@ -3,6 +3,7 @@ import json
 import time
 from urllib.parse import quote
 
+import pandas as pd
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.options import PageLoadStrategy
 from selenium.webdriver.support.select import Select
@@ -56,6 +57,8 @@ class BiRiteScraper(Scraper):
 		# 'sub-type': '',
 		# 'producer_description': '',
 	}
+
+	ENCODING = "utf-8"
 
 	TEST_CATEGORIES = 100
 	TEST_PRODUCTS = 20000
@@ -1931,6 +1934,7 @@ class BiRiteScraper(Scraper):
 		'home_directory': DEFAULT_DIRECTORY,
 		'url': 'https://shop.sgproof.com/search',
 		'search_term': 'Miscellaneous',
+		'attempts': '40',
 	}
 
 	def __init__(self, options=None):
@@ -2041,44 +2045,56 @@ class BiRiteScraper(Scraper):
 	def get_category_urls(self):
 		return self.CATEGORY_URLS
 
-	def process_product_list_search_api(self, html, category, sub_category, url_output_file):
-		# Build a list of product URLs
-		detail_urls = []
-		all_urls = []
+	def clean_url_file(self, input_file=None, output_file=None):
+		"""
+		Clean the URL file by removing rows that don't have a value in the 'name' column.
 
-		product_wrappers = self.wait.until(
-			EC.presence_of_all_elements_located((By.CLASS_NAME, 'search-result-col'))
-		)
-		print(f"Found Product Wrapper: {len(product_wrappers)}")
+		Args:
+			input_file (str, optional): Path to the input CSV file. If None, uses the URL output file from options.
+			output_file (str, optional): Path to save the cleaned CSV. If None, overwrites the input file.
 
-		for request in self.driver.requests:
-			#
-			if request.response and "//search" in request.url:  # Filter for API requests
-				print(f"URL: {request.url}")
-				print(f"Status Code: {request.response.status_code}")
-				print(f"Content Type: {request.response.headers.get('Content-Type')}")
+		Returns:
+			tuple: (success: bool, message: str) indicating the result of the operation
+		"""
+		try:
+			# Get input file path
+			if input_file is None:
+				input_file = self.get_data_file_path(self.options.get('home_directory', self.DEFAULT_DIRECTORY))
 
-				# Decode the response body (it's bytes by default)
-				try:
-					# body = request.response.body.decode(request.response.headers.get('Content-Encoding', 'identity'))
-					body = decode(request.response.body, request.response.headers.get('Content-Encoding', 'identity'))
+			# Set default output file to input file if not specified
+			if output_file is None:
+				output_file = input_file
 
-					# If the body is JSON, parse it
-					if 'application/json' in request.response.headers.get('Content-Type', ''):
-						data = json.loads(body)
-						# https://www.chefswarehouse.com/products/10303734/
-						detail_urls = [f"https://www.chefswarehouse.com{product['url']}" for product in data['results']]
-						print(f"== Number of products: {len(detail_urls)}")
-						self.save_urls_to_csv(detail_urls, category, sub_category)
-					else:
-						print(f"Response Body (Text): {body}")
-					all_urls.extend(detail_urls.url)
+			# Read the CSV file
+			# df = pd.read_csv(csv_file, encoding=ENCODING)
+			df = pd.read_csv(input_file, dtype=str, keep_default_na=False, encoding=self.ENCODING, on_bad_lines='skip')
 
-				except Exception as e:
-					print(f"⛔️⛔️⛔️Error decoding response body: {e}")
-		print(f"========= Number of products: {len(all_urls)}")
-		del self.driver.requests
-		return html, all_urls
+			# Check if 'name' column exists
+			if 'name' not in df.columns:
+				return False, f"Error: 'name' column not found in {input_file}"
+
+			# Count rows before cleaning
+			initial_count = len(df)
+
+			# Remove rows where name is empty or whitespace
+			clean_df = df[df['name'].str.strip().astype(bool)]
+
+			# Count rows after cleaning
+			final_count = len(clean_df)
+			removed_count = initial_count - final_count
+
+			# Save the cleaned data
+			clean_df.to_csv(output_file, index=False)
+
+			# If we removed any rows, return success with count
+			if removed_count > 0:
+				return True, f"Removed {removed_count} rows without names. {final_count} rows remaining in {output_file}"
+			else:
+				return True, "No rows without names found. File was not modified."
+
+		except Exception as e:
+			return False, f"Error cleaning URL file: {str(e)}"
+
 
 	def process_subcategories(self):
 		# Build a list of product URLs
@@ -2415,7 +2431,7 @@ class BiRiteScraper(Scraper):
 			second_found = False
 			attempts = 0
 
-			while (not first_found or not second_found) and attempts < 40:
+			while (not first_found or not second_found) and attempts < self.options['attempts']:
 				time.sleep(1)
 				attempts += 1
 				print(f"attempt: {attempts}")

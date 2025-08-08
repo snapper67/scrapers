@@ -67,16 +67,19 @@
                     </div>
                     <h5 class="mt-3">CSV Functions</h5>
                     <div class="row">
-                        <div class="form-check mb-3">
-                            <input class="form-check-input" type="checkbox" id="count_csv" name="count_csv"
-                                   {% if defaults.count_csv %}checked{% endif %}>
-                            <label class="form-check-label" for="count_csv" title="Count the number of rows in all CSV files in the specified directory">Count rows in a CSV folder (Uses path in home directory field)</label>
+                        <div class="col-md-6">
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="count_csv" name="count_csv"
+                                       {% if defaults.count_csv %}checked{% endif %}>
+                                <label class="form-check-label" for="count_csv" title="Count the number of rows in all CSV files in the specified directory">Count rows in a CSV folder</label>
+                            </div>
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="dedupe_csv" name="dedupe_csv"
+                                       {% if defaults.dedupe_csv %}checked{% endif %}>
+                                <label class="form-check-label" for="dedupe_csv" title="Remove duplicate entries from the specified CSV file (use URL Filename field)">Dedupe a CSV</label>
+                            </div>
                         </div>
-                        <div class="form-check mb-3">
-                            <input class="form-check-input" type="checkbox" id="dedupe_csv" name="dedupe_csv"
-                                   {% if defaults.dedupe_csv %}checked{% endif %}>
-                            <label class="form-check-label" for="dedupe_csv" title="Remove duplicate entries from the specified CSV file (use URL Filename field)">Dedupe a CSV (Place file name in URL Filename field)</label>
-                        </div>
+
                     </div>
                     <h5 class="mt-3">General Configuration</h5>
                     <div class="row">

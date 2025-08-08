@@ -161,7 +161,7 @@ class Scraper:
 		self.cleanup()
 
 	def get_product_spec(self):
-		return self.PRODUCT_DATA_SPEC.copy
+		return self.PRODUCT_DATA_SPEC.copy()
 
 	def setup_driver(self):
 		"""Initialize the WebDriver"""

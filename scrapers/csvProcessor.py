@@ -227,3 +227,32 @@ class CSVProcessor:
 		# Save the reordered dataframe
 		reordered_df.to_csv(output_file, index=False)
 		return output_file
+
+	def add_distributor_name(self, *args, **options):
+		directory = options['directory']
+		distributor_name = options['distributor_name']
+
+		if not os.path.isdir(directory):
+			return f"Error: '{directory}' is not a valid directory."
+
+		csv_files = glob.glob(os.path.join(directory, "**/*.csv"), recursive=True)
+
+		if not csv_files:
+			return "No CSV files found in the directory."
+
+		for file_name in csv_files:
+			file_path = os.path.join(directory, file_name)
+			try:
+				df = pd.read_csv(file_path)
+
+				if 'distributor_name' not in df.columns:
+					self.stdout.write(self.style.WARNING(f"Skipped '{file_name}': No 'distributor_name' column."))
+					continue
+
+				df['distributor_name'] = distributor_name
+				df.to_csv(file_path, index=False)
+				return f"Updated '{file_name}' successfully."
+
+			except Exception as e:
+				return f"Failed to update '{file_name}': {str(e)}"
+		return "CSV Files Updated."
