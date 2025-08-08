@@ -13,5 +13,6 @@ urlpatterns = [
     path("sg/", views.scrape_sg, name="sg"),
     path("birite/", views.scrape_birite, name="birite"),
     path("scrapers/count-csv-rows/", views.count_csv_rows, name="count_csv_rows"),
+    path("scrapers/update-distributor/", views.update_distributor, name="update_distributor"),
 
 ]

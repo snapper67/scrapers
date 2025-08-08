@@ -4,7 +4,7 @@ import os
 import pandas as pd
 from bs4 import BeautifulSoup
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Union
 
 class CSVProcessor:
 	"""
@@ -276,6 +276,71 @@ class CSVProcessor:
 		# Save the reordered dataframe
 		reordered_df.to_csv(output_file, index=False)
 		return output_file
+
+	@staticmethod
+	def update_distributor_in_csvs(directory: str, distributor_name: str) -> dict:
+		"""
+		Update or add distributor_name column in all CSV files in the specified directory.
+		
+		Args:
+			directory (str): Directory containing CSV files to update
+			distributor_name (str): Distributor name to set in the distributor_name column
+			
+		Returns:
+			dict: Dictionary containing results of the operation
+		"""
+		if not os.path.isdir(directory):
+			return {
+				'success': False,
+				'message': f"Error: '{directory}' is not a valid directory."
+			}
+
+		csv_files = list(Path(directory).rglob('*.csv'))
+		
+		if not csv_files:
+			return {
+				'success': False,
+				'message': f"No CSV files found in directory: {directory}"
+			}
+
+		results = {
+			'total_files': len(csv_files),
+			'files_updated': 0,
+			'files_skipped': 0,
+			'errors': [],
+			'updated_files': []
+		}
+
+		for csv_file in csv_files:
+			try:
+				# Read the CSV file
+				df = pd.read_csv(csv_file, dtype=str, keep_default_na=False)
+				
+				# Add or update distributor_name column
+				df['distributor_name'] = distributor_name
+				
+				# Save the updated CSV
+				df.to_csv(csv_file, index=False)
+				
+				results['files_updated'] += 1
+				results['updated_files'].append(str(csv_file.relative_to(directory)))
+				
+			except Exception as e:
+				error_msg = f"Error processing {csv_file.name}: {str(e)}"
+				results['errors'].append(error_msg)
+				results['files_skipped'] += 1
+				continue
+
+		results['success'] = results['files_updated'] > 0
+		if results['files_updated'] == results['total_files']:
+			results['message'] = f"Successfully updated distributor name in all {results['files_updated']} CSV files."
+		else:
+			results['message'] = (
+				f"Updated {results['files_updated']} out of {results['total_files']} files. "
+				f"Skipped {results['files_skipped']} files due to errors."
+			)
+		
+		return results
 
 	def add_distributor_name(self, *args, **options):
 		directory = options['directory']

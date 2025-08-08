@@ -8,7 +8,7 @@ from .breakthru import BreakthruScraper
 from .sg import SouthernGlazierScraper
 from .csvProcessor import CSVProcessor
 import os
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponseBadRequest
 
 class ScrapeProductsPageView(TemplateView):
     template_name = "scrape_products/scrape_home.html"
@@ -106,6 +106,36 @@ def count_csv_rows(request):
     
     return JsonResponse(
         {'error': 'Only POST method is allowed'}, 
+        status=405
+    )
+
+def update_distributor(request):
+    """
+    Update distributor name in all CSV files in the specified directory
+    """
+    if request.method == 'POST':
+        directory = request.POST.get('directory', '').strip()
+        distributor_name = request.POST.get('distributor_name', '').strip()
+        
+        if not directory or not distributor_name:
+            return JsonResponse(
+                {'success': False, 'error': 'Both directory and distributor name are required'},
+                status=400
+            )
+        
+        try:
+            # Call the CSV processor to update distributor names
+            results = CSVProcessor.update_distributor_in_csvs(directory, distributor_name)
+            return JsonResponse(results)
+            
+        except Exception as e:
+            return JsonResponse(
+                {'success': False, 'error': f'Error updating distributor: {str(e)}'},
+                status=500
+            )
+    
+    return JsonResponse(
+        {'success': False, 'error': 'Only POST method is allowed'},
         status=405
     )
 
