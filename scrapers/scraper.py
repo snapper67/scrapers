@@ -214,9 +214,8 @@ class Scraper:
 		# print(f"save_urls_to_csv(){urls}")
 
 		# Resolve the file path
-		filename = self.options.get('url_output_file')
 		home_dir = self.options.get('home_directory')
-		filename = self.get_file_path(filename, home_dir)
+		filename = self.get_url_file_path(home_dir)
 
 		# Ensure the directory exists
 		os.makedirs(os.path.dirname(os.path.abspath(filename)), exist_ok=True)
