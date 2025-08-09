@@ -1,20 +1,20 @@
 from django.shortcuts import render
 from django.views.generic import TemplateView
 
-from .birite import BiRiteScraper
-from .primizie import PrimizieScraper
-from .sardilli import SardilliScraper
+from scrapers.cut.birite import BiRiteScraper
+from scrapers.cut.primizie import PrimizieScraper
+from scrapers.cut.sardilli import SardilliScraper
+from .cut.maple_valley import MapleValleyScraper
 from .scraper import Scraper
-from .usfoods import USFoodsScraper
-from .chefswarehouse import ChefWarehouseScraper
-from .breakthru import BreakthruScraper
-from .sg import SouthernGlazierScraper
+from scrapers.misc.usfoods import USFoodsScraper
+from scrapers.misc.chefswarehouse import ChefWarehouseScraper
+from scrapers.misc.breakthru import BreakthruScraper
+from scrapers.misc.sg import SouthernGlazierScraper
 from .csvProcessor import CSVProcessor
 import os
-from django.http import JsonResponse, HttpResponseBadRequest, HttpResponse
+from django.http import JsonResponse
 import requests
-from bs4 import BeautifulSoup
-import re
+
 
 class ScrapeProductsPageView(TemplateView):
     template_name = "scrape_products/scrape_home.html"
@@ -245,7 +245,7 @@ def update_usfoods_options(post_data, current_options):
 
 def scrape_usfoods(request):
     options = {}
-    from .usfoods import USFoodsScraper
+    from scrapers.misc.usfoods import USFoodsScraper
 
     if request.method == 'POST':
         with USFoodsScraper(options) as scraper:
@@ -259,7 +259,7 @@ def scrape_usfoods(request):
             return render(request, 'scrape_products/scrape_results.html', {'result': result})
 
     # GET request - show form
-    from .usfoods import USFoodsScraper
+    from scrapers.misc.usfoods import USFoodsScraper
     scraper = USFoodsScraper()
     distributor_options  = scraper.get_options()
     category_ids = scraper.get_category_ids()
@@ -306,7 +306,7 @@ def update_cw_options(post_data, current_options):
     return current_options
 def scrape_cw(request):
     options = {}
-    from .chefswarehouse import ChefWarehouseScraper
+    from scrapers.misc.chefswarehouse import ChefWarehouseScraper
 
     if request.method == 'POST':
         with ChefWarehouseScraper(options) as scraper:
@@ -320,7 +320,7 @@ def scrape_cw(request):
             return render(request, 'scrape_products/scrape_results.html', {'result': result})
 
     # GET request - show form
-    from .chefswarehouse import ChefWarehouseScraper
+    from scrapers.misc.chefswarehouse import ChefWarehouseScraper
     scraper = ChefWarehouseScraper()
     distributor_options = scraper.get_options()
     category_ids = scraper.get_category_ids()
@@ -670,7 +670,7 @@ def scrape_primizie(request):
         'name': scraper.get_name()
     })
 
-def update_sardilli_options(post_data, current_options):
+def update_cut_options(post_data, current_options):
     """
     Update birite_options based on form POST data.
 
@@ -704,6 +704,24 @@ def update_sardilli_options(post_data, current_options):
     print(current_options)
     return current_options
 
+def update_cut_categories(post_data, scraper):
+    categories_scraped = scraper.get_categories()
+    categories = []
+    categories.append({
+        'id': 0,
+        'name': 'All',
+        'url_file': f"product_urls.csv",
+        'data_file': f"product_data.csv"
+    })
+    for category in categories_scraped:
+        categories.append({
+            'id': category['id'],
+            'name': category['name'],
+            'url_file': f"{scraper.make_filename_safe(category['name']).lower()}_product_urls.csv",
+            'data_file': f"{scraper.make_filename_safe(category['name']).lower()}_product_data.csv"
+        })
+    return categories
+
 def scrape_sardilli(request):
     options = {}
 
@@ -713,7 +731,7 @@ def scrape_sardilli(request):
             distributor_options = scraper.get_options()
 
             # Update options from form data
-            options = update_sardilli_options(request.POST, distributor_options)
+            options = update_cut_options(request.POST, distributor_options)
             options = update_common_options(request.POST, options)
 
             # Handle clean_urls option
@@ -733,21 +751,47 @@ def scrape_sardilli(request):
     # GET request - show form
     scraper = SardilliScraper()
     distributor_options = scraper.get_options()
-    categories_scraped = scraper.get_categories()
-    categories = []
-    categories.append({
-        'id': 0,
-        'name': 'All',
-        'url_file': f"product_urls.csv",
-        'data_file': f"product_data.csv"
+    categories = update_cut_categories(request.POST, scraper)
+
+    defaults = set_defaults(distributor_options)
+    defaults.update({'attempts': 40})
+
+    return render(request, 'scrape_products/scrape_cut.html', {
+        'categories': categories,
+        'defaults': defaults,
+        'name': scraper.get_name()
     })
-    for category in categories_scraped:
-        categories.append({
-            'id': category['id'],
-            'name': category['name'],
-            'url_file': f"{scraper.make_filename_safe(category['name']).lower()}_product_urls.csv",
-            'data_file': f"{scraper.make_filename_safe(category['name']).lower()}_product_data.csv"
-        })
+
+def scrape_maple_valley(request):
+    options = {}
+
+    if request.method == 'POST':
+        with MapleValleyScraper(options) as scraper:
+            print(request.POST)
+            distributor_options = scraper.get_options()
+
+            # Update options from form data
+            options = update_cut_options(request.POST, distributor_options)
+            options = update_common_options(request.POST, options)
+
+            # Handle clean_urls option
+            if options.get('clean_urls'):
+                success, message = scraper.clean_url_file()
+                if success:
+                    result = f"<div class='alert alert-success'>{message}</div>"
+                else:
+                    result = f"<div class='alert alert-danger'>{message}</div>"
+                return render(request, 'scrape_products/scrape_results.html', {'result': result})
+
+            # Run the scraper if not just cleaning URLs
+            scraper.set_options(options)
+            result = scraper.run()
+            return render(request, 'scrape_products/scrape_results.html', {'result': result})
+
+    # GET request - show form
+    scraper = MapleValleyScraper()
+    distributor_options = scraper.get_options()
+    categories = update_cut_categories(request.POST, scraper)
 
     defaults = set_defaults(distributor_options)
     defaults.update({'attempts': 40})

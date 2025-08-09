@@ -67,14 +67,35 @@ class CutScraper(Scraper):
 
 	SEARCH_API_OPERATION = 'ConsumerCanonicalProductsByCategoriesQuery'
 	PRODUCT_API_OPERATION = 'UniversalProductForPDP'
-	GRAPHQL_API_FILTER = 'app.cutanddry.com/GraphQLController'
+	GRAPHQL_API_FILTER = 'cutanddry.com/GraphQLController'
 
 	VENDOR_NAME = 'cut'
 	VENDOR_URL_NAME = 'cut'
 	VENDOR_ID = 247696227
 	VERIFIED_VENDOR_ID = 120984264
 
-
+	DEFAULT_OPTIONS = {
+		'get_categories': False,
+		'scrape_products': False,
+		'process_csv': False,
+		'reprocess_csv': False,
+		'dedupe_csv': False,
+		'count_csv': False,
+		'process_extra': False,
+		'search_requests': False,
+		'test_products': 20000,
+		'max_products': 999,
+		'csv_start_row': 0,
+		'category_to_process': 0,
+		'test_categories': 100,
+		'chosen_category': '10001',  # Default to Meat
+		'url_output_file': '',
+		'data_output_file': '',
+		'home_directory': DEFAULT_DIRECTORY,
+		'url': '',
+		'search_term': '',
+		'attempts': '40',
+	}
 
 	def __init__(self, options=None):
 		super().__init__(options)
@@ -111,7 +132,7 @@ class CutScraper(Scraper):
 		# URL encode the vendor name and other string parameters
 		encoded_vendor_name = quote_plus(self.VENDOR_URL_NAME)
 
-		base_url = f"https://app.cutanddry.com/catalog/{encoded_vendor_name}/{self.VENDOR_ID}"
+		base_url = f"https://app.cutanddry.com/catalog/{encoded_vendor_name}"
 		params = {
 			'verifiedVendorId': str(self.VERIFIED_VENDOR_ID),
 		}
@@ -536,6 +557,7 @@ class CutScraper(Scraper):
 
 											if len(detail_urls) < self.options['max_products']:
 												still_looking = False
+											break
 										else:
 											print(f"Response products missing: {'canonicalProducts' in data} ")
 											# print(f"data: {data} ")
@@ -636,7 +658,7 @@ class CutScraper(Scraper):
 		# Run on all to get a category list then copy the list to CATEGORIES
 		url = self.BASE_URL
 		categories = []
-		print(f"Loading page...{url}")
+		print(f"Loading base url...{url}")
 		del self.driver.requests
 		self.driver.get(url)
 
@@ -644,24 +666,32 @@ class CutScraper(Scraper):
 			EC.text_to_be_present_in_element((By.TAG_NAME, "div"), "All Items")
 		)
 		data = ''
-		for request in self.driver.requests:
-			if request.response and self.GRAPHQL_API_FILTER in request.url:  # Filter for API requests
-				try:
-					current_data = request.body.decode('utf-8')
-					payload = json.loads(current_data)
-					print(f"Found response :")
-					# print(f"Response Body (Text): {payload}")
-					if payload['operationName'] == 'CatalogCategoryOptionsQuery':
-						print("CatalogCategoryOptionsQuery")
-						body = decode(request.response.body, request.response.headers.get('Content-Encoding', 'identity'))
+		attempts = 0
+		found = False
 
-						# If the body is JSON, parse it
-						if 'application/json' in request.response.headers.get('Content-Type', ''):
-							data = json.loads(body)
-						else:
-							print(f"Response not JSON :")
-				except Exception as e:
-					print(f"⛔️⛔️⛔️Error decoding search response body: {e}")
+		while not found and attempts < self.options['attempts']:
+			time.sleep(1)
+			attempts += 1
+			print(f"attempt: {attempts}")
+			for request in self.driver.requests:
+				if request.response and self.GRAPHQL_API_FILTER in request.url:  # Filter for API requests
+					try:
+						current_data = request.body.decode('utf-8')
+						payload = json.loads(current_data)
+						print(f"Payload Method: {payload.get('operationName', '')}")
+						found = True
+						# print(f"Response Body (Text): {payload}")
+						if payload['operationName'] == 'CatalogCategoryOptionsQuery':
+							print("CatalogCategoryOptionsQuery")
+							body = decode(request.response.body, request.response.headers.get('Content-Encoding', 'identity'))
+
+							# If the body is JSON, parse it
+							if 'application/json' in request.response.headers.get('Content-Type', ''):
+								data = json.loads(body)
+							else:
+								print(f"Response not JSON :")
+					except Exception as e:
+						print(f"⛔️⛔️⛔️Error decoding search response body: {e}")
 
 		print(f"")
 		print(f"categories : {json.dumps(data)}")

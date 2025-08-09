@@ -1,18 +1,6 @@
 
 import json
-import time
-from urllib.parse import quote
-
-import pandas as pd
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.options import PageLoadStrategy
-from selenium.webdriver.support.select import Select
-from selenium.webdriver.support import expected_conditions as EC
-from seleniumwire.utils import decode
-from typing import List, Dict, Any, Optional
-
-from scrapers.cut import CutScraper
-from scrapers.scraper import Scraper, ProductNotFound
+from scrapers.cut.dry import CutScraper
 
 
 class BiRiteScraper(CutScraper):
@@ -1888,4 +1876,5 @@ class BiRiteScraper(CutScraper):
 	def __init__(self, options=None):
 		super().__init__(options)
 		self.options = {**self.DEFAULT_OPTIONS, **(options or {})}
+		self.options['home_directory'] = self.DEFAULT_DIRECTORY
 
