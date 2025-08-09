@@ -68,6 +68,7 @@ class ChefWarehouseScraper(Scraper):
 	DEFAULT_DIRECTORY = '/Users/mark/Downloads/scrapers/cw'
 
 	BASE_URL = 'https://www.chefswarehouse.com'
+	VENDOR_NAME = 'Chefs Warehouse'
 
 	CATEGORY_IDS = {
 		"MEAT": 1,

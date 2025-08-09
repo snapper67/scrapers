@@ -108,7 +108,8 @@ class SouthernGlazierScraper(Scraper):
 	MAX_API_PRODUCTS = 999  # Maximum number to change the search request page size
 	DEFAULT_DIRECTORY = '/Users/mark/Downloads/scrapers/sg'
 
-	BASE_URL = 'https://www.chefswarehouse.com'
+	BASE_URL = 'https://shop.sgproof.com/'
+	VENDOR_NAME = 'Southern Glazier'
 	CATEGORIES = [{'category': 'Beer', 'count': 1, 'url': 'https://shop.sgproof.com/search?text=&f-category=Beer'},
 	              {'category': 'Miscellaneous', 'count': 150, 'url': 'https://shop.sgproof.com/search?text=&f-category=Miscellaneous'},
 	              {'category': 'Non-Alcoholic Beverages', 'count': 1, 'url': 'https://shop.sgproof.com/search?text=&f-category=Non-Alcoholic Beverages'},

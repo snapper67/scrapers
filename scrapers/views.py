@@ -335,7 +335,7 @@ def scrape_cw(request):
 
     defaults = set_defaults(distributor_options)
 
-    return render(request, 'scrape_products/scrape_birite.html', {
+    return render(request, 'scrape_products/scrape_cw.html', {
         'categories': categories,
         'defaults': defaults,
     })

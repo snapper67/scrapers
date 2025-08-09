@@ -70,6 +70,7 @@ class BreakthruScraper(Scraper):
 	DEFAULT_DIRECTORY = '/Users/mark/Downloads/scrapers/breakthru'
 
 	BASE_URL = 'https://www.chefswarehouse.com'
+	VENDOR_NAME = 'Breakthru Beverage'
 	CATEGORIES = [{'id': 'Beer', 'count': 5626, 'filename': 'Beer', 'number': 1},
 	              {'id': 'Cider/Perry/Mead', 'count': 439, 'filename': 'CiderPerryMead', 'number': 2},
 	              {'id': 'FMB/Coolers/Hard', 'count': 761, 'filename': 'FMBCoolersHard', 'number': 3},
