@@ -323,7 +323,11 @@ class CutScraper(Scraper):
 				data = data.get('data',{}).get('universalProduct',{})
 				row_spec["sku"] = data.get("itemCode", "")
 				row_spec["name"] = data.get("name", "")
-				row_spec["brand"] = data.get("brandDetails", {}).get("name", "")
+				try:
+					row_spec["brand"] = data.get("brandDetails", {}).get("name", "")
+				except:
+					print(f" ⚠️No Brand info found")
+
 				row_spec["distributor_name"] = self.VENDOR_NAME
 
 				row_spec["pack_size"] = data.get('packSize', {})
@@ -366,31 +370,32 @@ class CutScraper(Scraper):
 	def get_manufacturer(self, data, row_spec):
 		print("get_manufacturer()")
 		try:
-			specifications = data.get('specifications', [])
+			specifications = data.get('specifications', None)
 			# Find the specification with displayName "Manufacturer Name"
-			manufacturer_spec = next(
-				(spec for spec in specifications 
-				 if isinstance(spec, dict) and spec.get('displayName') == 'Manufacturer Name'),
-				None
-			)
-			
-			if manufacturer_spec and 'value' in manufacturer_spec:
-				row_spec['manufacturer_name'] = manufacturer_spec['value']
-				print(f"Found manufacturer: {manufacturer_spec['value']}")
-			else:
-				print("⚠️ Manufacturer name not found in specifications")
+			if specifications:
+				manufacturer_spec = next(
+					(spec for spec in specifications
+					 if isinstance(spec, dict) and spec.get('displayName') == 'Manufacturer Name'),
+					None
+				)
 
-			manufacturer_spec = next(
-				(spec for spec in specifications
-				 if isinstance(spec, dict) and spec.get('displayName') == 'Manufacturer Product Code'),
-				None
-			)
+				if manufacturer_spec and 'value' in manufacturer_spec:
+					row_spec['manufacturer_name'] = manufacturer_spec['value']
+					print(f"Found manufacturer: {manufacturer_spec['value']}")
+				else:
+					print("⚠️ Manufacturer name not found in specifications")
 
-			if manufacturer_spec and 'value' in manufacturer_spec:
-				row_spec['manufacturer_sku'] = manufacturer_spec['value']
-				print(f"Found manufacturer id: {manufacturer_spec['value']}")
-			else:
-				print("⚠️ Manufacturer name not found in specifications")
+				manufacturer_spec = next(
+					(spec for spec in specifications
+					 if isinstance(spec, dict) and spec.get('displayName') == 'Manufacturer Product Code'),
+					None
+				)
+
+				if manufacturer_spec and 'value' in manufacturer_spec:
+					row_spec['manufacturer_sku'] = manufacturer_spec['value']
+					print(f"Found manufacturer id: {manufacturer_spec['value']}")
+				else:
+					print("⚠️ Manufacturer sku not found in specifications")
 
 		except Exception as e:
 			print(f"⛔️ Error processing manufacturer information: {type(e).__name__} - {str(e)}")
