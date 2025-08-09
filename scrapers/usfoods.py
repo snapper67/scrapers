@@ -687,7 +687,8 @@ class USFoodsScraper(Scraper):
 				# 	driver.close()
 				# 	driver.switch_to.window(main_window)
 
-				self.driver.back()
+				self.driver.get(category_URL)
+				self.driver.execute_script("document.body.style.zoom = '50%'")
 				print(f"Going back to get next category: {self.driver.title}")
 				# Wait before processing next category
 				time.sleep(3)
