@@ -3,9 +3,9 @@ import json
 from scrapers.cut.dry import CutScraper
 
 
-class MapleValleyScraper(CutScraper):
+class MapleValeScraper(CutScraper):
 
-	DEFAULT_DIRECTORY = '/Users/mark/Downloads/scrapers/maple_valley/'
+	DEFAULT_DIRECTORY = '/Users/mark/Downloads/scrapers/maple_vale/'
 
 
 	# Values to change
@@ -438,7 +438,7 @@ class MapleValleyScraper(CutScraper):
 }
 		''')
 
-	VENDOR_NAME = 'Maple Valley'
+	VENDOR_NAME = 'Maple Vale'
 	VENDOR_URL_NAME = 'maplevale'
 	VENDOR_ID = 106423628
 	VERIFIED_VENDOR_ID = 106423628

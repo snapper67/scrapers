@@ -4,7 +4,7 @@ from django.views.generic import TemplateView
 from scrapers.cut.birite import BiRiteScraper
 from scrapers.cut.primizie import PrimizieScraper
 from scrapers.cut.sardilli import SardilliScraper
-from .cut.maple_valley import MapleValleyScraper
+from .cut.maple_vale import MapleValeScraper
 from .scraper import Scraper
 from scrapers.misc.usfoods import USFoodsScraper
 from scrapers.misc.chefswarehouse import ChefWarehouseScraper
@@ -766,7 +766,7 @@ def scrape_maple_valley(request):
     options = {}
 
     if request.method == 'POST':
-        with MapleValleyScraper(options) as scraper:
+        with MapleValeScraper(options) as scraper:
             print(request.POST)
             distributor_options = scraper.get_options()
 
@@ -789,7 +789,7 @@ def scrape_maple_valley(request):
             return render(request, 'scrape_products/scrape_results.html', {'result': result})
 
     # GET request - show form
-    scraper = MapleValleyScraper()
+    scraper = MapleValeScraper()
     distributor_options = scraper.get_options()
     categories = update_cut_categories(request.POST, scraper)
 
