@@ -2,6 +2,7 @@
 import json
 import time
 
+from selenium.common import NoSuchElementException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.options import PageLoadStrategy
 from selenium.webdriver.support.select import Select
@@ -1009,8 +1010,8 @@ class SouthernGlazierScraper(Scraper):
 	def get_variant_section(self, container, row_spec):
 		# Scrape the section that contains the manufacturer information. It is in an unordered list
 		print("get_variant_section()")
-		hidden_element = self.driver.find_element(By.CSS_SELECTOR, 'div.item-variant-menu')
-		self.driver.execute_script("arguments[0].style.display = 'block';", hidden_element)
+		# hidden_element = self.driver.find_element(By.CSS_SELECTOR, 'div.item-variant-menu')
+		# self.driver.execute_script("arguments[0].style.display = 'block';", hidden_element)
 		variant_info = container.find_element(By.CSS_SELECTOR, 'div.item-variant-menu-list')
 		try:
 			rows = variant_info.find_elements(By.CSS_SELECTOR, 'a.item-variant-list-menu-item')
@@ -1045,14 +1046,17 @@ class SouthernGlazierScraper(Scraper):
 			producer_description = self.driver.find_element(By.CSS_SELECTOR, 'div.product-info-full').text.strip()
 			if producer_description:
 				row_spec["producer_description"]  = producer_description
+		except NoSuchElementException as e:
+			print(f"No ProducerDescription found")
 		except Exception as e:
 			print(f"⛔️️ Error processing product producer description: {type(e)}")
 
-		# product-card-pdp-desc
 		try:
 			description = self.driver.find_element(By.CSS_SELECTOR, 'div.product-card-pdp-desc').text.strip()
 			if description:
 				row_spec["description"]  = description
+		except NoSuchElementException as e:
+			print(f"No Description found")
 		except Exception as e:
 			print(f"⛔️️ Error processing product description: {type(e)}")
 		print("processing product overview Complete...")
@@ -1275,12 +1279,19 @@ class SouthernGlazierScraper(Scraper):
 				additional_packages = self.get_additional_packages()
 			else:
 				try:
+					hidden_element = self.driver.find_element(By.CSS_SELECTOR, 'div.item-variant-menu')
+					self.driver.execute_script("arguments[0].style.display = 'block';", hidden_element)
+
 					variant_info = container.find_element(By.CSS_SELECTOR, '.item-variant-select-text')
+				except Exception as e:
+					print(f"⛔️Error finding variant info element: {type(e)}")
+					raise SkuNotFound
+				try:
 					sku = variant_info.find_element(By.CSS_SELECTOR, '[data-at-product-id]').text.strip()
 					row_spec['sku'] = sku
 					row_spec = self.get_variant_section(container, row_spec)
 				except Exception as e:
-					print(f"⛔️Error finding variant info: {type(e)}")
+					print(f"⛔️Error finding variant info sku: {type(e)}")
 					raise SkuNotFound
 		except Exception as e:
 			print(f"⛔️⛔️⛔️Error processing process_details_from_html: {type(e)}")
