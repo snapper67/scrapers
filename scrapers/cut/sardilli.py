@@ -1541,7 +1541,6 @@ class SardilliScraper(CutScraper):
 
 	VENDOR_NAME = 'Sardilli'
 	VENDOR_URL_NAME = 'sardilli'
-	VENDOR_ID = 369151799
 	VERIFIED_VENDOR_ID = 369151799
 
 	DEFAULT_OPTIONS = {

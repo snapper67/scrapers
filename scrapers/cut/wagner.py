@@ -3,9 +3,9 @@ import json
 from scrapers.cut.dry import CutScraper
 
 
-class SardilliScraper(CutScraper):
+class WagnerScraper(CutScraper):
 
-	DEFAULT_DIRECTORY = '/Users/mark/Downloads/scrapers/sardilli'
+	DEFAULT_DIRECTORY = '/Users/mark/Downloads/scrapers/wagner/'
 
 	# Values to change
 	BASE_URL = "https://wagner.cutanddry.com/catalog/wagner?verifiedVendorId=152858455&categoryId=1&page=1"
@@ -14,174 +14,54 @@ class SardilliScraper(CutScraper):
     "catalogCategoryOptions": [
       {
         "category": {
-          "id": "476813170",
-          "baseName": "vegetables",
+          "id": "222088640",
+          "baseName": "beverage",
           "examplePictureUrl": null,
           "iconAltUrl": null,
-          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/38851c46a95dec40e98e46b684cc5fb3.jpg",
-          "name": "Vegetables",
-          "sortIndex": "0",
+          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/9411282b3ceb7e329b85f7d40d25a25f.jpg",
+          "name": "Beverage",
+          "sortIndex": "1",
           "visibleOnHeader": true,
           "visibleOnSidebar": true,
           "__typename": "ProductCategory"
         },
-        "productCount": 416,
+        "productCount": 777,
         "subcategories": [
           {
             "subcategory": {
-              "id": "476813172",
-              "name": "Tomato",
+              "id": "222088738",
+              "name": "Juice",
               "sortIndex": 0,
               "__typename": "ProductSubcategory"
             },
-            "productCount": 26,
+            "productCount": 200,
             "__typename": "subcategoryOption"
           },
           {
             "subcategory": {
-              "id": "476813177",
-              "name": "Anise",
-              "sortIndex": 3,
+              "id": "222091871",
+              "name": "Coffee",
+              "sortIndex": 0,
               "__typename": "ProductSubcategory"
             },
-            "productCount": 2,
+            "productCount": 117,
             "__typename": "subcategoryOption"
           },
           {
             "subcategory": {
-              "id": "476813187",
-              "name": "Artichoke",
-              "sortIndex": 8,
+              "id": "222088790",
+              "name": "Soft Drinks - Bottle/can",
+              "sortIndex": 0,
               "__typename": "ProductSubcategory"
             },
-            "productCount": 2,
+            "productCount": 70,
             "__typename": "subcategoryOption"
           },
           {
             "subcategory": {
-              "id": "476813188",
-              "name": "Greens",
-              "sortIndex": 9,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 15,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813189",
-              "name": "Asparagus",
-              "sortIndex": 10,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 5,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813194",
-              "name": "Beans",
-              "sortIndex": 15,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 6,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813196",
-              "name": "Beets",
-              "sortIndex": 16,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 6,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813197",
-              "name": "Smartcuts",
-              "sortIndex": 17,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 2,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813200",
-              "name": "Bok Choy",
-              "sortIndex": 19,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 4,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813201",
-              "name": "Broccoli",
-              "sortIndex": 20,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 6,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813204",
-              "name": "Brussel Sprt",
-              "sortIndex": 22,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 3,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813207",
-              "name": "Cabbage",
-              "sortIndex": 24,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 10,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813209",
-              "name": "Carrots",
-              "sortIndex": 26,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 11,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813211",
-              "name": "Cauliflower",
-              "sortIndex": 28,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 5,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813213",
-              "name": "Celery",
-              "sortIndex": 30,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 4,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813253",
-              "name": "Peppers",
-              "sortIndex": 35,
+              "id": "222088648",
+              "name": "Cocktail Mix- Passion Bay",
+              "sortIndex": 0,
               "__typename": "ProductSubcategory"
             },
             "productCount": 32,
@@ -189,149 +69,39 @@ class SardilliScraper(CutScraper):
           },
           {
             "subcategory": {
-              "id": "476813255",
-              "name": "Corn",
-              "sortIndex": 37,
+              "id": "222088841",
+              "name": "Tea",
+              "sortIndex": 0,
               "__typename": "ProductSubcategory"
             },
-            "productCount": 2,
+            "productCount": 77,
             "__typename": "subcategoryOption"
           },
           {
             "subcategory": {
-              "id": "476813259",
-              "name": "Cucumbers",
-              "sortIndex": 40,
+              "id": "222088758",
+              "name": "Bib- Pvt Label Ftn Drinks",
+              "sortIndex": 0,
               "__typename": "ProductSubcategory"
             },
-            "productCount": 8,
+            "productCount": 59,
             "__typename": "subcategoryOption"
           },
           {
             "subcategory": {
-              "id": "476813264",
-              "name": "Eggplant",
-              "sortIndex": 44,
+              "id": "222092738",
+              "name": "Coffee Private Label",
+              "sortIndex": 0,
               "__typename": "ProductSubcategory"
             },
-            "productCount": 6,
+            "productCount": 46,
             "__typename": "subcategoryOption"
           },
           {
             "subcategory": {
-              "id": "476813265",
-              "name": "Endive",
-              "sortIndex": 45,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 2,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813266",
-              "name": "Vegetables",
-              "sortIndex": 46,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 1,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813269",
-              "name": "Flowers",
-              "sortIndex": 49,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 6,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813272",
-              "name": "Frisse",
-              "sortIndex": 51,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 1,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813275",
-              "name": "Root",
-              "sortIndex": 53,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 7,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813274",
-              "name": "Garlic",
-              "sortIndex": 53,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 8,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813281",
-              "name": "Herbs",
-              "sortIndex": 58,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 28,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813285",
-              "name": "Jicama",
-              "sortIndex": 61,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 1,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813292",
-              "name": "Leeks",
-              "sortIndex": 65,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 3,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813291",
-              "name": "Leaves",
-              "sortIndex": 65,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 6,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813296",
-              "name": "Lettuce",
-              "sortIndex": 69,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 32,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813297",
-              "name": "Micro",
-              "sortIndex": 70,
+              "id": "222088818",
+              "name": "Sports Drinks",
+              "sortIndex": 0,
               "__typename": "ProductSubcategory"
             },
             "productCount": 23,
@@ -339,159 +109,19 @@ class SardilliScraper(CutScraper):
           },
           {
             "subcategory": {
-              "id": "476813307",
-              "name": "Mushrooms",
-              "sortIndex": 78,
+              "id": "222088949",
+              "name": "Bib - Fountain Drinks",
+              "sortIndex": 0,
               "__typename": "ProductSubcategory"
             },
-            "productCount": 18,
+            "productCount": 14,
             "__typename": "subcategoryOption"
           },
           {
             "subcategory": {
-              "id": "476813311",
-              "name": "Onions",
-              "sortIndex": 81,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 10,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813316",
-              "name": "Parsnips",
-              "sortIndex": 85,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 2,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813317",
-              "name": "Parsley",
-              "sortIndex": 86,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 6,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813320",
-              "name": "Peas",
-              "sortIndex": 89,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 5,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813325",
-              "name": "Pickles",
-              "sortIndex": 94,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 3,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813328",
-              "name": "Potatoes",
-              "sortIndex": 97,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 39,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813330",
-              "name": "Radish",
-              "sortIndex": 99,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 8,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813332",
-              "name": "Radicchio",
-              "sortIndex": 101,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 2,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813334",
-              "name": "Rhubarb",
-              "sortIndex": 103,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 1,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813339",
-              "name": "Scallions",
-              "sortIndex": 107,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 3,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813342",
-              "name": "Shallots",
-              "sortIndex": 109,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 4,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813343",
-              "name": "Cress",
-              "sortIndex": 110,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 1,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813344",
-              "name": "Spinach",
-              "sortIndex": 111,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 4,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813345",
-              "name": "Sprouts",
-              "sortIndex": 112,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 2,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813346",
-              "name": "Squash",
-              "sortIndex": 113,
+              "id": "222088641",
+              "name": "Cocktail Mixers",
+              "sortIndex": 0,
               "__typename": "ProductSubcategory"
             },
             "productCount": 22,
@@ -499,613 +129,49 @@ class SardilliScraper(CutScraper):
           },
           {
             "subcategory": {
-              "id": "476813348",
-              "name": "Tofu",
-              "sortIndex": 115,
+              "id": "222088846",
+              "name": "Energy Drinks",
+              "sortIndex": 0,
               "__typename": "ProductSubcategory"
             },
-            "productCount": 2,
+            "productCount": 15,
             "__typename": "subcategoryOption"
           },
           {
             "subcategory": {
-              "id": "476813350",
-              "name": "Tomatillo",
-              "sortIndex": 117,
+              "id": "222106650",
+              "name": "Bib - Frozen Drinks",
+              "sortIndex": 0,
               "__typename": "ProductSubcategory"
             },
-            "productCount": 2,
+            "productCount": 19,
             "__typename": "subcategoryOption"
           },
           {
             "subcategory": {
-              "id": "476813351",
-              "name": "Turnips",
-              "sortIndex": 118,
+              "id": "222088765",
+              "name": "Water",
+              "sortIndex": 0,
               "__typename": "ProductSubcategory"
             },
-            "productCount": 5,
+            "productCount": 38,
             "__typename": "subcategoryOption"
           },
           {
             "subcategory": {
-              "id": "476813353",
-              "name": "Watercress",
-              "sortIndex": 120,
+              "id": "222088799",
+              "name": "Bib-nat'l Brand Ftn Drink",
+              "sortIndex": 0,
               "__typename": "ProductSubcategory"
             },
-            "productCount": 2,
+            "productCount": 33,
             "__typename": "subcategoryOption"
           },
           {
             "subcategory": {
-              "id": "509740818",
-              "name": "Okra",
-              "sortIndex": 132,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 1,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "530496557",
-              "name": "Palms",
-              "sortIndex": 135,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 1,
-            "__typename": "subcategoryOption"
-          }
-        ],
-        "__typename": "categoryOption"
-      },
-      {
-        "category": {
-          "id": "476813174",
-          "baseName": "grocery",
-          "examplePictureUrl": null,
-          "iconAltUrl": null,
-          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/a4a171f120b0ced167b153167fceeae7.jpg",
-          "name": "Grocery",
-          "sortIndex": "1",
-          "visibleOnHeader": true,
-          "visibleOnSidebar": true,
-          "__typename": "ProductCategory"
-        },
-        "productCount": 195,
-        "subcategories": [
-          {
-            "subcategory": {
-              "id": "476813175",
-              "name": "Spice",
-              "sortIndex": 1,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 62,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813176",
-              "name": "Grocery",
-              "sortIndex": 2,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 20,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813180",
-              "name": "Dried Fruit",
-              "sortIndex": 5,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 20,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813191",
-              "name": "Salads",
-              "sortIndex": 12,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 10,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813193",
-              "name": "Dried Beans",
-              "sortIndex": 14,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 2,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813199",
-              "name": "Dried Grains",
-              "sortIndex": 18,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 10,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813252",
-              "name": "Dried Chili",
-              "sortIndex": 34,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 3,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813257",
-              "name": "Couscous",
-              "sortIndex": 38,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 1,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813260",
-              "name": "Dates",
-              "sortIndex": 41,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 1,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813270",
-              "name": "Flour",
-              "sortIndex": 50,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 1,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813273",
-              "name": "Garlic",
-              "sortIndex": 52,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 1,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813276",
-              "name": "Ginger",
-              "sortIndex": 54,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 1,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813277",
-              "name": "Rice",
-              "sortIndex": 55,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 8,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813282",
-              "name": "Honey",
-              "sortIndex": 59,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 6,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813284",
-              "name": "Horseradish",
-              "sortIndex": 60,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 2,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813287",
-              "name": "Cabbage",
-              "sortIndex": 62,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 1,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813290",
-              "name": "Leaves",
-              "sortIndex": 64,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 1,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813295",
-              "name": "Lentils",
-              "sortIndex": 68,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 3,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813303",
-              "name": "Meat",
-              "sortIndex": 75,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 3,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813308",
-              "name": "Mushrooms",
-              "sortIndex": 79,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 2,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813310",
-              "name": "Nuts",
-              "sortIndex": 80,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 10,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813318",
-              "name": "Paste",
-              "sortIndex": 87,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 2,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813322",
-              "name": "Dried Veg",
-              "sortIndex": 91,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 1,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813323",
-              "name": "Peppers",
-              "sortIndex": 92,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 2,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813333",
-              "name": "Raisins",
-              "sortIndex": 102,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 2,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813341",
-              "name": "Seeds",
-              "sortIndex": 108,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 3,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813347",
-              "name": "Syrup",
-              "sortIndex": 114,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 3,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813349",
-              "name": "Tomato",
-              "sortIndex": 116,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 3,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813352",
-              "name": "Vinegar",
-              "sortIndex": 119,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 1,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813354",
-              "name": "Yeast",
-              "sortIndex": 121,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 1,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "497911035",
-              "name": "Olives",
-              "sortIndex": 128,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 6,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "497911046",
-              "name": "Chili",
-              "sortIndex": 129,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 1,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "505811774",
-              "name": "Oil",
-              "sortIndex": 130,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 1,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "541054079",
-              "name": "Beans",
-              "sortIndex": 136,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 1,
-            "__typename": "subcategoryOption"
-          }
-        ],
-        "__typename": "categoryOption"
-      },
-      {
-        "category": {
-          "id": "476813178",
-          "baseName": "beverage",
-          "examplePictureUrl": null,
-          "iconAltUrl": null,
-          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/73b93dbd48c361cc16e0857df8c9ff89.jpg",
-          "name": "Beverage",
-          "sortIndex": "2",
-          "visibleOnHeader": true,
-          "visibleOnSidebar": true,
-          "__typename": "ProductCategory"
-        },
-        "productCount": 28,
-        "subcategories": [
-          {
-            "subcategory": {
-              "id": "476813179",
-              "name": "Juice",
-              "sortIndex": 4,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 26,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813306",
-              "name": "Milk",
-              "sortIndex": 78,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 2,
-            "__typename": "subcategoryOption"
-          }
-        ],
-        "__typename": "categoryOption"
-      },
-      {
-        "category": {
-          "id": "476813181",
-          "baseName": "fruit",
-          "examplePictureUrl": null,
-          "iconAltUrl": null,
-          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/7e825188724ec101f14d2de6d9a0320e.jpg",
-          "name": "Fruit",
-          "sortIndex": "3",
-          "visibleOnHeader": true,
-          "visibleOnSidebar": true,
-          "__typename": "ProductCategory"
-        },
-        "productCount": 131,
-        "subcategories": [
-          {
-            "subcategory": {
-              "id": "476813182",
-              "name": "Apples",
-              "sortIndex": 6,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 34,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813190",
-              "name": "Avocado",
-              "sortIndex": 11,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 8,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813192",
-              "name": "Bananas",
-              "sortIndex": 13,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 12,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813198",
-              "name": "Berries",
-              "sortIndex": 17,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 10,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813261",
-              "name": "Dragon",
-              "sortIndex": 42,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 1,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813268",
-              "name": "Figs",
-              "sortIndex": 48,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 1,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813278",
-              "name": "Grapes",
-              "sortIndex": 56,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 8,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813279",
-              "name": "Grapefruit",
-              "sortIndex": 57,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 3,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813288",
-              "name": "Kiwifruit",
-              "sortIndex": 62,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 2,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813289",
-              "name": "Kumquats",
-              "sortIndex": 63,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 1,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813293",
-              "name": "Lemons",
-              "sortIndex": 66,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 6,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813300",
-              "name": "Limes",
-              "sortIndex": 72,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 6,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813301",
-              "name": "Mangoes",
-              "sortIndex": 73,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 1,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813304",
-              "name": "Melons",
-              "sortIndex": 76,
+              "id": "222091994",
+              "name": "Cocoa",
+              "sortIndex": 0,
               "__typename": "ProductSubcategory"
             },
             "productCount": 9,
@@ -1113,142 +179,12 @@ class SardilliScraper(CutScraper):
           },
           {
             "subcategory": {
-              "id": "476813313",
-              "name": "Oranges",
-              "sortIndex": 83,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 8,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813315",
-              "name": "Papaya",
-              "sortIndex": 84,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 2,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813319",
-              "name": "Pears",
-              "sortIndex": 88,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 4,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813321",
-              "name": "Peaches",
-              "sortIndex": 90,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 2,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813326",
-              "name": "Pineapple",
-              "sortIndex": 95,
+              "id": "274457600",
+              "name": "Tea Private Label",
+              "sortIndex": 0,
               "__typename": "ProductSubcategory"
             },
             "productCount": 3,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813327",
-              "name": "Pomegranate",
-              "sortIndex": 96,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 2,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "476813335",
-              "name": "Root",
-              "sortIndex": 104,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 1,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "480603981",
-              "name": "Guava",
-              "sortIndex": 123,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 1,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "481474948",
-              "name": "Starfruit",
-              "sortIndex": 124,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 1,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "481627162",
-              "name": "Coconuts",
-              "sortIndex": 125,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 1,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "509739419",
-              "name": "Cherries",
-              "sortIndex": 131,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 1,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "510348737",
-              "name": "Apricot",
-              "sortIndex": 133,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 1,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "510349617",
-              "name": "Nectarine",
-              "sortIndex": 134,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 1,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "575399732",
-              "name": "Plums",
-              "sortIndex": 137,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 1,
             "__typename": "subcategoryOption"
           }
         ],
@@ -1256,24 +192,92 @@ class SardilliScraper(CutScraper):
       },
       {
         "category": {
-          "id": "476813185",
-          "baseName": "precut",
+          "id": "194836942",
+          "baseName": "poultry",
           "examplePictureUrl": null,
           "iconAltUrl": null,
-          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/1bea937d8354460699904a504f944ef7.jpg",
-          "name": "Precut",
-          "sortIndex": "4",
+          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/deeeaa50d85b1f6393073ccdcc73e4c3.jpg",
+          "name": "Poultry",
+          "sortIndex": "3",
           "visibleOnHeader": true,
           "visibleOnSidebar": true,
           "__typename": "ProductCategory"
         },
-        "productCount": 238,
+        "productCount": 173,
         "subcategories": [
           {
             "subcategory": {
-              "id": "476813186",
-              "name": "Smartcuts",
-              "sortIndex": 7,
+              "id": "194836943",
+              "name": "Chicken",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 133,
+            "__typename": "subcategoryOption"
+          },
+          {
+            "subcategory": {
+              "id": "194837229",
+              "name": "Duck",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 18,
+            "__typename": "subcategoryOption"
+          },
+          {
+            "subcategory": {
+              "id": "194836971",
+              "name": "Turkey",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 22,
+            "__typename": "subcategoryOption"
+          }
+        ],
+        "__typename": "categoryOption"
+      },
+      {
+        "category": {
+          "id": "194831525",
+          "baseName": "meats",
+          "examplePictureUrl": null,
+          "iconAltUrl": null,
+          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/d0c9f08f55ad653236292c8d47881148.jpg",
+          "name": "Meats",
+          "sortIndex": "5",
+          "visibleOnHeader": true,
+          "visibleOnSidebar": true,
+          "__typename": "ProductCategory"
+        },
+        "productCount": 741,
+        "subcategories": [
+          {
+            "subcategory": {
+              "id": "194836999",
+              "name": "Veal",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 28,
+            "__typename": "subcategoryOption"
+          },
+          {
+            "subcategory": {
+              "id": "194831527",
+              "name": "Beef",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 466,
+            "__typename": "subcategoryOption"
+          },
+          {
+            "subcategory": {
+              "id": "194836439",
+              "name": "Pork",
+              "sortIndex": 0,
               "__typename": "ProductSubcategory"
             },
             "productCount": 195,
@@ -1281,29 +285,445 @@ class SardilliScraper(CutScraper):
           },
           {
             "subcategory": {
-              "id": "476813202",
-              "name": "Broccoli",
-              "sortIndex": 21,
+              "id": "194837031",
+              "name": "Lamb",
+              "sortIndex": 0,
               "__typename": "ProductSubcategory"
             },
-            "productCount": 3,
+            "productCount": 30,
             "__typename": "subcategoryOption"
           },
           {
             "subcategory": {
-              "id": "476813208",
-              "name": "Cabbage",
-              "sortIndex": 25,
+              "id": "194836802",
+              "name": "Wild Game",
+              "sortIndex": 0,
               "__typename": "ProductSubcategory"
             },
-            "productCount": 5,
+            "productCount": 22,
+            "__typename": "subcategoryOption"
+          }
+        ],
+        "__typename": "categoryOption"
+      },
+      {
+        "category": {
+          "id": "194831491",
+          "baseName": "seafood",
+          "examplePictureUrl": null,
+          "iconAltUrl": null,
+          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/356402db3f0869502d5febd7d469a22c.jpg",
+          "name": "Seafood",
+          "sortIndex": "7",
+          "visibleOnHeader": true,
+          "visibleOnSidebar": true,
+          "__typename": "ProductCategory"
+        },
+        "productCount": 391,
+        "subcategories": [
+          {
+            "subcategory": {
+              "id": "194831492",
+              "name": "Shellfish",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 196,
             "__typename": "subcategoryOption"
           },
           {
             "subcategory": {
-              "id": "476813210",
-              "name": "Carrots",
-              "sortIndex": 27,
+              "id": "194832278",
+              "name": "Finfish",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 176,
+            "__typename": "subcategoryOption"
+          },
+          {
+            "subcategory": {
+              "id": "194836799",
+              "name": "Specialty Seafood",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 19,
+            "__typename": "subcategoryOption"
+          }
+        ],
+        "__typename": "categoryOption"
+      },
+      {
+        "category": {
+          "id": "194830804",
+          "baseName": "produce",
+          "examplePictureUrl": null,
+          "iconAltUrl": null,
+          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/f77c84d22f7ea2809320482302157e42.jpg",
+          "name": "Produce",
+          "sortIndex": "9",
+          "visibleOnHeader": true,
+          "visibleOnSidebar": true,
+          "__typename": "ProductCategory"
+        },
+        "productCount": 719,
+        "subcategories": [
+          {
+            "subcategory": {
+              "id": "194835126",
+              "name": "Vegetables",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 522,
+            "__typename": "subcategoryOption"
+          },
+          {
+            "subcategory": {
+              "id": "194830805",
+              "name": "Fruits",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 197,
+            "__typename": "subcategoryOption"
+          }
+        ],
+        "__typename": "categoryOption"
+      },
+      {
+        "category": {
+          "id": "194830817",
+          "baseName": "dairy",
+          "examplePictureUrl": null,
+          "iconAltUrl": null,
+          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/500a08a6b110444940005444bff383f7.jpg",
+          "name": "Dairy",
+          "sortIndex": "11",
+          "visibleOnHeader": true,
+          "visibleOnSidebar": true,
+          "__typename": "ProductCategory"
+        },
+        "productCount": 403,
+        "subcategories": [
+          {
+            "subcategory": {
+              "id": "194831038",
+              "name": "Dairy Frozen",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 66,
+            "__typename": "subcategoryOption"
+          },
+          {
+            "subcategory": {
+              "id": "194836338",
+              "name": "Cheese",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 196,
+            "__typename": "subcategoryOption"
+          },
+          {
+            "subcategory": {
+              "id": "194830818",
+              "name": "Cultured Dairy",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 36,
+            "__typename": "subcategoryOption"
+          },
+          {
+            "subcategory": {
+              "id": "194836313",
+              "name": "Butter/margarine",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 24,
+            "__typename": "subcategoryOption"
+          },
+          {
+            "subcategory": {
+              "id": "194836290",
+              "name": "Eggs",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 30,
+            "__typename": "subcategoryOption"
+          },
+          {
+            "subcategory": {
+              "id": "194830821",
+              "name": "Milk",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 51,
+            "__typename": "subcategoryOption"
+          }
+        ],
+        "__typename": "categoryOption"
+      },
+      {
+        "category": {
+          "id": "168756161",
+          "baseName": "frozen fruits & vegetable",
+          "examplePictureUrl": null,
+          "iconAltUrl": null,
+          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/6ea3840f0e39f2ba54283b3bd336a0c3.jpg",
+          "name": "Frozen Fruits & Vegetable",
+          "sortIndex": "13",
+          "visibleOnHeader": true,
+          "visibleOnSidebar": true,
+          "__typename": "ProductCategory"
+        },
+        "productCount": 204,
+        "subcategories": [
+          {
+            "subcategory": {
+              "id": "194831662",
+              "name": "Vegetables",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 169,
+            "__typename": "subcategoryOption"
+          },
+          {
+            "subcategory": {
+              "id": "194837246",
+              "name": "Fruits",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 35,
+            "__typename": "subcategoryOption"
+          }
+        ],
+        "__typename": "categoryOption"
+      },
+      {
+        "category": {
+          "id": "194831066",
+          "baseName": "frozen and refr goods",
+          "examplePictureUrl": null,
+          "iconAltUrl": null,
+          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/aa90c0dd2a3466aeaade51858481c694.jpg",
+          "name": "Frozen And Refr Goods",
+          "sortIndex": "14",
+          "visibleOnHeader": true,
+          "visibleOnSidebar": true,
+          "__typename": "ProductCategory"
+        },
+        "productCount": 1523,
+        "subcategories": [
+          {
+            "subcategory": {
+              "id": "194831547",
+              "name": "Dressings",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 30,
+            "__typename": "subcategoryOption"
+          },
+          {
+            "subcategory": {
+              "id": "194831163",
+              "name": "Appetizers Frz Or Refr",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 185,
+            "__typename": "subcategoryOption"
+          },
+          {
+            "subcategory": {
+              "id": "194831349",
+              "name": "Pork & Processed Meats",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 133,
+            "__typename": "subcategoryOption"
+          },
+          {
+            "subcategory": {
+              "id": "194831067",
+              "name": "Bakery Frozen",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 783,
+            "__typename": "subcategoryOption"
+          },
+          {
+            "subcategory": {
+              "id": "194838322",
+              "name": "Bib - Frozen Drinks",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 22,
+            "__typename": "subcategoryOption"
+          },
+          {
+            "subcategory": {
+              "id": "194836461",
+              "name": "Chicken Further Processed",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 43,
+            "__typename": "subcategoryOption"
+          },
+          {
+            "subcategory": {
+              "id": "194832310",
+              "name": "Pasta Frozen",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 63,
+            "__typename": "subcategoryOption"
+          },
+          {
+            "subcategory": {
+              "id": "194836454",
+              "name": "Turkey Further Processed",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 28,
+            "__typename": "subcategoryOption"
+          },
+          {
+            "subcategory": {
+              "id": "194831495",
+              "name": "Sauces Bases & Gravies",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 70,
+            "__typename": "subcategoryOption"
+          },
+          {
+            "subcategory": {
+              "id": "194831281",
+              "name": "Pizza: Crust/dough",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 59,
+            "__typename": "subcategoryOption"
+          },
+          {
+            "subcategory": {
+              "id": "194831345",
+              "name": "Entrees Frz Or Refr",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 79,
+            "__typename": "subcategoryOption"
+          },
+          {
+            "subcategory": {
+              "id": "194831481",
+              "name": "Soups & Chili Refr",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 27,
+            "__typename": "subcategoryOption"
+          },
+          {
+            "subcategory": {
+              "id": "194836387",
+              "name": "Unassigned",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 1,
+            "__typename": "subcategoryOption"
+          }
+        ],
+        "__typename": "categoryOption"
+      },
+      {
+        "category": {
+          "id": "194830808",
+          "baseName": "dry-canned fr & veg",
+          "examplePictureUrl": null,
+          "iconAltUrl": null,
+          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/a0abb8b821a90d4bc236dcb1a0f4e024.jpg",
+          "name": "Dry-canned Fr & Veg",
+          "sortIndex": "15",
+          "visibleOnHeader": true,
+          "visibleOnSidebar": true,
+          "__typename": "ProductCategory"
+        },
+        "productCount": 292,
+        "subcategories": [
+          {
+            "subcategory": {
+              "id": "194831422",
+              "name": "Vegetables",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 167,
+            "__typename": "subcategoryOption"
+          },
+          {
+            "subcategory": {
+              "id": "194830809",
+              "name": "Fruits",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 125,
+            "__typename": "subcategoryOption"
+          }
+        ],
+        "__typename": "categoryOption"
+      },
+      {
+        "category": {
+          "id": "194834632",
+          "baseName": "shortenings and oils",
+          "examplePictureUrl": null,
+          "iconAltUrl": null,
+          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/da7860262fb728ade7f7696083a3710a.jpg",
+          "name": "Shortenings And Oils",
+          "sortIndex": "17",
+          "visibleOnHeader": true,
+          "visibleOnSidebar": true,
+          "__typename": "ProductCategory"
+        },
+        "productCount": 41,
+        "subcategories": [
+          {
+            "subcategory": {
+              "id": "194834633",
+              "name": "Olive Oil",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 10,
+            "__typename": "subcategoryOption"
+          },
+          {
+            "subcategory": {
+              "id": "194834731",
+              "name": "Pan Coatings & Sprays",
+              "sortIndex": 0,
               "__typename": "ProductSubcategory"
             },
             "productCount": 7,
@@ -1311,59 +731,373 @@ class SardilliScraper(CutScraper):
           },
           {
             "subcategory": {
-              "id": "476813212",
-              "name": "Cauliflower",
-              "sortIndex": 29,
+              "id": "194834666",
+              "name": "Frying Oil",
+              "sortIndex": 0,
               "__typename": "ProductSubcategory"
             },
-            "productCount": 2,
+            "productCount": 7,
             "__typename": "subcategoryOption"
           },
           {
             "subcategory": {
-              "id": "476813214",
-              "name": "Celery",
-              "sortIndex": 31,
+              "id": "194834653",
+              "name": "Other: Oil/shortenings",
+              "sortIndex": 0,
               "__typename": "ProductSubcategory"
             },
-            "productCount": 5,
+            "productCount": 17,
+            "__typename": "subcategoryOption"
+          }
+        ],
+        "__typename": "categoryOption"
+      },
+      {
+        "category": {
+          "id": "168755495",
+          "baseName": "dry groc, season & spices",
+          "examplePictureUrl": null,
+          "iconAltUrl": null,
+          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/0cf45464cb015e15e5d3a4e47b299c26.jpg",
+          "name": "Dry Groc, Season & Spices",
+          "sortIndex": "19",
+          "visibleOnHeader": true,
+          "visibleOnSidebar": true,
+          "__typename": "ProductCategory"
+        },
+        "productCount": 1842,
+        "subcategories": [
+          {
+            "subcategory": {
+              "id": "194831415",
+              "name": "Condiments",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 152,
             "__typename": "subcategoryOption"
           },
           {
             "subcategory": {
-              "id": "476813298",
-              "name": "Lettuce",
-              "sortIndex": 71,
+              "id": "194831207",
+              "name": "Spices & Seasoning",
+              "sortIndex": 0,
               "__typename": "ProductSubcategory"
             },
-            "productCount": 6,
+            "productCount": 324,
             "__typename": "subcategoryOption"
           },
           {
             "subcategory": {
-              "id": "476813312",
-              "name": "Onions",
-              "sortIndex": 82,
+              "id": "194831104",
+              "name": "Snacks Shelf Stable",
+              "sortIndex": 0,
               "__typename": "ProductSubcategory"
             },
-            "productCount": 2,
+            "productCount": 303,
             "__typename": "subcategoryOption"
           },
           {
             "subcategory": {
-              "id": "476813329",
-              "name": "Potatoes",
-              "sortIndex": 98,
+              "id": "194831081",
+              "name": "Sauces Bases & Gravies",
+              "sortIndex": 0,
               "__typename": "ProductSubcategory"
             },
-            "productCount": 11,
+            "productCount": 312,
             "__typename": "subcategoryOption"
           },
           {
             "subcategory": {
-              "id": "476813337",
-              "name": "Salads",
-              "sortIndex": 105,
+              "id": "194831072",
+              "name": "Bakery Mixes/ingredients",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 435,
+            "__typename": "subcategoryOption"
+          },
+          {
+            "subcategory": {
+              "id": "168755713",
+              "name": "Meats & Soup Shelf Stable",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 59,
+            "__typename": "subcategoryOption"
+          },
+          {
+            "subcategory": {
+              "id": "194832391",
+              "name": "Cereal",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 51,
+            "__typename": "subcategoryOption"
+          },
+          {
+            "subcategory": {
+              "id": "194831545",
+              "name": "Dressings",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 67,
+            "__typename": "subcategoryOption"
+          },
+          {
+            "subcategory": {
+              "id": "194831488",
+              "name": "Pasta Shelf Stable",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 77,
+            "__typename": "subcategoryOption"
+          },
+          {
+            "subcategory": {
+              "id": "194831688",
+              "name": "Vinegar & Cooking Wine",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 28,
+            "__typename": "subcategoryOption"
+          },
+          {
+            "subcategory": {
+              "id": "194834427",
+              "name": "Rice",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 21,
+            "__typename": "subcategoryOption"
+          },
+          {
+            "subcategory": {
+              "id": "194831176",
+              "name": "Unassigned",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 13,
+            "__typename": "subcategoryOption"
+          }
+        ],
+        "__typename": "categoryOption"
+      },
+      {
+        "category": {
+          "id": "194828602",
+          "baseName": "disposables",
+          "examplePictureUrl": null,
+          "iconAltUrl": null,
+          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/1b47ff15b8270d5f1309b5e7be02c4a8.jpg",
+          "name": "Disposables",
+          "sortIndex": "20",
+          "visibleOnHeader": true,
+          "visibleOnSidebar": true,
+          "__typename": "ProductCategory"
+        },
+        "productCount": 1760,
+        "subcategories": [
+          {
+            "subcategory": {
+              "id": "194828890",
+              "name": "Drinkware",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 323,
+            "__typename": "subcategoryOption"
+          },
+          {
+            "subcategory": {
+              "id": "194828731",
+              "name": "Other: Disposables",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 88,
+            "__typename": "subcategoryOption"
+          },
+          {
+            "subcategory": {
+              "id": "194828615",
+              "name": "Containers & Lids",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 544,
+            "__typename": "subcategoryOption"
+          },
+          {
+            "subcategory": {
+              "id": "194830656",
+              "name": "Napkin Towels & Tissue",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 124,
+            "__typename": "subcategoryOption"
+          },
+          {
+            "subcategory": {
+              "id": "194828692",
+              "name": "Can Liners & Storage Bags",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 166,
+            "__typename": "subcategoryOption"
+          },
+          {
+            "subcategory": {
+              "id": "194830933",
+              "name": "Menu Covers",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 44,
+            "__typename": "subcategoryOption"
+          },
+          {
+            "subcategory": {
+              "id": "194828603",
+              "name": "Film Foil & Wraps",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 97,
+            "__typename": "subcategoryOption"
+          },
+          {
+            "subcategory": {
+              "id": "194830751",
+              "name": "Placemats & Coasters",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 18,
+            "__typename": "subcategoryOption"
+          },
+          {
+            "subcategory": {
+              "id": "194830848",
+              "name": "Gloves",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 29,
+            "__typename": "subcategoryOption"
+          },
+          {
+            "subcategory": {
+              "id": "194828892",
+              "name": "Dinnerware",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 116,
+            "__typename": "subcategoryOption"
+          },
+          {
+            "subcategory": {
+              "id": "194828688",
+              "name": "Table Covers",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 17,
+            "__typename": "subcategoryOption"
+          },
+          {
+            "subcategory": {
+              "id": "194828899",
+              "name": "Trays & Pans",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 81,
+            "__typename": "subcategoryOption"
+          },
+          {
+            "subcategory": {
+              "id": "194830513",
+              "name": "Cutlery",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 90,
+            "__typename": "subcategoryOption"
+          },
+          {
+            "subcategory": {
+              "id": "194830602",
+              "name": "Toothpick/marker/skewer",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 22,
+            "__typename": "subcategoryOption"
+          },
+          {
+            "subcategory": {
+              "id": "483685641",
+              "name": "Napkins",
+              "sortIndex": 1,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 1,
+            "__typename": "subcategoryOption"
+          }
+        ],
+        "__typename": "categoryOption"
+      },
+      {
+        "category": {
+          "id": "222086318",
+          "baseName": "supplies and equipment",
+          "examplePictureUrl": null,
+          "iconAltUrl": null,
+          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/b43d5bf64cb904406bffeff356ae1daf.jpg",
+          "name": "Supplies And Equipment",
+          "sortIndex": "22",
+          "visibleOnHeader": true,
+          "visibleOnSidebar": true,
+          "__typename": "ProductCategory"
+        },
+        "productCount": 3752,
+        "subcategories": [
+          {
+            "subcategory": {
+              "id": "222086319",
+              "name": "Smallwares Equipment",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 3314,
+            "__typename": "subcategoryOption"
+          },
+          {
+            "subcategory": {
+              "id": "222087660",
+              "name": "Miscellaneous Equipment",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 154,
+            "__typename": "subcategoryOption"
+          },
+          {
+            "subcategory": {
+              "id": "404870551",
+              "name": "Salad Cups",
+              "sortIndex": 0,
               "__typename": "ProductSubcategory"
             },
             "productCount": 1,
@@ -1371,103 +1105,39 @@ class SardilliScraper(CutScraper):
           },
           {
             "subcategory": {
-              "id": "497910951",
-              "name": "Grapefruit",
-              "sortIndex": 128,
+              "id": "222088602",
+              "name": "Beverage Equipment",
+              "sortIndex": 0,
               "__typename": "ProductSubcategory"
             },
-            "productCount": 1,
-            "__typename": "subcategoryOption"
-          }
-        ],
-        "__typename": "categoryOption"
-      },
-      {
-        "category": {
-          "id": "476813205",
-          "baseName": "butter",
-          "examplePictureUrl": null,
-          "iconAltUrl": null,
-          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/883460dec082b592bb0592a78184f10f.jpg",
-          "name": "Butter",
-          "sortIndex": "5",
-          "visibleOnHeader": true,
-          "visibleOnSidebar": true,
-          "__typename": "ProductCategory"
-        },
-        "productCount": 6,
-        "subcategories": [
-          {
-            "subcategory": {
-              "id": "476813206",
-              "name": "Butter",
-              "sortIndex": 23,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 5,
+            "productCount": 121,
             "__typename": "subcategoryOption"
           },
           {
             "subcategory": {
-              "id": "476813302",
-              "name": "Margarine",
-              "sortIndex": 74,
+              "id": "222090087",
+              "name": "Food Warmers & Holding Eq",
+              "sortIndex": 0,
               "__typename": "ProductSubcategory"
             },
-            "productCount": 1,
+            "productCount": 53,
             "__typename": "subcategoryOption"
-          }
-        ],
-        "__typename": "categoryOption"
-      },
-      {
-        "category": {
-          "id": "476813215",
-          "baseName": "cheese",
-          "examplePictureUrl": null,
-          "iconAltUrl": null,
-          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/a1700adc4ec0d733c387416bbca2df83.jpg",
-          "name": "Cheese",
-          "sortIndex": "6",
-          "visibleOnHeader": true,
-          "visibleOnSidebar": true,
-          "__typename": "ProductCategory"
-        },
-        "productCount": 96,
-        "subcategories": [
+          },
           {
             "subcategory": {
-              "id": "476813216",
-              "name": "Cheese",
-              "sortIndex": 32,
+              "id": "222088987",
+              "name": "Cooking Equipment",
+              "sortIndex": 0,
               "__typename": "ProductSubcategory"
             },
-            "productCount": 96,
+            "productCount": 19,
             "__typename": "subcategoryOption"
-          }
-        ],
-        "__typename": "categoryOption"
-      },
-      {
-        "category": {
-          "id": "476813242",
-          "baseName": "dairy",
-          "examplePictureUrl": null,
-          "iconAltUrl": null,
-          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/a5bf61067d45473b409bf61a05c14460.jpg",
-          "name": "Dairy",
-          "sortIndex": "7",
-          "visibleOnHeader": true,
-          "visibleOnSidebar": true,
-          "__typename": "ProductCategory"
-        },
-        "productCount": 53,
-        "subcategories": [
+          },
           {
             "subcategory": {
-              "id": "476813243",
-              "name": "Cheese",
-              "sortIndex": 33,
+              "id": "407374746",
+              "name": "Filters",
+              "sortIndex": 0,
               "__typename": "ProductSubcategory"
             },
             "productCount": 2,
@@ -1475,32 +1145,62 @@ class SardilliScraper(CutScraper):
           },
           {
             "subcategory": {
-              "id": "476813258",
-              "name": "Cream",
-              "sortIndex": 39,
+              "id": "407374741",
+              "name": "Refrigeration Equipment",
+              "sortIndex": 0,
               "__typename": "ProductSubcategory"
             },
-            "productCount": 11,
+            "productCount": 2,
             "__typename": "subcategoryOption"
           },
           {
             "subcategory": {
-              "id": "476813305",
-              "name": "Milk",
-              "sortIndex": 77,
+              "id": "407374442",
+              "name": "Dish Washing Equipment",
+              "sortIndex": 0,
               "__typename": "ProductSubcategory"
             },
-            "productCount": 25,
+            "productCount": 8,
             "__typename": "subcategoryOption"
           },
           {
             "subcategory": {
-              "id": "476813355",
-              "name": "Yogurt",
-              "sortIndex": 122,
+              "id": "407374504",
+              "name": "Blenders",
+              "sortIndex": 0,
               "__typename": "ProductSubcategory"
             },
-            "productCount": 15,
+            "productCount": 1,
+            "__typename": "subcategoryOption"
+          },
+          {
+            "subcategory": {
+              "id": "407374447",
+              "name": "Cutlery",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 1,
+            "__typename": "subcategoryOption"
+          },
+          {
+            "subcategory": {
+              "id": "407374440",
+              "name": "Cleaners",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 4,
+            "__typename": "subcategoryOption"
+          },
+          {
+            "subcategory": {
+              "id": "596875439",
+              "name": "Db Equipment",
+              "sortIndex": 2,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 72,
             "__typename": "subcategoryOption"
           }
         ],
@@ -1508,27 +1208,107 @@ class SardilliScraper(CutScraper):
       },
       {
         "category": {
-          "id": "476813262",
-          "baseName": "eggs",
+          "id": "194829492",
+          "baseName": "janitorial and chemical",
           "examplePictureUrl": null,
           "iconAltUrl": null,
-          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/09a0e9b1b7339b3661835526162adb70.jpg",
-          "name": "Eggs",
-          "sortIndex": "8",
+          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/e4f1c868a73fb925e87cc48c2aa11d41.jpg",
+          "name": "Janitorial And Chemical",
+          "sortIndex": "24",
           "visibleOnHeader": true,
           "visibleOnSidebar": true,
           "__typename": "ProductCategory"
         },
-        "productCount": 3,
+        "productCount": 379,
         "subcategories": [
           {
             "subcategory": {
-              "id": "476813263",
-              "name": "Eggs",
-              "sortIndex": 43,
+              "id": "194829855",
+              "name": "Cleaners",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 135,
+            "__typename": "subcategoryOption"
+          },
+          {
+            "subcategory": {
+              "id": "194829844",
+              "name": "Janitorial Equipment",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 136,
+            "__typename": "subcategoryOption"
+          },
+          {
+            "subcategory": {
+              "id": "194830082",
+              "name": "Insecticide",
+              "sortIndex": 0,
               "__typename": "ProductSubcategory"
             },
             "productCount": 3,
+            "__typename": "subcategoryOption"
+          },
+          {
+            "subcategory": {
+              "id": "194829925",
+              "name": "Odor Control",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 8,
+            "__typename": "subcategoryOption"
+          },
+          {
+            "subcategory": {
+              "id": "194830017",
+              "name": "Hygiene/dispenser",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 56,
+            "__typename": "subcategoryOption"
+          },
+          {
+            "subcategory": {
+              "id": "194829493",
+              "name": "Warewash",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 14,
+            "__typename": "subcategoryOption"
+          },
+          {
+            "subcategory": {
+              "id": "194835104",
+              "name": "Dish And Laundry",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 16,
+            "__typename": "subcategoryOption"
+          },
+          {
+            "subcategory": {
+              "id": "194830304",
+              "name": "Unassigned",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 1,
+            "__typename": "subcategoryOption"
+          },
+          {
+            "subcategory": {
+              "id": "194829941",
+              "name": "Laundry Chemicals",
+              "sortIndex": 0,
+              "__typename": "ProductSubcategory"
+            },
+            "productCount": 10,
             "__typename": "subcategoryOption"
           }
         ],
@@ -1541,31 +1321,7 @@ class SardilliScraper(CutScraper):
 
 	VENDOR_NAME = 'Wagner'
 	VENDOR_URL_NAME = 'wagner'
-	VENDOR_ID = 152858455
 	VERIFIED_VENDOR_ID = 152858455
-
-	DEFAULT_OPTIONS = {
-		'get_categories': False,
-		'scrape_products': False,
-		'process_csv': False,
-		'reprocess_csv': False,
-		'dedupe_csv': False,
-		'count_csv': False,
-		'process_extra': False,
-		'search_requests': False,
-		'test_products': 20000,
-		'max_products': 99,
-		'csv_start_row': 0,
-		'category_to_process': 0,
-		'test_categories': 100,
-		'chosen_category': '10001',  # Default to Meat
-		'url_output_file': '',
-		'data_output_file': '',
-		'home_directory': DEFAULT_DIRECTORY,
-		'url': 'https://app.cutanddry.com/catalog/sardilli?verifiedVendorId=369151799&categoryId=1&page=1',
-		'search_term': 'Spices',
-		'attempts': '40',
-	}
 
 	def __init__(self, options=None):
 		super().__init__(options)

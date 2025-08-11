@@ -1847,7 +1847,6 @@ class BiRiteScraper(CutScraper):
 
 	VENDOR_NAME = 'BiRite Foodservice Distributors'
 	VENDOR_URL_NAME = 'BiRite%20Foodservice%20Distributors'
-	VENDOR_ID = 247696227
 	VERIFIED_VENDOR_ID = 120984264
 
 	DEFAULT_OPTIONS = {

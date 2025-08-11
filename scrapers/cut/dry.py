@@ -71,7 +71,6 @@ class CutScraper(Scraper):
 
 	VENDOR_NAME = 'cut'
 	VENDOR_URL_NAME = 'cut'
-	VENDOR_ID = 247696227
 	VERIFIED_VENDOR_ID = 120984264
 
 	DEFAULT_OPTIONS = {

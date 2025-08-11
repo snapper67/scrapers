@@ -519,7 +519,6 @@ class PrimizieScraper(CutScraper):
 
 	VENDOR_NAME = 'Primizie NY'
 	VENDOR_URL_NAME = 'primizieny'
-	VENDOR_ID = 247696227
 	VERIFIED_VENDOR_ID = 120984264
 
 	DEFAULT_OPTIONS = {

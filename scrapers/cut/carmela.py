@@ -3,39 +3,39 @@ import json
 from scrapers.cut.dry import CutScraper
 
 
-class MapleValeScraper(CutScraper):
+class CarmelaScraper(CutScraper):
 
-	DEFAULT_DIRECTORY = '/Users/mark/Downloads/scrapers/maple_vale/'
+	DEFAULT_DIRECTORY = '/Users/mark/Downloads/scrapers/carmela/'
 
 
 	# Values to change
-	BASE_URL = "https://maplevale.cutanddry.com/catalog/maplevale?verifiedVendorId=106423628&categoryId=1&page=1"
+	BASE_URL = "https://app.cutanddry.com/catalog/carmela?verifiedVendorId=174874579&categoryId=1&page=1"
 	CATEGORIES = json.loads('''{
   "data": {
     "catalogCategoryOptions": [
       {
         "category": {
-          "id": "120035269",
-          "baseName": "steaks",
+          "id": "219987189",
+          "baseName": "dry grocery",
           "examplePictureUrl": null,
           "iconAltUrl": null,
-          "iconUrl": "https://cut-dry-assets.s3.us-east-2.amazonaws.com/category-images/106423628/Steaks.png",
-          "name": "Steaks",
+          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/5404dc637d29a06800fb50524d301908.jpg",
+          "name": "Dry Grocery",
           "sortIndex": "0",
           "visibleOnHeader": true,
           "visibleOnSidebar": true,
           "__typename": "ProductCategory"
         },
-        "productCount": 473,
+        "productCount": 3175,
         "subcategories": [
           {
             "subcategory": {
-              "id": "120043907",
-              "name": "Steaks",
+              "id": "219987190",
+              "name": "Dry Grocery",
               "sortIndex": 0,
               "__typename": "ProductSubcategory"
             },
-            "productCount": 473,
+            "productCount": 3175,
             "__typename": "subcategoryOption"
           }
         ],
@@ -43,27 +43,27 @@ class MapleValeScraper(CutScraper):
       },
       {
         "category": {
-          "id": "120035281",
-          "baseName": "specialty items",
+          "id": "220182397",
+          "baseName": "fresh herbs/produce",
           "examplePictureUrl": null,
           "iconAltUrl": null,
-          "iconUrl": "https://cut-dry-assets.s3.us-east-2.amazonaws.com/category-images/106423628/Specialty Items.png",
-          "name": "Specialty Items",
+          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/1d4f5a7df3f5c262eeaa20c96bba84a0.jpg",
+          "name": "Fresh Herbs/produce",
           "sortIndex": "1",
           "visibleOnHeader": true,
           "visibleOnSidebar": true,
           "__typename": "ProductCategory"
         },
-        "productCount": 772,
+        "productCount": 11,
         "subcategories": [
           {
             "subcategory": {
-              "id": "120043913",
-              "name": "Specialty Items",
-              "sortIndex": 0,
+              "id": "220182398",
+              "name": "Fresh Herbs/produce",
+              "sortIndex": 1,
               "__typename": "ProductSubcategory"
             },
-            "productCount": 772,
+            "productCount": 11,
             "__typename": "subcategoryOption"
           }
         ],
@@ -71,27 +71,27 @@ class MapleValeScraper(CutScraper):
       },
       {
         "category": {
-          "id": "120035378",
-          "baseName": "poultry",
+          "id": "220182399",
+          "baseName": "land based protein",
           "examplePictureUrl": null,
           "iconAltUrl": null,
-          "iconUrl": "https://cut-dry-assets.s3.us-east-2.amazonaws.com/category-images/106423628/Poultry.png",
-          "name": "Poultry",
+          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/bdba4214ac93a9bf35d1a16cfbf7be07.jpg",
+          "name": "Land Based Protein",
           "sortIndex": "2",
           "visibleOnHeader": true,
           "visibleOnSidebar": true,
           "__typename": "ProductCategory"
         },
-        "productCount": 387,
+        "productCount": 1687,
         "subcategories": [
           {
             "subcategory": {
-              "id": "120043969",
-              "name": "Poultry",
-              "sortIndex": 0,
+              "id": "220182400",
+              "name": "Land Based Protein",
+              "sortIndex": 1,
               "__typename": "ProductSubcategory"
             },
-            "productCount": 387,
+            "productCount": 1687,
             "__typename": "subcategoryOption"
           }
         ],
@@ -99,27 +99,27 @@ class MapleValeScraper(CutScraper):
       },
       {
         "category": {
-          "id": "120035401",
+          "id": "220182401",
           "baseName": "seafood",
           "examplePictureUrl": null,
           "iconAltUrl": null,
-          "iconUrl": "https://cut-dry-assets.s3.us-east-2.amazonaws.com/category-images/106423628/Seafood.png",
+          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/2c86b15ff62fd1aa98542d71bd4a22e9.jpg",
           "name": "Seafood",
           "sortIndex": "3",
           "visibleOnHeader": true,
           "visibleOnSidebar": true,
           "__typename": "ProductCategory"
         },
-        "productCount": 249,
+        "productCount": 1056,
         "subcategories": [
           {
             "subcategory": {
-              "id": "120044182",
+              "id": "220182402",
               "name": "Seafood",
-              "sortIndex": 0,
+              "sortIndex": 1,
               "__typename": "ProductSubcategory"
             },
-            "productCount": 249,
+            "productCount": 1056,
             "__typename": "subcategoryOption"
           }
         ],
@@ -127,27 +127,27 @@ class MapleValeScraper(CutScraper):
       },
       {
         "category": {
-          "id": "120035503",
-          "baseName": "dairy",
+          "id": "220182403",
+          "baseName": "cheese",
           "examplePictureUrl": null,
           "iconAltUrl": null,
-          "iconUrl": "https://cut-dry-assets.s3.us-east-2.amazonaws.com/category-images/106423628/Dairy.png",
-          "name": "Dairy",
+          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/503e5f0cffd759fc1963a46dd6adb1f5.jpg",
+          "name": "Cheese",
           "sortIndex": "4",
           "visibleOnHeader": true,
           "visibleOnSidebar": true,
           "__typename": "ProductCategory"
         },
-        "productCount": 650,
+        "productCount": 715,
         "subcategories": [
           {
             "subcategory": {
-              "id": "120044193",
-              "name": "Dairy",
-              "sortIndex": 0,
+              "id": "220182404",
+              "name": "Cheese",
+              "sortIndex": 1,
               "__typename": "ProductSubcategory"
             },
-            "productCount": 650,
+            "productCount": 715,
             "__typename": "subcategoryOption"
           }
         ],
@@ -155,27 +155,27 @@ class MapleValeScraper(CutScraper):
       },
       {
         "category": {
-          "id": "120035542",
-          "baseName": "produce",
+          "id": "220182405",
+          "baseName": "deli",
           "examplePictureUrl": null,
           "iconAltUrl": null,
-          "iconUrl": "https://cut-dry-assets.s3.us-east-2.amazonaws.com/category-images/106423628/Produce.png",
-          "name": "Produce",
+          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/09ff3639bc850c8d28a9c34a4a5978fe.jpg",
+          "name": "Deli",
           "sortIndex": "5",
           "visibleOnHeader": true,
           "visibleOnSidebar": true,
           "__typename": "ProductCategory"
         },
-        "productCount": 312,
+        "productCount": 369,
         "subcategories": [
           {
             "subcategory": {
-              "id": "120044287",
-              "name": "Produce",
-              "sortIndex": 0,
+              "id": "220182406",
+              "name": "Deli",
+              "sortIndex": 1,
               "__typename": "ProductSubcategory"
             },
-            "productCount": 312,
+            "productCount": 369,
             "__typename": "subcategoryOption"
           }
         ],
@@ -183,27 +183,27 @@ class MapleValeScraper(CutScraper):
       },
       {
         "category": {
-          "id": "120035548",
-          "baseName": "beverages",
+          "id": "220182407",
+          "baseName": "frozen dessert",
           "examplePictureUrl": null,
           "iconAltUrl": null,
-          "iconUrl": "https://cut-dry-assets.s3.us-east-2.amazonaws.com/category-images/106423628/Beverages.png",
-          "name": "Beverages",
+          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/5ffa0cee54f74109011cbd55e156108d.jpg",
+          "name": "Frozen Dessert",
           "sortIndex": "6",
           "visibleOnHeader": true,
           "visibleOnSidebar": true,
           "__typename": "ProductCategory"
         },
-        "productCount": 165,
+        "productCount": 170,
         "subcategories": [
           {
             "subcategory": {
-              "id": "120044290",
-              "name": "Beverages",
-              "sortIndex": 0,
+              "id": "220182408",
+              "name": "Frozen Dessert",
+              "sortIndex": 1,
               "__typename": "ProductSubcategory"
             },
-            "productCount": 165,
+            "productCount": 170,
             "__typename": "subcategoryOption"
           }
         ],
@@ -211,27 +211,27 @@ class MapleValeScraper(CutScraper):
       },
       {
         "category": {
-          "id": "120035903",
-          "baseName": "disposables",
+          "id": "220182409",
+          "baseName": "beverage",
           "examplePictureUrl": null,
           "iconAltUrl": null,
-          "iconUrl": "https://cut-dry-assets.s3.us-east-2.amazonaws.com/category-images/106423628/Disposable.png",
-          "name": "Disposables",
+          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/2a4362a643dcf116294f19fcd185c6b5.jpg",
+          "name": "Beverage",
           "sortIndex": "7",
           "visibleOnHeader": true,
           "visibleOnSidebar": true,
           "__typename": "ProductCategory"
         },
-        "productCount": 810,
+        "productCount": 235,
         "subcategories": [
           {
             "subcategory": {
-              "id": "120044550",
-              "name": "Disposables",
-              "sortIndex": 0,
+              "id": "220182410",
+              "name": "Beverage",
+              "sortIndex": 1,
               "__typename": "ProductSubcategory"
             },
-            "productCount": 810,
+            "productCount": 235,
             "__typename": "subcategoryOption"
           }
         ],
@@ -239,27 +239,27 @@ class MapleValeScraper(CutScraper):
       },
       {
         "category": {
-          "id": "120043908",
-          "baseName": "meat",
+          "id": "220182411",
+          "baseName": "dairy",
           "examplePictureUrl": null,
           "iconAltUrl": null,
-          "iconUrl": "https://cut-dry-assets.s3.us-east-2.amazonaws.com/category-images/106423628/Meat.png",
-          "name": "Meat",
+          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/ff7766eca59f58a4ebaee1b0617f93d2.jpg",
+          "name": "Dairy",
           "sortIndex": "8",
           "visibleOnHeader": true,
           "visibleOnSidebar": true,
           "__typename": "ProductCategory"
         },
-        "productCount": 913,
+        "productCount": 35,
         "subcategories": [
           {
             "subcategory": {
-              "id": "120043909",
-              "name": "Meat",
-              "sortIndex": 0,
+              "id": "220182412",
+              "name": "Dairy",
+              "sortIndex": 1,
               "__typename": "ProductSubcategory"
             },
-            "productCount": 913,
+            "productCount": 35,
             "__typename": "subcategoryOption"
           }
         ],
@@ -267,27 +267,27 @@ class MapleValeScraper(CutScraper):
       },
       {
         "category": {
-          "id": "120043979",
-          "baseName": "frozen foods",
+          "id": "220182414",
+          "baseName": "coffee",
           "examplePictureUrl": null,
           "iconAltUrl": null,
-          "iconUrl": "https://cut-dry-assets.s3.us-east-2.amazonaws.com/category-images/106423628/Frozen+Foods.png",
-          "name": "Frozen Foods",
+          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/12925d04fd2c48ca9711672f59fed5b0.jpg",
+          "name": "Coffee",
           "sortIndex": "9",
           "visibleOnHeader": true,
           "visibleOnSidebar": true,
           "__typename": "ProductCategory"
         },
-        "productCount": 1078,
+        "productCount": 202,
         "subcategories": [
           {
             "subcategory": {
-              "id": "120043981",
-              "name": "Frozen Foods",
-              "sortIndex": 0,
+              "id": "220182415",
+              "name": "Coffee",
+              "sortIndex": 1,
               "__typename": "ProductSubcategory"
             },
-            "productCount": 1078,
+            "productCount": 202,
             "__typename": "subcategoryOption"
           }
         ],
@@ -295,27 +295,27 @@ class MapleValeScraper(CutScraper):
       },
       {
         "category": {
-          "id": "120044179",
-          "baseName": "pantry essentials",
+          "id": "220182420",
+          "baseName": "frozen bakery",
           "examplePictureUrl": null,
           "iconAltUrl": null,
-          "iconUrl": "https://cut-dry-assets.s3.us-east-2.amazonaws.com/category-images/106423628/Pantry+Essentials.png",
-          "name": "Pantry Essentials",
+          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/9979b28ef46385a2988d8bd5c9751d9f.jpg",
+          "name": "Frozen Bakery",
           "sortIndex": "10",
           "visibleOnHeader": true,
           "visibleOnSidebar": true,
           "__typename": "ProductCategory"
         },
-        "productCount": 823,
+        "productCount": 252,
         "subcategories": [
           {
             "subcategory": {
-              "id": "120044180",
-              "name": "Pantry Essentials",
-              "sortIndex": 0,
+              "id": "220182421",
+              "name": "Frozen Bakery",
+              "sortIndex": 1,
               "__typename": "ProductSubcategory"
             },
-            "productCount": 823,
+            "productCount": 252,
             "__typename": "subcategoryOption"
           }
         ],
@@ -323,27 +323,27 @@ class MapleValeScraper(CutScraper):
       },
       {
         "category": {
-          "id": "120044190",
-          "baseName": "grocery",
+          "id": "220182422",
+          "baseName": "chef source",
           "examplePictureUrl": null,
           "iconAltUrl": null,
-          "iconUrl": "https://cut-dry-assets.s3.us-east-2.amazonaws.com/category-images/106423628/Grocery.png",
-          "name": "Grocery",
+          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/b65866364c50b6a31fa55d7356aa587d.jpg",
+          "name": "Chef Source",
           "sortIndex": "11",
           "visibleOnHeader": true,
           "visibleOnSidebar": true,
           "__typename": "ProductCategory"
         },
-        "productCount": 1957,
+        "productCount": 2507,
         "subcategories": [
           {
             "subcategory": {
-              "id": "120044191",
-              "name": "Grocery",
-              "sortIndex": 0,
+              "id": "220182423",
+              "name": "Chef Source",
+              "sortIndex": 1,
               "__typename": "ProductSubcategory"
             },
-            "productCount": 1957,
+            "productCount": 2507,
             "__typename": "subcategoryOption"
           }
         ],
@@ -351,27 +351,27 @@ class MapleValeScraper(CutScraper):
       },
       {
         "category": {
-          "id": "120044196",
-          "baseName": "kitchen utensils",
+          "id": "220182428",
+          "baseName": "frozen grocery",
           "examplePictureUrl": null,
           "iconAltUrl": null,
-          "iconUrl": "https://cut-dry-assets.s3.us-east-2.amazonaws.com/category-images/106423628/Kitchen+Utensils.png",
-          "name": "Kitchen Utensils",
+          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/1fc802236bb0af4781a409355a89fbbd.jpg",
+          "name": "Frozen Grocery",
           "sortIndex": "12",
           "visibleOnHeader": true,
           "visibleOnSidebar": true,
           "__typename": "ProductCategory"
         },
-        "productCount": 482,
+        "productCount": 237,
         "subcategories": [
           {
             "subcategory": {
-              "id": "120044197",
-              "name": "Kitchen Utensils",
-              "sortIndex": 0,
+              "id": "220182429",
+              "name": "Frozen Grocery",
+              "sortIndex": 1,
               "__typename": "ProductSubcategory"
             },
-            "productCount": 482,
+            "productCount": 237,
             "__typename": "subcategoryOption"
           }
         ],
@@ -379,55 +379,27 @@ class MapleValeScraper(CutScraper):
       },
       {
         "category": {
-          "id": "120044211",
-          "baseName": "bakery",
+          "id": "456485712",
+          "baseName": "frozen",
           "examplePictureUrl": null,
           "iconAltUrl": null,
-          "iconUrl": "https://cut-dry-assets.s3.us-east-2.amazonaws.com/category-images/106423628/Bakery.png",
-          "name": "Bakery",
-          "sortIndex": "13",
+          "iconUrl": null,
+          "name": "Frozen",
+          "sortIndex": "16",
           "visibleOnHeader": true,
           "visibleOnSidebar": true,
           "__typename": "ProductCategory"
         },
-        "productCount": 906,
+        "productCount": 2,
         "subcategories": [
           {
             "subcategory": {
-              "id": "120044212",
-              "name": "Bakery",
-              "sortIndex": 0,
+              "id": "456485713",
+              "name": "Frozen",
+              "sortIndex": 3,
               "__typename": "ProductSubcategory"
             },
-            "productCount": 906,
-            "__typename": "subcategoryOption"
-          }
-        ],
-        "__typename": "categoryOption"
-      },
-      {
-        "category": {
-          "id": "120035271",
-          "baseName": "other",
-          "examplePictureUrl": null,
-          "iconAltUrl": null,
-          "iconUrl": "https://cut-dry-assets.s3.us-east-2.amazonaws.com/category-images/106423628/Other.png",
-          "name": "Other",
-          "sortIndex": "14",
-          "visibleOnHeader": true,
-          "visibleOnSidebar": true,
-          "__typename": "ProductCategory"
-        },
-        "productCount": 936,
-        "subcategories": [
-          {
-            "subcategory": {
-              "id": "120044183",
-              "name": "Other",
-              "sortIndex": 0,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 936,
+            "productCount": 2,
             "__typename": "subcategoryOption"
           }
         ],
@@ -438,11 +410,10 @@ class MapleValeScraper(CutScraper):
 }
 		''')
 
-	VENDOR_NAME = 'Maple Vale'
-	VENDOR_URL_NAME = 'maplevale'
-	VERIFIED_VENDOR_ID = 106423628
-
-
+	VENDOR_NAME = 'Carmela'
+	VENDOR_URL_NAME = 'carmela'
+	VENDOR_ID = 174874579
+	VERIFIED_VENDOR_ID = 174874579
 
 	def __init__(self, options=None):
 		super().__init__(options)
