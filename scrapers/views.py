@@ -300,6 +300,7 @@ def update_cw_options(post_data, current_options):
 
     print(current_options)
     return current_options
+
 def scrape_cw(request):
     options = {}
     from scrapers.misc.chefswarehouse import ChefWarehouseScraper
@@ -378,6 +379,7 @@ def update_breakthru_options(post_data, current_options):
 
     print(current_options)
     return current_options
+
 def scrape_breakthru(request):
     options = {}
 
@@ -449,6 +451,7 @@ def update_sg_options(post_data, current_options):
 
     print(current_options)
     return current_options
+
 def scrape_sg(request):
     options = {}
 
@@ -490,181 +493,27 @@ def scrape_sg(request):
         'defaults': defaults,
     })
 
-def update_birite_options(post_data, current_options):
-    """
-    Update birite_options based on form POST data.
-
-    Args:
-        post_data: request.POST dictionary
-        current_options: Current birite_options to update
-
-    Returns:
-        Updated birite_options dictionary
-    """
-    # Update category and file names if category changes
-    category_id = post_data.get('category_id')
-    if category_id and int(category_id) != 0:
-        current_options['chosen_category'] = category_id
-        category_name = ''
-        current_options['category_url'] = ''
-        current_options['url_output_file'] = str(post_data.get('url_file', ''))
-        current_options['data_output_file'] = str(post_data.get('data_file', ''))
-    else:
-        category_name = 'All'
-        current_options['chosen_category'] = 0
-        current_options['url_output_file'] = current_options['home_directory']
-        current_options['data_output_file'] = ''
-    
-    # Update clean_urls option
-    current_options['clean_urls'] = post_data.get('clean_urls') == 'on'
-    current_options['category_name'] = category_name
-    current_options['direct_category_to_process'] = str(post_data.get('direct_category_to_process', ''))
-    current_options['attempts'] = int(post_data.get('attempts', 40))
-
-    print(current_options)
-    return current_options
-
-def scrape_birite(request):
-    options = {}
-
-    if request.method == 'POST':
-        with BiRiteScraper(options) as scraper:
-            print(request.POST)
-            distributor_options = scraper.get_options()
-
-            # Update options from form data
-            options = update_birite_options(request.POST, distributor_options)
-            options = update_common_options(request.POST, options)
-            
-            # Handle clean_urls option
-            if options.get('clean_urls'):
-                success, message = scraper.clean_url_file()
-                if success:
-                    result = f"<div class='alert alert-success'>{message}</div>"
-                else:
-                    result = f"<div class='alert alert-danger'>{message}</div>"
-                return render(request, 'scrape_products/scrape_results.html', {'result': result})
-            
-            # Run the scraper if not just cleaning URLs
-            scraper.set_options(options)
-            result = scraper.run()
-            return render(request, 'scrape_products/scrape_results.html', {'result': result})
-
-    # GET request - show form
-    scraper = BiRiteScraper()
+def process_cut_post(request, scraper):
+    print(request.POST)
     distributor_options = scraper.get_options()
-    categories_scraped = scraper.get_categories()
-    categories = []
-    categories.append({
-        'id': 0,
-        'name': 'All',
-        'url_file': f"product_urls.csv",
-        'data_file': f"product_data.csv"
-      })
-    for category in categories_scraped:
-        categories.append({
-            'id': category['id'],
-            'name': category['name'],
-            'url_file': f"{scraper.make_filename_safe(category['name']).lower()}_product_urls.csv",
-            'data_file': f"{scraper.make_filename_safe(category['name']).lower()}_product_data.csv"
-        })
 
-    defaults = set_defaults(distributor_options)
-    defaults.update({'attempts': 40})
+    # Update options from form data
+    options = update_cut_options(request.POST, distributor_options)
+    options = update_common_options(request.POST, options)
 
-    return render(request, 'scrape_products/scrape_cut.html', {
-        'categories': categories,
-        'defaults': defaults,
-        'name': scraper.get_name()
-    })
+    # Handle clean_urls option
+    if options.get('clean_urls'):
+        success, message = scraper.clean_url_file()
+        if success:
+            result = f"<div class='alert alert-success'>{message}</div>"
+        else:
+            result = f"<div class='alert alert-danger'>{message}</div>"
+        return render(request, 'scrape_products/scrape_results.html', {'result': result})
 
-def update_primizie_options(post_data, current_options):
-    """
-    Update birite_options based on form POST data.
-
-    Args:
-        post_data: request.POST dictionary
-        current_options: Current birite_options to update
-
-    Returns:
-        Updated birite_options dictionary
-    """
-    # Update category and file names if category changes
-    category_id = post_data.get('category_id')
-    if category_id and int(category_id) != 0:
-        current_options['chosen_category'] = category_id
-        category_name = ''
-        current_options['category_url'] = ''
-        current_options['url_output_file'] = str(post_data.get('url_file', ''))
-        current_options['data_output_file'] = str(post_data.get('data_file', ''))
-    else:
-        category_name = 'All'
-        current_options['chosen_category'] = 0
-        current_options['url_output_file'] = current_options['home_directory']
-        current_options['data_output_file'] = ''
-
-    # Update clean_urls option
-    current_options['clean_urls'] = post_data.get('clean_urls') == 'on'
-    current_options['category_name'] = category_name
-    current_options['direct_category_to_process'] = str(post_data.get('direct_category_to_process', ''))
-    current_options['attempts'] = int(post_data.get('attempts', 40))
-
-    print(current_options)
-    return current_options
-
-def scrape_primizie(request):
-    options = {}
-
-    if request.method == 'POST':
-        with PrimizieScraper(options) as scraper:
-            print(request.POST)
-            distributor_options = scraper.get_options()
-
-            # Update options from form data
-            options = update_primizie_options(request.POST, distributor_options)
-            options = update_common_options(request.POST, options)
-
-            # Handle clean_urls option
-            if options.get('clean_urls'):
-                success, message = scraper.clean_url_file()
-                if success:
-                    result = f"<div class='alert alert-success'>{message}</div>"
-                else:
-                    result = f"<div class='alert alert-danger'>{message}</div>"
-                return render(request, 'scrape_products/scrape_results.html', {'result': result})
-
-            # Run the scraper if not just cleaning URLs
-            scraper.set_options(options)
-            result = scraper.run()
-            return render(request, 'scrape_products/scrape_results.html', {'result': result})
-
-    # GET request - show form
-    scraper = PrimizieScraper()
-    distributor_options = scraper.get_options()
-    categories_scraped = scraper.get_categories()
-    categories = []
-    categories.append({
-        'id': 0,
-        'name': 'All',
-        'url_file': f"product_urls.csv",
-        'data_file': f"product_data.csv"
-    })
-    for category in categories_scraped:
-        categories.append({
-            'id': category['id'],
-            'name': category['name'],
-            'url_file': f"{scraper.make_filename_safe(category['name']).lower()}_product_urls.csv",
-            'data_file': f"{scraper.make_filename_safe(category['name']).lower()}_product_data.csv"
-        })
-
-    defaults = set_defaults(distributor_options)
-    defaults.update({'attempts': 40})
-
-    return render(request, 'scrape_products/scrape_cut.html', {
-        'categories': categories,
-        'defaults': defaults,
-        'name': scraper.get_name()
-    })
+    # Run the scraper if not just cleaning URLs
+    scraper.set_options(options)
+    result = scraper.run()
+    return result
 
 def update_cut_options(post_data, current_options):
     """
@@ -725,30 +574,58 @@ def update_cut_categories(post_data, scraper):
                 total_products += category['productCount']
     return categories, total_products
 
+def scrape_birite(request):
+    options = {}
+
+    if request.method == 'POST':
+        with BiRiteScraper(options) as scraper:
+            result = process_cut_post(request, scraper)
+            return render(request, 'scrape_products/scrape_results.html', {'result': result})
+
+    # GET request - show form
+    scraper = BiRiteScraper()
+    distributor_options = scraper.get_options()
+    categories, total_products = update_cut_categories(request.POST, scraper)
+
+    defaults = set_defaults(distributor_options)
+    defaults.update({'attempts': 40})
+
+    return render(request, 'scrape_products/scrape_cut.html', {
+        'categories': categories,
+        'defaults': defaults,
+        'name': scraper.get_name(),
+        'total_products': total_products
+    })
+
+def scrape_primizie(request):
+    options = {}
+
+    if request.method == 'POST':
+        with PrimizieScraper(options) as scraper:
+            result = process_cut_post(request, scraper)
+            return render(request, 'scrape_products/scrape_results.html', {'result': result})
+
+    # GET request - show form
+    scraper = PrimizieScraper()
+    distributor_options = scraper.get_options()
+    categories, total_products = update_cut_categories(request.POST, scraper)
+
+    defaults = set_defaults(distributor_options)
+    defaults.update({'attempts': 40})
+
+    return render(request, 'scrape_products/scrape_cut.html', {
+        'categories': categories,
+        'defaults': defaults,
+        'name': scraper.get_name(),
+        'total_products': total_products
+    })
+
 def scrape_sardilli(request):
     options = {}
 
     if request.method == 'POST':
         with SardilliScraper(options) as scraper:
-            print(request.POST)
-            distributor_options = scraper.get_options()
-
-            # Update options from form data
-            options = update_cut_options(request.POST, distributor_options)
-            options = update_common_options(request.POST, options)
-
-            # Handle clean_urls option
-            if options.get('clean_urls'):
-                success, message = scraper.clean_url_file()
-                if success:
-                    result = f"<div class='alert alert-success'>{message}</div>"
-                else:
-                    result = f"<div class='alert alert-danger'>{message}</div>"
-                return render(request, 'scrape_products/scrape_results.html', {'result': result})
-
-            # Run the scraper if not just cleaning URLs
-            scraper.set_options(options)
-            result = scraper.run()
+            result = process_cut_post(request, scraper)
             return render(request, 'scrape_products/scrape_results.html', {'result': result})
 
     # GET request - show form
@@ -771,25 +648,7 @@ def scrape_maple_valley(request):
 
     if request.method == 'POST':
         with MapleValeScraper(options) as scraper:
-            print(request.POST)
-            distributor_options = scraper.get_options()
-
-            # Update options from form data
-            options = update_cut_options(request.POST, distributor_options)
-            options = update_common_options(request.POST, options)
-
-            # Handle clean_urls option
-            if options.get('clean_urls'):
-                success, message = scraper.clean_url_file()
-                if success:
-                    result = f"<div class='alert alert-success'>{message}</div>"
-                else:
-                    result = f"<div class='alert alert-danger'>{message}</div>"
-                return render(request, 'scrape_products/scrape_results.html', {'result': result})
-
-            # Run the scraper if not just cleaning URLs
-            scraper.set_options(options)
-            result = scraper.run()
+            result = process_cut_post(request, scraper)
             return render(request, 'scrape_products/scrape_results.html', {'result': result})
 
     # GET request - show form
@@ -812,25 +671,7 @@ def scrape_wagner(request):
 
     if request.method == 'POST':
         with WagnerScraper(options) as scraper:
-            print(request.POST)
-            distributor_options = scraper.get_options()
-
-            # Update options from form data
-            options = update_cut_options(request.POST, distributor_options)
-            options = update_common_options(request.POST, options)
-
-            # Handle clean_urls option
-            if options.get('clean_urls'):
-                success, message = scraper.clean_url_file()
-                if success:
-                    result = f"<div class='alert alert-success'>{message}</div>"
-                else:
-                    result = f"<div class='alert alert-danger'>{message}</div>"
-                return render(request, 'scrape_products/scrape_results.html', {'result': result})
-
-            # Run the scraper if not just cleaning URLs
-            scraper.set_options(options)
-            result = scraper.run()
+            result = process_cut_post(request, scraper)
             return render(request, 'scrape_products/scrape_results.html', {'result': result})
 
     # GET request - show form
@@ -853,25 +694,7 @@ def scrape_carmela(request):
 
     if request.method == 'POST':
         with CarmelaScraper(options) as scraper:
-            print(request.POST)
-            distributor_options = scraper.get_options()
-
-            # Update options from form data
-            options = update_cut_options(request.POST, distributor_options)
-            options = update_common_options(request.POST, options)
-
-            # Handle clean_urls option
-            if options.get('clean_urls'):
-                success, message = scraper.clean_url_file()
-                if success:
-                    result = f"<div class='alert alert-success'>{message}</div>"
-                else:
-                    result = f"<div class='alert alert-danger'>{message}</div>"
-                return render(request, 'scrape_products/scrape_results.html', {'result': result})
-
-            # Run the scraper if not just cleaning URLs
-            scraper.set_options(options)
-            result = scraper.run()
+            result = process_cut_post(request, scraper)
             return render(request, 'scrape_products/scrape_results.html', {'result': result})
 
     # GET request - show form
@@ -894,25 +717,7 @@ def scrape_manson(request):
 
     if request.method == 'POST':
         with MansonScraper(options) as scraper:
-            print(request.POST)
-            distributor_options = scraper.get_options()
-
-            # Update options from form data
-            options = update_cut_options(request.POST, distributor_options)
-            options = update_common_options(request.POST, options)
-
-            # Handle clean_urls option
-            if options.get('clean_urls'):
-                success, message = scraper.clean_url_file()
-                if success:
-                    result = f"<div class='alert alert-success'>{message}</div>"
-                else:
-                    result = f"<div class='alert alert-danger'>{message}</div>"
-                return render(request, 'scrape_products/scrape_results.html', {'result': result})
-
-            # Run the scraper if not just cleaning URLs
-            scraper.set_options(options)
-            result = scraper.run()
+            result = process_cut_post(request, scraper)
             return render(request, 'scrape_products/scrape_results.html', {'result': result})
 
     # GET request - show form
@@ -929,30 +734,13 @@ def scrape_manson(request):
         'name': scraper.get_name(),
         'total_products': total_products
     })
+
 def scrape_indianhead(request):
     options = {}
 
     if request.method == 'POST':
         with IndianheadScraper(options) as scraper:
-            print(request.POST)
-            distributor_options = scraper.get_options()
-
-            # Update options from form data
-            options = update_cut_options(request.POST, distributor_options)
-            options = update_common_options(request.POST, options)
-
-            # Handle clean_urls option
-            if options.get('clean_urls'):
-                success, message = scraper.clean_url_file()
-                if success:
-                    result = f"<div class='alert alert-success'>{message}</div>"
-                else:
-                    result = f"<div class='alert alert-danger'>{message}</div>"
-                return render(request, 'scrape_products/scrape_results.html', {'result': result})
-
-            # Run the scraper if not just cleaning URLs
-            scraper.set_options(options)
-            result = scraper.run()
+            result = process_cut_post(request, scraper)
             return render(request, 'scrape_products/scrape_results.html', {'result': result})
 
     # GET request - show form
@@ -969,30 +757,13 @@ def scrape_indianhead(request):
         'name': scraper.get_name(),
         'total_products': total_products
     })
+
 def scrape_ab(request):
     options = {}
 
     if request.method == 'POST':
         with ABScraper(options) as scraper:
-            print(request.POST)
-            distributor_options = scraper.get_options()
-
-            # Update options from form data
-            options = update_cut_options(request.POST, distributor_options)
-            options = update_common_options(request.POST, options)
-
-            # Handle clean_urls option
-            if options.get('clean_urls'):
-                success, message = scraper.clean_url_file()
-                if success:
-                    result = f"<div class='alert alert-success'>{message}</div>"
-                else:
-                    result = f"<div class='alert alert-danger'>{message}</div>"
-                return render(request, 'scrape_products/scrape_results.html', {'result': result})
-
-            # Run the scraper if not just cleaning URLs
-            scraper.set_options(options)
-            result = scraper.run()
+            result = process_cut_post(request, scraper)
             return render(request, 'scrape_products/scrape_results.html', {'result': result})
 
     # GET request - show form
@@ -1014,25 +785,7 @@ def scrape_sandw(request):
 
     if request.method == 'POST':
         with SandWScraper(options) as scraper:
-            print(request.POST)
-            distributor_options = scraper.get_options()
-
-            # Update options from form data
-            options = update_cut_options(request.POST, distributor_options)
-            options = update_common_options(request.POST, options)
-
-            # Handle clean_urls option
-            if options.get('clean_urls'):
-                success, message = scraper.clean_url_file()
-                if success:
-                    result = f"<div class='alert alert-success'>{message}</div>"
-                else:
-                    result = f"<div class='alert alert-danger'>{message}</div>"
-                return render(request, 'scrape_products/scrape_results.html', {'result': result})
-
-            # Run the scraper if not just cleaning URLs
-            scraper.set_options(options)
-            result = scraper.run()
+            result = process_cut_post(request, scraper)
             return render(request, 'scrape_products/scrape_results.html', {'result': result})
 
     # GET request - show form
