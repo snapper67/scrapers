@@ -8,7 +8,7 @@ class ABScraper(CutScraper):
 	DEFAULT_DIRECTORY = '/Users/mark/Downloads/scrapers/ab/'
 
 	# Values to change
-	BASE_URL = "https://app.cutanddry.com/catalog/aandb?verifiedVendorId=1861824&categoryId=1&page=1"
+	BASE_URL = "https://app.cutanddry.com/catalog/aandb?verifiedVendorId=1861824&categoryId=1&categoryName=All+Items&page=1"
 	CATEGORIES = json.loads('''{
   "data": {
     "catalogCategoryOptions": [
@@ -410,7 +410,7 @@ class ABScraper(CutScraper):
 		''')
 
 	VENDOR_NAME = 'A & B'
-	VENDOR_URL_NAME = 'aandb?'
+	VENDOR_URL_NAME = 'aandb'
 	VERIFIED_VENDOR_ID = 1861824
 
 	def __init__(self, options=None):

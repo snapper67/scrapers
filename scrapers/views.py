@@ -776,6 +776,7 @@ def scrape_ab(request):
 
     return render(request, 'scrape_products/scrape_cut.html', {
         'categories': categories,
+        'defaults': defaults,
         'name': scraper.get_name(),
         'total_products': total_products
     })
