@@ -4,7 +4,9 @@ from django.views.generic import TemplateView
 from scrapers.cut.birite import BiRiteScraper
 from scrapers.cut.primizie import PrimizieScraper
 from scrapers.cut.sardilli import SardilliScraper
+from .cut.ab import ABScraper
 from .cut.carmela import CarmelaScraper
+from .cut.indianhead import IndianheadScraper
 from .cut.maple_vale import MapleValeScraper
 from .cut.wagner import WagnerScraper
 from .scraper import Scraper
@@ -862,6 +864,86 @@ def scrape_carmela(request):
 
     # GET request - show form
     scraper = CarmelaScraper()
+    distributor_options = scraper.get_options()
+    categories = update_cut_categories(request.POST, scraper)
+
+    defaults = set_defaults(distributor_options)
+    defaults.update({'attempts': 40})
+
+    return render(request, 'scrape_products/scrape_cut.html', {
+        'categories': categories,
+        'defaults': defaults,
+        'name': scraper.get_name()
+    })
+
+def scrape_indianhead(request):
+    options = {}
+
+    if request.method == 'POST':
+        with IndianheadScraper(options) as scraper:
+            print(request.POST)
+            distributor_options = scraper.get_options()
+
+            # Update options from form data
+            options = update_cut_options(request.POST, distributor_options)
+            options = update_common_options(request.POST, options)
+
+            # Handle clean_urls option
+            if options.get('clean_urls'):
+                success, message = scraper.clean_url_file()
+                if success:
+                    result = f"<div class='alert alert-success'>{message}</div>"
+                else:
+                    result = f"<div class='alert alert-danger'>{message}</div>"
+                return render(request, 'scrape_products/scrape_results.html', {'result': result})
+
+            # Run the scraper if not just cleaning URLs
+            scraper.set_options(options)
+            result = scraper.run()
+            return render(request, 'scrape_products/scrape_results.html', {'result': result})
+
+    # GET request - show form
+    scraper = IndianheadScraper()
+    distributor_options = scraper.get_options()
+    categories = update_cut_categories(request.POST, scraper)
+
+    defaults = set_defaults(distributor_options)
+    defaults.update({'attempts': 40})
+
+    return render(request, 'scrape_products/scrape_cut.html', {
+        'categories': categories,
+        'defaults': defaults,
+        'name': scraper.get_name()
+    })
+
+def scrape_ab(request):
+    options = {}
+
+    if request.method == 'POST':
+        with ABScraper(options) as scraper:
+            print(request.POST)
+            distributor_options = scraper.get_options()
+
+            # Update options from form data
+            options = update_cut_options(request.POST, distributor_options)
+            options = update_common_options(request.POST, options)
+
+            # Handle clean_urls option
+            if options.get('clean_urls'):
+                success, message = scraper.clean_url_file()
+                if success:
+                    result = f"<div class='alert alert-success'>{message}</div>"
+                else:
+                    result = f"<div class='alert alert-danger'>{message}</div>"
+                return render(request, 'scrape_products/scrape_results.html', {'result': result})
+
+            # Run the scraper if not just cleaning URLs
+            scraper.set_options(options)
+            result = scraper.run()
+            return render(request, 'scrape_products/scrape_results.html', {'result': result})
+
+    # GET request - show form
+    scraper = ABScraper()
     distributor_options = scraper.get_options()
     categories = update_cut_categories(request.POST, scraper)
 
