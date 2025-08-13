@@ -453,46 +453,124 @@
                     // Clear previous results
                     resultsBody.innerHTML = '';
                     let totalRows = 0;
+                    let totalUrlRows = 0;
+                    let totalDataRows = 0;
 
                     // Process results
                     for (const [dirPath, dirData] of Object.entries(data.results)) {
-                        let isFirstFile = true;
+                        // Group files by their base name (without _urls or _data suffix)
+                        const fileGroups = {};
 
                         dirData.files.forEach(file => {
-                            const row = document.createElement('tr');
-
-                            // Directory column (only show on first row for each directory)
-                            const dirCell = document.createElement('td');
-                            if (isFirstFile) {
-                                dirCell.textContent = dirPath || '.';
-                                dirCell.rowSpan = dirData.files.length;
-                                isFirstFile = false;
+                            // Extract base name (e.g., 'products' from 'products_urls.csv' or 'products_data.csv')
+                            const baseName = file.file_name.replace(/(_urls|_data)\.csv$/, '');
+                            if (!fileGroups[baseName]) {
+                                fileGroups[baseName] = {
+                                    urlFile: null,
+                                    dataFile: null,
+                                    dirPath: dirPath
+                                };
                             }
 
-                            // File name column
-                            const fileCell = document.createElement('td');
-                            fileCell.textContent = file.file_name;
-
-                            // Row count column
-                            const countCell = document.createElement('td');
-                            countCell.textContent = file.row_count.toLocaleString();
-                            countCell.className = 'text-end';
-
-                            // Add cells to row
-                            if (dirCell.textContent) {
-                                row.appendChild(dirCell);
+                            if (file.type === 'urls') {
+                                fileGroups[baseName].urlFile = file;
+                            } else if (file.type === 'data') {
+                                fileGroups[baseName].dataFile = file;
                             }
-                            row.appendChild(fileCell);
-                            row.appendChild(countCell);
-
-                            resultsBody.appendChild(row);
                         });
 
-                        totalRows += dirData.total_rows;
+                        // Create rows for each file group
+                        Object.entries(fileGroups).forEach(([baseName, files]) => {
+                            const row = document.createElement('tr');
+
+                            // Directory column
+                            const dirCell = document.createElement('td');
+                            dirCell.textContent = dirPath || '.';
+
+                            // Base name column
+                            const nameCell = document.createElement('td');
+                            nameCell.textContent = baseName;
+
+                            // URL file count column
+                            const urlCell = document.createElement('td');
+                            if (files.urlFile) {
+                                urlCell.textContent = files.urlFile.row_count.toLocaleString();
+                                urlCell.className = 'text-primary text-end';
+                                totalUrlRows += files.urlFile.row_count;
+                            } else {
+                                urlCell.textContent = '0';
+                                urlCell.className = 'text-muted text-end';
+                            }
+
+                            // Data file count column
+                            const dataCell = document.createElement('td');
+                            if (files.dataFile) {
+                                const dataCount = files.dataFile.row_count;
+                                dataCell.textContent = dataCount.toLocaleString();
+                                dataCell.className = 'text-end';
+
+                                // Make text green if data count >= url count
+                                const urlCount = files.urlFile ? files.urlFile.row_count : 0;
+                                if (dataCount >= urlCount) {
+                                    dataCell.classList.add('text-success', 'fw-bold');
+                                }
+
+                                totalDataRows += dataCount;
+                            } else {
+                                dataCell.textContent = '0';
+                                dataCell.className = 'text-muted text-end';
+                            }
+
+                            // Add cells to row
+                            row.appendChild(dirCell);
+                            row.appendChild(nameCell);
+                            row.appendChild(urlCell);
+                            row.appendChild(dataCell);
+
+                            resultsBody.appendChild(row);
+                            totalRows += (files.urlFile?.row_count || 0) + (files.dataFile?.row_count || 0);
+                        });
+
+                        // Add summary row for this directory
+                        const summaryRow = document.createElement('tr');
+                        summaryRow.classList.add('table-active');
+
+                        const summaryCell = document.createElement('td');
+                        summaryCell.colSpan = 2;
+                        summaryCell.textContent = 'Total';
+                        summaryCell.className = 'text-end fw-bold';
+
+                        const urlTotalCell = document.createElement('td');
+                        urlTotalCell.textContent = dirData.url_rows.toLocaleString();
+                        urlTotalCell.className = 'text-primary text-end fw-bold';
+
+                        const dataTotalCell = document.createElement('td');
+                        dataTotalCell.textContent = dirData.data_rows.toLocaleString();
+                        dataTotalCell.className = 'text-end fw-bold';
+
+                        // Make data total green if >= url total
+                        if (dirData.data_rows >= dirData.url_rows) {
+                            dataTotalCell.classList.add('text-success');
+                        }
+
+                        summaryRow.appendChild(summaryCell);
+                        summaryRow.appendChild(urlTotalCell);
+                        summaryRow.appendChild(dataTotalCell);
+                        resultsBody.appendChild(summaryRow);
                     }
 
                     // Update total rows
                     totalRowsCell.textContent = totalRows.toLocaleString();
+                    document.getElementById('total_url_rows').textContent = totalUrlRows.toLocaleString();
+                    document.getElementById('total_data_rows').textContent = totalDataRows.toLocaleString();
+
+                    // Update total data rows class based on comparison
+                    const totalDataCell = document.getElementById('total_data_rows');
+                    if (totalDataRows >= totalUrlRows) {
+                        totalDataCell.classList.add('text-success', 'fw-bold');
+                    } else {
+                        totalDataCell.classList.remove('text-success', 'fw-bold');
+                    }
 
                     // Show results
                     resultsDiv.style.display = 'block';

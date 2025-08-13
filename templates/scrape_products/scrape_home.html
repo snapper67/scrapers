@@ -9,29 +9,29 @@
                 <h1>Scrapers</h1>
                 <div class="mb-4">
                     <ul class="list-unstyled">
-                        <li class="mb-2"><a href="{% url 'sg' %}" class="btn btn-outline-primary">Southern Glazier</a></li>
+                        <li class="mb-2"><a href="{% url 'sg' %}" class="btn btn-sm btn-outline-primary">Southern Glazier</a></li>
                     </ul>
                     
                     <h5 class="mt-4">Cut & Dry</h5>
                     <ul class="list-unstyled">
-                        <li class="mb-2"><a href="{% url 'birite' %}" class="btn btn-outline-primary">BiRite</a></li>
-                        <li class="mb-2"><a href="{% url 'primizie' %}" class="btn btn-outline-primary">Primizie</a></li>
-                        <li class="mb-2"><a href="{% url 'maple_valley' %}" class="btn btn-outline-primary">Maple Valley</a></li>
-                        <li class="mb-2"><a href="{% url 'wagner' %}" class="btn btn-outline-primary">Wagner</a></li>
-                        <li class="mb-2"><a href="{% url 'carmela' %}" class="btn btn-outline-primary">Carmela</a></li>
+                        <li class="mb-2"><a href="{% url 'birite' %}" class="btn btn-sm btn-outline-primary">BiRite</a></li>
+                        <li class="mb-2"><a href="{% url 'primizie' %}" class="btn btn-sm btn-outline-primary">Primizie</a></li>
+                        <li class="mb-2"><a href="{% url 'maple_valley' %}" class="btn btn-sm btn-outline-primary">Maple Valley</a></li>
+                        <li class="mb-2"><a href="{% url 'wagner' %}" class="btn btn-sm btn-outline-primary">Wagner</a></li>
+                        <li class="mb-2"><a href="{% url 'carmela' %}" class="btn btn-sm btn-outline-primary">Carmela</a></li>
                     </ul>
                 </div>
             </div>
             <div class="col-md-6">
                 <h5 class="mt-4">Done</h5>
                 <ul class="list-unstyled">
-                    <li class="mb-2"><a href="{% url 'usfoods' %}" class="btn btn-outline-success">US Foods</a></li>
-                    <li class="mb-2"><a href="{% url 'cw' %}" class="btn btn-outline-success">Chefs' Warehouse</a></li>
-                    <li class="mb-2"><a href="{% url 'breakthru' %}" class="btn btn-outline-success">Breakthru</a></li>
+                    <li class="mb-2"><a href="{% url 'usfoods' %}" class="btn btn-sm btn-outline-success">US Foods</a></li>
+                    <li class="mb-2"><a href="{% url 'cw' %}" class="btn btn-sm btn-outline-success">Chefs' Warehouse</a></li>
+                    <li class="mb-2"><a href="{% url 'breakthru' %}" class="btn btn-sm btn-outline-success">Breakthru</a></li>
                 </ul>
                 <h5 class="mt-4">Cut & Dry</h5>
                 <ul class="list-unstyled">
-                    <li class="mb-2"><a href="{% url 'sardilli' %}" class="btn btn-outline-success">Sardilli</a></li>
+                    <li class="mb-2"><a href="{% url 'sardilli' %}" class="btn btn-sm btn-outline-success">Sardilli</a></li>
                 </ul>
             </div>
 
@@ -119,7 +119,8 @@
                 // Display results
                 let html = `
                     <div class="mb-3">
-                        <h6 class="text-maroon">Total Rows: ${data.total_rows.toLocaleString()}</h6>
+                        <h6 class="text-maroon">Total DataRows: ${data.total_data_rows.toLocaleString()}</h6>
+                        <h6 class="text-maroon">Total URL Rows: ${data.total_url_rows.toLocaleString()}</h6>
                     </div>
                 `;
                 
@@ -128,18 +129,27 @@
                     html += `
                         <div class="mb-3">
                             <h6>${dirPath}</h6>
-                            <ul class="list-group list-group-flush">
+                            <table class="table striped">
                                 ${dirData.files.map(file => `
-                                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                                        ${file.file_name}
-                                        <span class="badge bg-maroon rounded-pill">${file.row_count.toLocaleString()}</span>
-                                    </li>
+                                    <tr>
+                                        <td class="">${file.file_name}</td>
+                                        <td class="text-end">
+                                            <span class="">${file.url_row_count.toLocaleString()}</span>
+                                        </td>
+                                        <td class="text-end">
+                                            <span class="badge rounded-pill ${file.data_row_count >= file.url_row_count ? 'bg-success' : 'bg-maroon'} ${file.data_row_count > file.url_row_count ? 'bg-warning' : ''}">
+                                                ${file.data_row_count.toLocaleString()}
+                                            </span>
+                                        </td>
+                                    </tr>
                                 `).join('')}
-                                <li class="list-group-item d-flex justify-content-between align-items-center fw-bold">
+                                <td class="list-group-item d-flex justify-content-between align-items-center fw-bold">
                                     Total
-                                    <span class="badge bg-dark rounded-pill">${dirData.total_rows.toLocaleString()}</span>
-                                </li>
-                            </ul>
+                                    <td class="text-end"><span class="badge bg-dark rounded-pill">${dirData.url_rows.toLocaleString()}</span></td>
+                                    <td class="text-end"><span class="badge bg-dark rounded-pill">${dirData.data_rows.toLocaleString()}</span></td>
+                                </td>
+                                </tr>
+                            </table>
                         </div>
                     `;
                 }

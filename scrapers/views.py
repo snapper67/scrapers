@@ -64,7 +64,7 @@ def update_common_options(post_data, current_options):
 
 def count_csv_rows(request):
     """
-    Count rows in all CSV files with 'data' in their names across subdirectories.
+    Count rows in all CSV files with 'data' or 'urls' in their names across subdirectories.
     Returns JSON response with the results.
     """
     if request.method == 'POST':
@@ -79,34 +79,24 @@ def count_csv_rows(request):
             # Get row counts using CSVProcessor
             results = CSVProcessor.count_rows_in_data_csvs(directory)
             
-            # Convert Path objects to strings for JSON serialization
-            formatted_results = {}
-            total_rows = 0
-            
-            for dir_path, files in results.items():
-                dir_rows = 0
-                dir_files = []
-                
-                for file_name, row_count in files:
-                    dir_files.append({
-                        'file_name': file_name,
-                        'row_count': row_count
-                    })
-                    dir_rows += row_count
-                
-                formatted_results[str(dir_path)] = {
-                    'files': dir_files,
-                    'total_rows': dir_rows
-                }
-                total_rows += dir_rows
+            # The results are already in the correct format from CSVProcessor
+            # Calculate the total number of rows across all directories
+            total_data_rows = sum(directory_data.get('data_rows', 0)
+                           for directory_data in results.values())
+
+            total_url_rows = sum(directory_data.get('url_rows', 0)
+                                  for directory_data in results.values())
             
             return JsonResponse({
-                'results': formatted_results,
-                'total_rows': total_rows,
+                'results': results,
+                'total_data_rows': total_data_rows,
+                'total_url_rows': total_url_rows,
                 'status': 'success'
             })
             
         except Exception as e:
+            import traceback
+            traceback.print_exc()  # This will print the full traceback to the console
             return JsonResponse(
                 {'error': f'Error counting CSV rows: {str(e)}'}, 
                 status=500

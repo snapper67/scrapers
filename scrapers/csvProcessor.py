@@ -6,6 +6,7 @@ from bs4 import BeautifulSoup
 from pathlib import Path
 from typing import Dict, List, Tuple, Union
 
+
 class CSVProcessor:
 	"""
 	A utility class for processing CSV files with various operations.
@@ -58,48 +59,90 @@ class CSVProcessor:
 	@staticmethod
 	def count_rows_in_data_csvs(directory: str) -> Dict[str, Dict]:
 		"""
-		Count rows in all CSV files containing 'data' in their filenames across all subdirectories.
-		
+		Count rows in all CSV files containing 'data' or 'urls' in their filenames across all subdirectories.
+
 		Args:
 			directory (str): Root directory to search for CSV files
-			
+
 		Returns:
 			Dict[str, Dict]: A dictionary where keys are subdirectory paths and values are
-			    dictionaries with 'files' (list of dicts with file info) and 'total_rows' (int)
+				dictionaries with:
+				- 'files': list of dicts with file info and row counts
+				- 'total_rows': total rows across all files
+				- 'url_rows': total rows in URL files
+				- 'data_rows': total rows in data files
 		"""
 		print(f"Scanning directory: {directory}")
 		results = {}
-		
+
 		try:
 			# Convert to Path object for easier path handling
 			root_dir = Path(directory)
-			
-			# Find all CSV files with 'data' in the name
-			for csv_file in root_dir.rglob('*data*.csv'):
-				try:
-					# Get relative path from root directory
-					rel_path = csv_file.relative_to(root_dir)
-					parent_dir = str(rel_path.parent)
-					
-					# Read the CSV file to count rows (excluding header)
-					with open(csv_file, 'r', encoding='utf-8') as f:
-						# Subtract 1 to exclude header row
-						row_count = sum(1 for _ in f) - 1
-					
-					# Initialize subdirectory in results if not exists
-					if parent_dir not in results:
-						results[parent_dir] = []
-					
-					# Add file and row count to results
-					results[parent_dir].append((csv_file.name, row_count))
-					
-				except Exception as e:
-					print(f"Error processing {csv_file}: {e}")
-					continue
-					
+
+			# Find all CSV files with 'data' or 'urls' in the name
+			for pattern in ['*data*.csv', '*urls*.csv']:
+				is_url_file = 'urls' in pattern
+
+				for csv_file in root_dir.rglob(pattern):
+					print(f"Found {csv_file}")
+					try:
+						# Get relative path from root directory
+						rel_path = csv_file.relative_to(root_dir)
+						parent_dir = str(rel_path.parent)
+
+						# Read the CSV file to count rows (excluding header)
+						with open(csv_file, 'r', encoding='utf-8') as f:
+							reader = csv.reader(f)
+							# Skip header
+							next(reader, None)
+							row_count = sum(1 for _ in reader)
+
+						# Initialize subdirectory in results if not exists
+						if parent_dir not in results:
+							results[parent_dir] = {
+								'files': {},
+								'total_rows': 0,
+								'url_rows': 0,
+								'data_rows': 0
+							}
+
+						# Get base filename without _data or _urls suffix
+						base_name = csv_file.stem.replace('_data', '').replace('_urls', '')
+
+						# Initialize file entry if it doesn't exist
+						if base_name not in results[parent_dir]['files']:
+							results[parent_dir]['files'][base_name] = {
+								'file_name': f"{base_name}.csv",
+								'data_row_count': 0,
+								'url_row_count': 0,
+								'type': 'data'  # Default type, will be updated below
+							}
+
+						# Update the appropriate row count
+						file_entry = results[parent_dir]['files'][base_name]
+						if is_url_file:
+							file_entry['url_row_count'] = row_count
+							file_entry['type'] = 'urls'
+							results[parent_dir]['url_rows'] += row_count
+						else:
+							file_entry['data_row_count'] = row_count
+							file_entry['type'] = 'data'
+							results[parent_dir]['data_rows'] += row_count
+
+						results[parent_dir]['total_rows'] += row_count
+						print(f"Found {row_count} {'URL' if is_url_file else 'Data'} rows in {csv_file}")
+
+					except Exception as e:
+						print(f"Error processing {csv_file}: {e}")
+						continue
+
 		except Exception as e:
 			print(f"Error scanning directory {directory}: {e}")
-			
+
+		# Convert the files dictionary to a list for the final output
+		for dir_data in results.values():
+			dir_data['files'] = list(dir_data['files'].values())
+
 		return results
 
 	@staticmethod
@@ -281,11 +324,11 @@ class CSVProcessor:
 	def update_distributor_in_csvs(directory: str, distributor_name: str) -> dict:
 		"""
 		Update or add distributor_name column in all CSV files in the specified directory.
-		
+
 		Args:
 			directory (str): Directory containing CSV files to update
 			distributor_name (str): Distributor name to set in the distributor_name column
-			
+
 		Returns:
 			dict: Dictionary containing results of the operation
 		"""
@@ -296,7 +339,7 @@ class CSVProcessor:
 			}
 
 		csv_files = list(Path(directory).rglob('*data*.csv'))
-		
+
 		if not csv_files:
 			return {
 				'success': False,
@@ -315,16 +358,16 @@ class CSVProcessor:
 			try:
 				# Read the CSV file
 				df = pd.read_csv(csv_file, dtype=str, keep_default_na=False)
-				
+
 				# Add or update distributor_name column
 				df['distributor_name'] = distributor_name
-				
+
 				# Save the updated CSV
 				df.to_csv(csv_file, index=False)
-				
+
 				results['files_updated'] += 1
 				results['updated_files'].append(str(csv_file.relative_to(directory)))
-				
+
 			except Exception as e:
 				error_msg = f"Error processing {csv_file.name}: {str(e)}"
 				results['errors'].append(error_msg)
@@ -339,7 +382,7 @@ class CSVProcessor:
 				f"Updated {results['files_updated']} out of {results['total_files']} files. "
 				f"Skipped {results['files_skipped']} files due to errors."
 			)
-		
+
 		return results
 
 	def add_distributor_name(self, *args, **options):
