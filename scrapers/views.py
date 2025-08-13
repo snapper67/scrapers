@@ -644,7 +644,7 @@ def scrape_sardilli(request):
         'total_products': total_products
     })
 
-def scrape_maple_valley(request):
+def scrape_maple_vale(request):
     options = {}
 
     if request.method == 'POST':

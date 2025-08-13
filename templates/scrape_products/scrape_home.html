@@ -16,7 +16,7 @@
                     <ul class="list-unstyled">
 
                         <li class="mb-2"><a href="{% url 'primizie' %}" class="btn btn-sm btn-outline-primary">Primizie</a></li>
-                        <li class="mb-2"><a href="{% url 'maple_valley' %}" class="btn btn-sm btn-outline-primary">Maple Valley</a></li>
+                        <li class="mb-2"><a href="{% url 'maple_vale' %}" class="btn btn-sm btn-outline-primary">Maple Vale</a></li>
                         <li class="mb-2"><a href="{% url 'wagner' %}" class="btn btn-sm btn-outline-primary">Wagner</a></li>
                         <li class="mb-2"><a href="{% url 'carmela' %}" class="btn btn-sm btn-outline-primary">Carmela</a></li>
                         <li class="mb-2"><a href="{% url 'indianhead' %}" class="btn btn-sm btn-outline-primary">Indianhead</a></li>
@@ -134,7 +134,7 @@
                 // Add results for each directory
                 for (const [dirPath, dirData] of Object.entries(data.results)) {
                     html += `
-                        <div class="mb-3 bg-maroon text-white">
+                        <div class="mb-3 bg-maroon text-white p-2">
                             <h6>${dirPath}</h6>
                             <table class="table striped">
                                 ${dirData.files.map(file => `
