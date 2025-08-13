@@ -5,6 +5,7 @@
         {% block common %}
             <div class="container mt-4">
                 <h2>{% block name %}{% endblock name %}</h2>
+                {% block top %}{% endblock top %}
                 <form method="post" class="mt-4" id="scraperForm">
                     {% csrf_token %}
                     <!-- Scraping Functions Card -->

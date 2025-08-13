@@ -1,7 +1,10 @@
 {% extends "./_scrape_base.html" %}
 {% block name %}{{ name }}{% endblock name %}
-
-
+{% block top %}
+<div class="alert alert-info">
+    <strong>Total Products:</strong> {{ total_products|default:"N/A" }}
+</div>
+{% endblock top %}
 {% block custom %}
     <div class="row mt-4">
         <div class="col-md-12">

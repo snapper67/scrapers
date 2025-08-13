@@ -9,6 +9,7 @@ from .cut.carmela import CarmelaScraper
 from .cut.indianhead import IndianheadScraper
 from .cut.manson import MansonScraper
 from .cut.maple_vale import MapleValeScraper
+from .cut.sandw import SandWScraper
 from .cut.wagner import WagnerScraper
 from .scraper import Scraper
 from scrapers.misc.usfoods import USFoodsScraper
@@ -715,7 +716,14 @@ def update_cut_categories(post_data, scraper):
             'url_file': f"{scraper.make_filename_safe(category['name']).lower()}_product_urls.csv",
             'data_file': f"{scraper.make_filename_safe(category['name']).lower()}_product_data.csv"
         })
-    return categories
+
+    # Calculate total product count from top-level categories
+    total_products = 0
+    if hasattr(scraper, 'CATEGORIES') and 'data' in scraper.CATEGORIES:
+        for category in scraper.CATEGORIES['data'].get('catalogCategoryOptions', []):
+            if 'productCount' in category and isinstance(category['productCount'], (int, float)):
+                total_products += category['productCount']
+    return categories, total_products
 
 def scrape_sardilli(request):
     options = {}
@@ -746,7 +754,7 @@ def scrape_sardilli(request):
     # GET request - show form
     scraper = SardilliScraper()
     distributor_options = scraper.get_options()
-    categories = update_cut_categories(request.POST, scraper)
+    categories, total_products = update_cut_categories(request.POST, scraper)
 
     defaults = set_defaults(distributor_options)
     defaults.update({'attempts': 40})
@@ -754,7 +762,8 @@ def scrape_sardilli(request):
     return render(request, 'scrape_products/scrape_cut.html', {
         'categories': categories,
         'defaults': defaults,
-        'name': scraper.get_name()
+        'name': scraper.get_name(),
+        'total_products': total_products
     })
 
 def scrape_maple_valley(request):
@@ -786,7 +795,7 @@ def scrape_maple_valley(request):
     # GET request - show form
     scraper = MapleValeScraper()
     distributor_options = scraper.get_options()
-    categories = update_cut_categories(request.POST, scraper)
+    categories, total_products = update_cut_categories(request.POST, scraper)
 
     defaults = set_defaults(distributor_options)
     defaults.update({'attempts': 40})
@@ -794,7 +803,8 @@ def scrape_maple_valley(request):
     return render(request, 'scrape_products/scrape_cut.html', {
         'categories': categories,
         'defaults': defaults,
-        'name': scraper.get_name()
+        'name': scraper.get_name(),
+        'total_products': total_products
     })
 
 def scrape_wagner(request):
@@ -826,7 +836,7 @@ def scrape_wagner(request):
     # GET request - show form
     scraper = WagnerScraper()
     distributor_options = scraper.get_options()
-    categories = update_cut_categories(request.POST, scraper)
+    categories, total_products = update_cut_categories(request.POST, scraper)
 
     defaults = set_defaults(distributor_options)
     defaults.update({'attempts': 40})
@@ -834,7 +844,8 @@ def scrape_wagner(request):
     return render(request, 'scrape_products/scrape_cut.html', {
         'categories': categories,
         'defaults': defaults,
-        'name': scraper.get_name()
+        'name': scraper.get_name(),
+        'total_products': total_products
     })
 
 def scrape_carmela(request):
@@ -866,7 +877,7 @@ def scrape_carmela(request):
     # GET request - show form
     scraper = CarmelaScraper()
     distributor_options = scraper.get_options()
-    categories = update_cut_categories(request.POST, scraper)
+    categories, total_products = update_cut_categories(request.POST, scraper)
 
     defaults = set_defaults(distributor_options)
     defaults.update({'attempts': 40})
@@ -874,7 +885,8 @@ def scrape_carmela(request):
     return render(request, 'scrape_products/scrape_cut.html', {
         'categories': categories,
         'defaults': defaults,
-        'name': scraper.get_name()
+        'name': scraper.get_name(),
+        'total_products': total_products
     })
 
 def scrape_manson(request):
@@ -906,7 +918,7 @@ def scrape_manson(request):
     # GET request - show form
     scraper = MansonScraper()
     distributor_options = scraper.get_options()
-    categories = update_cut_categories(request.POST, scraper)
+    categories, total_products = update_cut_categories(request.POST, scraper)
 
     defaults = set_defaults(distributor_options)
     defaults.update({'attempts': 40})
@@ -914,7 +926,8 @@ def scrape_manson(request):
     return render(request, 'scrape_products/scrape_cut.html', {
         'categories': categories,
         'defaults': defaults,
-        'name': scraper.get_name()
+        'name': scraper.get_name(),
+        'total_products': total_products
     })
 def scrape_indianhead(request):
     options = {}
@@ -945,7 +958,7 @@ def scrape_indianhead(request):
     # GET request - show form
     scraper = IndianheadScraper()
     distributor_options = scraper.get_options()
-    categories = update_cut_categories(request.POST, scraper)
+    categories, total_products = update_cut_categories(request.POST, scraper)
 
     defaults = set_defaults(distributor_options)
     defaults.update({'attempts': 40})
@@ -953,9 +966,9 @@ def scrape_indianhead(request):
     return render(request, 'scrape_products/scrape_cut.html', {
         'categories': categories,
         'defaults': defaults,
-        'name': scraper.get_name()
+        'name': scraper.get_name(),
+        'total_products': total_products
     })
-
 def scrape_ab(request):
     options = {}
 
@@ -985,7 +998,47 @@ def scrape_ab(request):
     # GET request - show form
     scraper = ABScraper()
     distributor_options = scraper.get_options()
-    categories = update_cut_categories(request.POST, scraper)
+    categories, total_products = update_cut_categories(request.POST, scraper)
+
+    defaults = set_defaults(distributor_options)
+    defaults.update({'attempts': 40})
+
+    return render(request, 'scrape_products/scrape_cut.html', {
+        'categories': categories,
+        'name': scraper.get_name(),
+        'total_products': total_products
+    })
+
+def scrape_sandw(request):
+    options = {}
+
+    if request.method == 'POST':
+        with SandWScraper(options) as scraper:
+            print(request.POST)
+            distributor_options = scraper.get_options()
+
+            # Update options from form data
+            options = update_cut_options(request.POST, distributor_options)
+            options = update_common_options(request.POST, options)
+
+            # Handle clean_urls option
+            if options.get('clean_urls'):
+                success, message = scraper.clean_url_file()
+                if success:
+                    result = f"<div class='alert alert-success'>{message}</div>"
+                else:
+                    result = f"<div class='alert alert-danger'>{message}</div>"
+                return render(request, 'scrape_products/scrape_results.html', {'result': result})
+
+            # Run the scraper if not just cleaning URLs
+            scraper.set_options(options)
+            result = scraper.run()
+            return render(request, 'scrape_products/scrape_results.html', {'result': result})
+
+    # GET request - show form
+    scraper = SandWScraper()
+    distributor_options = scraper.get_options()
+    categories, total_products = update_cut_categories(request.POST, scraper)
 
     defaults = set_defaults(distributor_options)
     defaults.update({'attempts': 40})
@@ -993,5 +1046,6 @@ def scrape_ab(request):
     return render(request, 'scrape_products/scrape_cut.html', {
         'categories': categories,
         'defaults': defaults,
-        'name': scraper.get_name()
+        'name': scraper.get_name(),
+        'total_products': total_products
     })

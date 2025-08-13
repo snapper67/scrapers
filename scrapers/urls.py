@@ -20,6 +20,7 @@ urlpatterns = [
     path("manson/", views.scrape_manson, name="manson"),
 path("indianhead/", views.scrape_indianhead, name="indianhead"),
     path("ab/", views.scrape_ab, name="ab"),
+    path("sandw/", views.scrape_sandw, name="sandw"),
     path("scrapers/count-csv-rows/", views.count_csv_rows, name="count_csv_rows"),
     path("scrapers/update-distributor/", views.update_distributor, name="update_distributor"),
     path("scrapers/search-requests/", views.search_requests, name="search_requests"),
