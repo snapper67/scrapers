@@ -295,6 +295,7 @@ class Scraper:
 		return self.get_file_path(input_file, home_dir)
 
 	def get_data_file_path(self, home_dir=DEFAULT_DIRECTORY, input_file=None):
+		print("get_data_file_path")
 		if not input_file:
 			input_file = self.options.get('data_output_file', '')
 		return self.get_file_path(input_file, home_dir)

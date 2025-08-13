@@ -501,14 +501,14 @@ def process_cut_post(request, scraper):
     options = update_cut_options(request.POST, distributor_options)
     options = update_common_options(request.POST, options)
 
-    # Handle clean_urls option
-    if options.get('clean_urls'):
-        success, message = scraper.clean_url_file()
+    # Handle clean_datas option
+    if options.get('clean_data'):
+        success, message = scraper.clean_data_file()
         if success:
             result = f"<div class='alert alert-success'>{message}</div>"
         else:
             result = f"<div class='alert alert-danger'>{message}</div>"
-        return render(request, 'scrape_products/scrape_results.html', {'result': result})
+        return result
 
     # Run the scraper if not just cleaning URLs
     scraper.set_options(options)
@@ -540,8 +540,8 @@ def update_cut_options(post_data, current_options):
         current_options['url_output_file'] = current_options['home_directory']
         current_options['data_output_file'] = ''
 
-    # Update clean_urls option
-    current_options['clean_urls'] = post_data.get('clean_urls') == 'on'
+    # Update clean_data option
+    current_options['clean_data'] = post_data.get('clean_data') == 'on'
     current_options['category_name'] = category_name
     current_options['direct_category_to_process'] = str(post_data.get('direct_category_to_process', ''))
     current_options['attempts'] = int(post_data.get('attempts', 40))

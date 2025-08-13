@@ -82,6 +82,7 @@ class CutScraper(Scraper):
 		'count_csv': False,
 		'process_extra': False,
 		'search_requests': False,
+		# 'clean_data': False,
 		'test_products': 20000,
 		'max_products': 999,
 		'csv_start_row': 0,
@@ -206,7 +207,7 @@ class CutScraper(Scraper):
 	def get_name(self):
 		return self.VENDOR_NAME
 
-	def clean_url_file(self, input_file=None, output_file=None):
+	def clean_data_file(self, input_file=None, output_file=None):
 		"""
 		Clean the URL file by removing rows that don't have a value in the 'name' column.
 
