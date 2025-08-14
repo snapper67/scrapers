@@ -24,7 +24,8 @@ urlpatterns = [
     path("southwest_traders/", views.scrape_southwest_traders, name="southwest_traders"),
     path("caruso/", views.scrape_caruso, name="caruso"),
     path("chefs_kitchen/", views.scrape_chefs_kitchen, name="chefs_kitchen"),
-    path("scrapers/count-csv-rows/", views.count_csv_rows, name="count_csv_rows"),
+	path("cooks_company/", views.scrape_cooks_company, name="cooks_company"),
+	path("scrapers/count-csv-rows/", views.count_csv_rows, name="count_csv_rows"),
     path("scrapers/update-distributor/", views.update_distributor, name="update_distributor"),
     path("scrapers/search-requests/", views.search_requests, name="search_requests"),
 
