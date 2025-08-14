@@ -336,6 +336,30 @@ class CutScraper(Scraper):
 
 		return image_url
 
+	def get_first_image_url_2(self, data, row_spec):
+		"""
+		Extract the first available image URL from the product API response.
+
+		Args:
+			data (dict): The parsed JSON response from the API
+
+		Returns:
+			str: URL of the first available image, or None if no image found
+		"""
+		print("get_first_image_url()")
+		image_url = ''
+
+		productShopDataForStore = data.get('productShopDataForStore', {})
+		if productShopDataForStore:
+			try:
+				# product-viewer-image
+				row_spec["image"] = productShopDataForStore.get('productimages', {})[0].get('url', '')
+				row_spec["name"] = productShopDataForStore.get('shopifyName', '')
+			except Exception as e:
+				print(f"Error extracting image from page: {type(e)}")
+
+		return row_spec
+
 	def get_product_data(self, data, row_spec):
 		print("processing product data from response...")
 		# print(data)
@@ -352,15 +376,50 @@ class CutScraper(Scraper):
 
 				row_spec["distributor_name"] = self.VENDOR_NAME
 
-				row_spec["pack_size"] = data.get('packSize', {})
-				row_spec["gtin"] = data.get('gtin', {})
+				row_spec["pack_size"] = data.get('packSize', '')
+				row_spec["gtin"] = data.get('gtin', '')
 
 				row_spec["image"] = self.get_first_image_url(data)
 				# row_spec = self.get_classification(data, row_spec)
 				row_spec = self.get_description(data, row_spec)
 				row_spec = self.get_manufacturer(data, row_spec)
 				# row_spec = self.get_additional_info(data, row_spec)
-				row_spec["extra_data_1"] = json.dumps(data)
+				# row_spec["extra_data_1"] = json.dumps(data)
+
+			except Exception as e:
+				print(f" ⛔️⛔️⛔️Error processing product data: {e}")
+
+		print("processing get_product_data Complete...")
+		return row_spec
+
+	def get_product_data_2(self, row_spec):
+		print("processing product data 2 from response...")
+		data = json.loads(row_spec.get('extra_data_2', {}))
+		# print(data)
+		if data:
+			try:
+				# row_spec["extra_data_1"] = json.dumps(data)
+				data = data.get('data',{}).get('canonicalProduct',{})
+
+				row_spec["sku"] = data.get("itemCode", "")
+				# row_spec["name"] = data.get("nameWithoutBrand", "")
+				try:
+					row_spec["brand"] = data.get("productbrand", {}).get("displayName", "")
+				except:
+					print(f" ⚠️No Brand info found")
+
+				row_spec["distributor_name"] = self.VENDOR_NAME
+
+				row_spec["size"] = data.get('size', '')
+				row_spec["pack"] = data.get('pack', '')
+				row_spec["gtin"] = data.get('gtin', '')
+
+				row_spec = self.get_first_image_url_2(data, row_spec)
+				# row_spec = self.get_classification(data, row_spec)
+				row_spec["description"] = data.get("description", "")
+				row_spec = self.get_manufacturer_2(data, row_spec)
+				# row_spec = self.get_additional_info(data, row_spec)
+				# row_spec["extra_data_1"] = json.dumps(data)
 
 			except Exception as e:
 				print(f" ⛔️⛔️⛔️Error processing product data: {e}")
@@ -418,6 +477,23 @@ class CutScraper(Scraper):
 					print(f"Found manufacturer id: {manufacturer_spec['value']}")
 				else:
 					print("⚠️ Manufacturer sku not found in specifications")
+
+		except Exception as e:
+			print(f"⛔️ Error processing manufacturer information: {type(e).__name__} - {str(e)}")
+			
+		print("Processing manufacturer information complete...")
+		return row_spec
+
+	def get_manufacturer_2(self, data, row_spec):
+		print("get_manufacturer()")
+		try:
+			manufacturerproduct = data.get('manufacturerproduct', None)
+			# Find the specification with displayName "Manufacturer Name"
+			if manufacturerproduct:
+				manufacturer = manufacturerproduct.get('manufacturer', {})
+				row_spec['manufacturer_sku'] = manufacturerproduct.get('itemCode', '')
+				if manufacturer:
+					row_spec['manufacturer_name'] = manufacturer.get('name', '')
 
 		except Exception as e:
 			print(f"⛔️ Error processing manufacturer information: {type(e).__name__} - {str(e)}")
@@ -683,13 +759,16 @@ class CutScraper(Scraper):
 							except Exception as e:
 								print(f"⛔️⛔️⛔️Error decoding detail response body: {e}")
 							row_spec['extra_data_2'] = json.dumps(data)
+						elif payload.get('operationName', '') == 'TrackPDPViewedMutation' and second_found:
+							# we got to the end but did not find our target response. This sometimes happens
+							attempts = 40
 						# else:
 						# 	# self.driver.delete_request(request.id)
 						# 	print(f"attempts: {attempts}")
 			if not first_found and not second_found:
 				raise ProductNotFound
 			if second_found and not first_found:
-				row_spec = self.get_product_data(data, row_spec)
+				row_spec = self.get_product_data_2(row_spec)
 		except Exception as e:
 			print(f"⛔️⛔️⛔️Error waiting for request: {e}")
 
