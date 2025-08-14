@@ -466,7 +466,7 @@ class ChefsKitchenScraper(CutScraper):
 		''')
 
 	VENDOR_NAME = "Chef's Kitchen"
-	VENDOR_URL_NAME = 'ckfresh?'
+	VENDOR_URL_NAME = 'ckfresh'
 	VERIFIED_VENDOR_ID = 165144545
 
 	def __init__(self, options=None):
