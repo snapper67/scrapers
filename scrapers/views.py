@@ -6,6 +6,8 @@ from scrapers.cut.primizie import PrimizieScraper
 from scrapers.cut.sardilli import SardilliScraper
 from .cut.ab import ABScraper
 from .cut.carmela import CarmelaScraper
+from .cut.caruso import CarusoScraper
+from .cut.chefs_kitchen import ChefsKitchenScraper
 from .cut.indianhead import IndianheadScraper
 from .cut.manson import MansonScraper
 from .cut.maple_vale import MapleValeScraper
@@ -805,7 +807,6 @@ def scrape_sandw(request):
         'total_products': total_products
     })
 
-
 def scrape_southwest_traders(request):
     options = {}
 
@@ -816,6 +817,52 @@ def scrape_southwest_traders(request):
 
     # GET request - show form
     scraper = SouthwestTradersScraper()
+    distributor_options = scraper.get_options()
+    categories, total_products = update_cut_categories(request.POST, scraper)
+
+    defaults = set_defaults(distributor_options)
+    defaults.update({'attempts': 40})
+
+    return render(request, 'scrape_products/scrape_cut.html', {
+        'categories': categories,
+        'defaults': defaults,
+        'name': scraper.get_name(),
+        'total_products': total_products
+    })
+
+def scrape_caruso(request):
+    options = {}
+
+    if request.method == 'POST':
+        with CarusoScraper(options) as scraper:
+            result = process_cut_post(request, scraper)
+            return render(request, 'scrape_products/scrape_results.html', {'result': result})
+
+    # GET request - show form
+    scraper = CarusoScraper()
+    distributor_options = scraper.get_options()
+    categories, total_products = update_cut_categories(request.POST, scraper)
+
+    defaults = set_defaults(distributor_options)
+    defaults.update({'attempts': 40})
+
+    return render(request, 'scrape_products/scrape_cut.html', {
+        'categories': categories,
+        'defaults': defaults,
+        'name': scraper.get_name(),
+        'total_products': total_products
+    })
+
+def scrape_chefs_kitchen(request):
+    options = {}
+
+    if request.method == 'POST':
+        with ChefsKitchenScraper(options) as scraper:
+            result = process_cut_post(request, scraper)
+            return render(request, 'scrape_products/scrape_results.html', {'result': result})
+
+    # GET request - show form
+    scraper = ChefsKitchenScraper()
     distributor_options = scraper.get_options()
     categories, total_products = update_cut_categories(request.POST, scraper)
 
