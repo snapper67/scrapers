@@ -9,6 +9,7 @@ class ABScraper(CutScraper):
 
 	# Values to change
 	BASE_URL = "https://app.cutanddry.com/catalog/aandb?verifiedVendorId=1861824&categoryId=1&categoryName=All+Items&page=1"
+	SUB_DOMAIN = "https://app.cutanddry.com"
 	CATEGORIES = json.loads('''{
   "data": {
     "catalogCategoryOptions": [

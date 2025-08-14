@@ -9,6 +9,7 @@ class WagnerScraper(CutScraper):
 
 	# Values to change
 	BASE_URL = "https://wagner.cutanddry.com/catalog/wagner?verifiedVendorId=152858455&categoryId=1&page=1"
+	SUB_DOMAIN = "https://wagner.cutanddry.com"
 	CATEGORIES = json.loads('''{
   "data": {
     "catalogCategoryOptions": [

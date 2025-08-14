@@ -9,6 +9,7 @@ class AllStarSpecialtiesScraper(CutScraper):
 
 	# Values to change
 	BASE_URL = "https://allstarspecialties.cutanddry.com/market/AllStar/448081160/448081149/quantities?verifiedVendorId=320450261&categoryId=1&page=1"
+	SUB_DOMAIN = "https://allstarspecialties.cutanddry.com"
 	CATEGORIES = json.loads('''{
   "data": {
     "catalogCategoryOptions": [

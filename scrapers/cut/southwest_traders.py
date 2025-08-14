@@ -9,6 +9,7 @@ class SouthwestTradersScraper(CutScraper):
 
 	# Values to change
 	BASE_URL = "https://app.cutanddry.com/catalog/southwesttraders?verifiedVendorId=1862188&categoryId=1&page=1"
+	SUB_DOMAIN = "https://app.cutanddry.com"
 	CATEGORIES = json.loads('''{
   "data": {
     "catalogCategoryOptions": [

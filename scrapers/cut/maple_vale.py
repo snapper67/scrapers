@@ -10,6 +10,7 @@ class MapleValeScraper(CutScraper):
 
 	# Values to change
 	BASE_URL = "https://maplevale.cutanddry.com/catalog/maplevale?verifiedVendorId=106423628&categoryId=1&page=1"
+	SUB_DOMAIN = "https://maplevale.cutanddry.com"
 	CATEGORIES = json.loads('''{
   "data": {
     "catalogCategoryOptions": [

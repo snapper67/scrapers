@@ -9,6 +9,7 @@ class BiRiteScraper(CutScraper):
 
 
 	BASE_URL = 'https://app.cutanddry.com/catalog/BiRite%20Foodservice%20Distributors?verifiedVendorId=120984264&categoryId=1&categoryName=All+Items&page=1'
+	SUB_DOMAIN = "https://app.cutanddry.com"
 	CATEGORIES = json.loads('''{
 	    "data": {
 	        "catalogCategoryOptions": [

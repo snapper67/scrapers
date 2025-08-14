@@ -9,6 +9,7 @@ class CooksCompanyScraper(CutScraper):
 
 	# Values to change
 	BASE_URL = "https://app.cutanddry.com/catalog/cooks?verifiedVendorId=1897602&categoryId=1&page=1"
+	SUB_DOMAIN = "https://app.cutanddry.com"
 	CATEGORIES = json.loads('''{
   "data": {
     "catalogCategoryOptions": [

@@ -9,6 +9,7 @@ class SardilliScraper(CutScraper):
 
 	# Values to change
 	BASE_URL = "https://app.cutanddry.com/catalog/sardilli?verifiedVendorId=369151799&categoryId=1&categoryName=All+Items&page=1"
+	SUB_DOMAIN = "https://app.cutanddry.com"
 	CATEGORIES = json.loads('''{
   "data": {
     "catalogCategoryOptions": [

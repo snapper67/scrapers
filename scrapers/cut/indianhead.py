@@ -9,6 +9,7 @@ class IndianheadScraper(CutScraper):
 
 	# Values to change
 	BASE_URL = "https://ifd.cutanddry.com/catalog/ShopIFD?verifiedVendorId=320572326&categoryId=1&page=1"
+	SUB_DOMAIN = "https://ifd.cutanddry.com"
 	CATEGORIES = json.loads('''{
   "data": {
     "catalogCategoryOptions": [

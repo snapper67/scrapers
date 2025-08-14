@@ -3,13 +3,13 @@ import json
 from scrapers.cut.dry import CutScraper
 
 
-class SandWScraper(CutScraper):
+class DriscollScraper(CutScraper):
 
-	DEFAULT_DIRECTORY = '/Users/mark/Downloads/scrapers/sandw/'
+	DEFAULT_DIRECTORY = '/Users/mark/Downloads/scrapers/driscoll/'
 
 	# Values to change
-	BASE_URL = "https://app.cutanddry.com/catalog/swfoods?verifiedVendorId=1862163&page=2&categoryId=1"
-	SUB_DOMAIN = "https://app.cutanddry.com"
+	BASE_URL = "https://driscoll.cutanddry.com/catalog/Driscoll?verifiedVendorId=1861940&categoryId=1&page=1"
+	SUB_DOMAIN = "https://driscoll.cutanddry.com"
 	CATEGORIES = json.loads('''{
   "data": {
     "catalogCategoryOptions": [
@@ -26,7 +26,7 @@ class SandWScraper(CutScraper):
           "visibleOnSidebar": true,
           "__typename": "ProductCategory"
         },
-        "productCount": 307,
+        "productCount": 1032,
         "subcategories": [],
         "__typename": "categoryOption"
       },
@@ -43,7 +43,7 @@ class SandWScraper(CutScraper):
           "visibleOnSidebar": true,
           "__typename": "ProductCategory"
         },
-        "productCount": 486,
+        "productCount": 737,
         "subcategories": [],
         "__typename": "categoryOption"
       },
@@ -60,7 +60,7 @@ class SandWScraper(CutScraper):
           "visibleOnSidebar": true,
           "__typename": "ProductCategory"
         },
-        "productCount": 185,
+        "productCount": 790,
         "subcategories": [],
         "__typename": "categoryOption"
       },
@@ -77,7 +77,7 @@ class SandWScraper(CutScraper):
           "visibleOnSidebar": true,
           "__typename": "ProductCategory"
         },
-        "productCount": 135,
+        "productCount": 204,
         "subcategories": [],
         "__typename": "categoryOption"
       },
@@ -94,7 +94,7 @@ class SandWScraper(CutScraper):
           "visibleOnSidebar": true,
           "__typename": "ProductCategory"
         },
-        "productCount": 398,
+        "productCount": 1263,
         "subcategories": [],
         "__typename": "categoryOption"
       },
@@ -111,7 +111,7 @@ class SandWScraper(CutScraper):
           "visibleOnSidebar": true,
           "__typename": "ProductCategory"
         },
-        "productCount": 600,
+        "productCount": 1903,
         "subcategories": [],
         "__typename": "categoryOption"
       },
@@ -128,7 +128,7 @@ class SandWScraper(CutScraper):
           "visibleOnSidebar": true,
           "__typename": "ProductCategory"
         },
-        "productCount": 1506,
+        "productCount": 2628,
         "subcategories": [],
         "__typename": "categoryOption"
       },
@@ -145,7 +145,7 @@ class SandWScraper(CutScraper):
           "visibleOnSidebar": true,
           "__typename": "ProductCategory"
         },
-        "productCount": 243,
+        "productCount": 808,
         "subcategories": [],
         "__typename": "categoryOption"
       },
@@ -162,7 +162,7 @@ class SandWScraper(CutScraper):
           "visibleOnSidebar": true,
           "__typename": "ProductCategory"
         },
-        "productCount": 1574,
+        "productCount": 4776,
         "subcategories": [],
         "__typename": "categoryOption"
       },
@@ -179,7 +179,7 @@ class SandWScraper(CutScraper):
           "visibleOnSidebar": true,
           "__typename": "ProductCategory"
         },
-        "productCount": 422,
+        "productCount": 1530,
         "subcategories": [],
         "__typename": "categoryOption"
       },
@@ -196,7 +196,7 @@ class SandWScraper(CutScraper):
           "visibleOnSidebar": true,
           "__typename": "ProductCategory"
         },
-        "productCount": 153,
+        "productCount": 762,
         "subcategories": [],
         "__typename": "categoryOption"
       },
@@ -213,7 +213,7 @@ class SandWScraper(CutScraper):
           "visibleOnSidebar": true,
           "__typename": "ProductCategory"
         },
-        "productCount": 196,
+        "productCount": 496,
         "subcategories": [],
         "__typename": "categoryOption"
       },
@@ -230,7 +230,7 @@ class SandWScraper(CutScraper):
           "visibleOnSidebar": true,
           "__typename": "ProductCategory"
         },
-        "productCount": 1083,
+        "productCount": 1599,
         "subcategories": [],
         "__typename": "categoryOption"
       }
@@ -239,9 +239,9 @@ class SandWScraper(CutScraper):
 }
 		''')
 
-	VENDOR_NAME = 'S & W Foods'
-	VENDOR_URL_NAME = 'swfoods'
-	VERIFIED_VENDOR_ID = 1862163
+	VENDOR_NAME = 'Driscoll'
+	VENDOR_URL_NAME = 'Driscoll'
+	VERIFIED_VENDOR_ID = 186194
 
 	def __init__(self, options=None):
 		super().__init__(options)

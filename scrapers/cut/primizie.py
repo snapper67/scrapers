@@ -9,6 +9,7 @@ class PrimizieScraper(CutScraper):
 
 	# Values to change
 	BASE_URL = "https://app.cutanddry.com/catalog/primizieny?verifiedVendorId=50714839&categoryId=1&page=1"
+	SUB_DOMAIN = "https://app.cutanddry.com"
 	CATEGORIES = json.loads('''{
 	    "data": {
 	        "catalogCategoryOptions": [

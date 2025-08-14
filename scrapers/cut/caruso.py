@@ -9,6 +9,7 @@ class CarusoScraper(CutScraper):
 
 	# Values to change
 	BASE_URL = "https://carusoproduce.cutanddry.com/catalog/CarusoProduceInc?verifiedVendorId=271724692&categoryId=1&page=1"
+	SUB_DOMAIN = "https://carusoproduce.cutanddry.com"
 	CATEGORIES = json.loads('''{
   "data": {
     "catalogCategoryOptions": [

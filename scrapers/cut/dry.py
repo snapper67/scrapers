@@ -52,7 +52,8 @@ class CutScraper(Scraper):
 
 	ENCODING = "utf-8"
 
-	BASE_URL = 'https://www.cutanddry.com'
+	BASE_URL = 'https://app.cutanddry.com'
+	SUB_DOMAIN = "https://app.cutanddry.com"
 
 	CATEGORY_IDS = {}
 	CATEGORY_NAMES = {}
@@ -132,7 +133,7 @@ class CutScraper(Scraper):
 		# URL encode the vendor name and other string parameters
 		encoded_vendor_name = quote_plus(self.VENDOR_URL_NAME)
 
-		base_url = f"https://app.cutanddry.com/catalog/{encoded_vendor_name}"
+		base_url = f"{self.SUB_DOMAIN}/catalog/{encoded_vendor_name}"
 		params = {
 			'verifiedVendorId': str(self.VERIFIED_VENDOR_ID),
 		}
@@ -172,7 +173,7 @@ class CutScraper(Scraper):
 		# URL encode the vendor name and other string parameters
 		encoded_vendor_name = quote(self.VENDOR_URL_NAME)
 
-		base_url = f"https://app.cutanddry.com/catalog/{encoded_vendor_name}/product/{product_id}?srcPge=Public%20Catalog&srcLoc=General&verifiedVendorId={self.VERIFIED_VENDOR_ID}"
+		base_url = f"{self.SUB_DOMAIN}/catalog/{encoded_vendor_name}/product/{product_id}?srcPge=Public%20Catalog&srcLoc=General&verifiedVendorId={self.VERIFIED_VENDOR_ID}"
 		params = {
 			'verifiedVendorId': str(self.VERIFIED_VENDOR_ID),
 		}
@@ -472,7 +473,7 @@ class CutScraper(Scraper):
 
 		return interceptor
 
-	def wait_and_process_products_utls(self, html, all_urls, category, subcat='', subcat_name='', include_subcategories=True):
+	def wait_and_process_products_urls(self, html, all_urls, category, subcat='', subcat_name='', include_subcategories=True):
 		still_looking = True
 		page = 0
 		test_products = self.options.get('test_products', 0)
@@ -594,7 +595,7 @@ class CutScraper(Scraper):
 				break
 			subcategories = category.get('subcategories', [])
 			if len(subcategories) == 0:
-				self.wait_and_process_products_utls(category, include_subcategories=False)
+				html, all_urls = self.wait_and_process_products_urls(html, all_urls, category, include_subcategories=False)
 			else:
 				for subcategory in category.get('subcategories', []):
 					print(f"subcategory : {subcategory}")
@@ -607,7 +608,7 @@ class CutScraper(Scraper):
 						'direct_category_to_process'] != url:
 						print(f"Skipping category {category['name']} as it is not the direct category to process")
 						continue
-					html, all_urls = self.wait_and_process_products_utls(html, all_urls, category, subcat, subcat_name)
+					html, all_urls = self.wait_and_process_products_urls(html, all_urls, category, subcat, subcat_name)
 
 					time.sleep(2)
 

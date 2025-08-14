@@ -9,6 +9,7 @@ class ChefsKitchenScraper(CutScraper):
 
 	# Values to change
 	BASE_URL = "https://ckfresh.cutanddry.com/catalog/ckfresh?verifiedVendorId=165144545&categoryId=1&page=1"
+	SUB_DOMAIN = "https://ckfresh.cutanddry.com"
 	CATEGORIES = json.loads('''{
   "data": {
     "catalogCategoryOptions": [

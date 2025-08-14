@@ -9,6 +9,7 @@ class ChristPanosScraper(CutScraper):
 
 	# Values to change
 	BASE_URL = "https://panos.cutanddry.com/catalog/christpanos?verifiedVendorId=1861896&categoryId=1&page=1"
+	SUB_DOMAIN = "https://panos.cutanddry.com"
 	CATEGORIES = json.loads('''{
   "data": {
     "catalogCategoryOptions": [

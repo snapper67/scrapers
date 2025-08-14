@@ -9,6 +9,7 @@ class MansonScraper(CutScraper):
 
 	# Values to change
 	BASE_URL = "https://manson.cutanddry.com/catalog/MansonProducts?verifiedVendorId=160779759&categoryId=1&page=1"
+	SUB_DOMAIN = "https://manson.cutanddry.com"
 	CATEGORIES = json.loads('''{
   "data": {
     "catalogCategoryOptions": [
