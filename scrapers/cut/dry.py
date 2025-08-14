@@ -340,7 +340,7 @@ class CutScraper(Scraper):
 		# print(data)
 		if data:
 			try:
-				row_spec["extra_data_1"] = json.dumps(data)
+				# row_spec["extra_data_1"] = json.dumps(data)
 				data = data.get('data',{}).get('universalProduct',{})
 				row_spec["sku"] = data.get("itemCode", "")
 				row_spec["name"] = data.get("name", "")
@@ -422,6 +422,24 @@ class CutScraper(Scraper):
 			print(f"⛔️ Error processing manufacturer information: {type(e).__name__} - {str(e)}")
 			
 		print("Processing manufacturer information complete...")
+		return row_spec
+
+	def get_price(self, data, row_spec):
+		print("get_price()")
+		try:
+			productShopDataForStore = data.get('productShopDataForStore', None)
+			# Find the specification with displayName "Manufacturer Name"
+			if productShopDataForStore:
+				consumerPrice = productShopDataForStore.get('consumerPrice', None)
+				if consumerPrice:
+					row_spec['retail_price'] = consumerPrice['float']
+			else:
+				print("⚠️ Price not found in specifications")
+
+		except Exception as e:
+			print(f"⛔️ Error processing price information: {type(e).__name__} - {str(e)}")
+
+		print("Processing price information complete...")
 		return row_spec
 
 	def create_interceptor(self, max_api_products=200, page=1):
@@ -647,6 +665,7 @@ class CutScraper(Scraper):
 								print(f"⛔️⛔️⛔️Error decoding detail response body: {e}")
 
 							# These use the data if available, then try to scrape from the page
+							row_spec["extra_data_1"] = json.dumps(data)
 							row_spec = self.get_product_data(data, row_spec)
 						elif payload.get('operationName', '') == 'canonicalProductQuery' and not second_found:
 							second_found = True
@@ -666,8 +685,10 @@ class CutScraper(Scraper):
 						# else:
 						# 	# self.driver.delete_request(request.id)
 						# 	print(f"attempts: {attempts}")
-			if not first_found:
+			if not first_found and not second_found:
 				raise ProductNotFound
+			if second_found and not first_found:
+				row_spec = self.get_product_data(data, row_spec)
 		except Exception as e:
 			print(f"⛔️⛔️⛔️Error waiting for request: {e}")
 
