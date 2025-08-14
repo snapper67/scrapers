@@ -8,6 +8,8 @@ from .cut.ab import ABScraper
 from .cut.carmela import CarmelaScraper
 from .cut.caruso import CarusoScraper
 from .cut.chefs_kitchen import ChefsKitchenScraper
+from .cut.christ_panos import ChristPanosScraper
+from .cut.derstines import DerstinesScraper
 from .cut.indianhead import IndianheadScraper
 from .cut.manson import MansonScraper
 from .cut.maple_vale import MapleValeScraper
@@ -887,6 +889,52 @@ def scrape_cooks_company(request):
 
     # GET request - show form
     scraper = CooksCompanyScraper()
+    distributor_options = scraper.get_options()
+    categories, total_products = update_cut_categories(request.POST, scraper)
+
+    defaults = set_defaults(distributor_options)
+    defaults.update({'attempts': 40})
+
+    return render(request, 'scrape_products/scrape_cut.html', {
+        'categories': categories,
+        'defaults': defaults,
+        'name': scraper.get_name(),
+        'total_products': total_products
+    })
+
+def scrape_christ_panos(request):
+    options = {}
+
+    if request.method == 'POST':
+        with ChristPanosScraper(options) as scraper:
+            result = process_cut_post(request, scraper)
+            return render(request, 'scrape_products/scrape_results.html', {'result': result})
+
+    # GET request - show form
+    scraper = ChristPanosScraper()
+    distributor_options = scraper.get_options()
+    categories, total_products = update_cut_categories(request.POST, scraper)
+
+    defaults = set_defaults(distributor_options)
+    defaults.update({'attempts': 40})
+
+    return render(request, 'scrape_products/scrape_cut.html', {
+        'categories': categories,
+        'defaults': defaults,
+        'name': scraper.get_name(),
+        'total_products': total_products
+    })
+
+def scrape_derstines(request):
+    options = {}
+
+    if request.method == 'POST':
+        with DerstinesScraper(options) as scraper:
+            result = process_cut_post(request, scraper)
+            return render(request, 'scrape_products/scrape_results.html', {'result': result})
+
+    # GET request - show form
+    scraper = DerstinesScraper()
     distributor_options = scraper.get_options()
     categories, total_products = update_cut_categories(request.POST, scraper)
 
