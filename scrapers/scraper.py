@@ -404,7 +404,8 @@ class Scraper:
 		Main entry point that determines which action to take based on the options
 		Currently only processing a single option this could easily be changed to support multiple
 		"""
-		logging.info(f"Running scraper with options: {self.options}")
+		# logging.info(f"Running scraper with options: {self.options}")
+		print(f"Running scraper with options: {self.options}")
 		if self.options.get('get_categories'):
 			return self.build_categories_list()
 		elif self.options.get('scrape_products'):

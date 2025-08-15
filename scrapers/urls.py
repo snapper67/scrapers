@@ -29,6 +29,7 @@ urlpatterns = [
 	path("cooks_company/", views.scrape_cooks_company, name="cooks_company"),
     path("christ_panos/", views.scrape_christ_panos, name="christ_panos"),
     path("derstines/", views.scrape_derstines, name="derstines"),
+    path("foodandpaper/", views.scrape_foodandpaper, name="foodandpaper"),
 	path("scrapers/count-csv-rows/", views.count_csv_rows, name="count_csv_rows"),
     path("scrapers/update-distributor/", views.update_distributor, name="update_distributor"),
     path("scrapers/search-requests/", views.search_requests, name="search_requests"),

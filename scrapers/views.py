@@ -15,6 +15,7 @@ from .cut.chefs_kitchen import ChefsKitchenScraper
 from .cut.christ_panos import ChristPanosScraper
 from .cut.derstines import DerstinesScraper
 from .cut.driscoll import DriscollScraper
+from .cut.food_paper import FoodAndPaperScraper
 from .cut.indianhead import IndianheadScraper
 from .cut.manson import MansonScraper
 from .cut.maple_vale import MapleValeScraper
@@ -39,6 +40,31 @@ class ScrapeProductsPageView(TemplateView):
     def get(self, request, *args, **kwargs):
 
         return render(request, self.template_name)
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def get_processing_progress(request):
+    """
+    Endpoint to get the current progress of product processing.
+    Expected POST data: {"task_id": "unique_task_id"}
+    """
+    try:
+        data = json.loads(request.body)
+        task_id = data.get('task_id')
+        print("checking progress for task_id:", task_id)
+        if not task_id:
+            return JsonResponse({'error': 'task_id is required'}, status=400)
+
+        progress = cache.get(f'product_processing_progress_{task_id}', {})
+        return JsonResponse({
+            'status': 'success',
+            'progress': progress
+        })
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 
 def update_common_options(post_data, current_options):
@@ -568,7 +594,7 @@ def process_cut_post(request, scraper):
                     scraper.set_options(options)
 
                     # Run the scraper
-                    print(f"Running scraper with options: {options}")
+                    print(f"Starting scraper with options: {options}")
                     scraper.run()
                 
             except Exception as e:
@@ -597,7 +623,8 @@ def process_cut_post(request, scraper):
         # Return the task ID to the client immediately
         print(f"Returning task ID: {task_id}")
         return JsonResponse({'task_id': task_id}, status=200)
-    
+
+    print(f"skipping processing CSV")
     # Normal synchronous processing
     result = scraper.run()
     return result
@@ -1049,33 +1076,34 @@ def scrape_driscoll(request):
     defaults.update({'attempts': 40})
 
     return render(request, 'scrape_products/scrape_cut.html', {
-        'distributor': 'Driscoll',
-        'distributor_options': distributor_options,
-        'defaults': defaults,
         'categories': categories,
+        'defaults': defaults,
+        'name': scraper.get_name(),
         'total_products': total_products
     })
 
-@csrf_exempt
-@require_http_methods(["POST"])
-def get_processing_progress(request):
-    """
-    Endpoint to get the current progress of product processing.
-    Expected POST data: {"task_id": "unique_task_id"}
-    """
-    try:
-        data = json.loads(request.body)
-        task_id = data.get('task_id')
-        print("checking progress for task_id:", task_id)
-        if not task_id:
-            return JsonResponse({'error': 'task_id is required'}, status=400)
-            
-        progress = cache.get(f'product_processing_progress_{task_id}', {})
-        return JsonResponse({
-            'status': 'success',
-            'progress': progress
-        })
-    except json.JSONDecodeError:
-        return JsonResponse({'error': 'Invalid JSON'}, status=400)
-    except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+def scrape_foodandpaper(request):
+	print("Calling scrape_derstines()")
+	options = {}
+
+	if request.method == 'POST':
+		with FoodAndPaperScraper(options) as scraper:
+			print("Calling process_cut_post from scrape_derstines()")
+			result = process_cut_post(request, scraper)
+			return result
+
+	# GET request - show form
+	scraper = FoodAndPaperScraper()
+	distributor_options = scraper.get_options()
+	categories, total_products = update_cut_categories(request.POST, scraper)
+
+	defaults = set_defaults(distributor_options)
+	defaults.update({'attempts': 40})
+
+	return render(request, 'scrape_products/scrape_cut.html', {
+		'categories': categories,
+		'defaults': defaults,
+		'name': scraper.get_name(),
+		'total_products': total_products
+	})
+
