@@ -1,5 +1,6 @@
 import csv
 import json
+import logging
 import re
 import requests
 import time
@@ -141,6 +142,8 @@ class Scraper:
 		self.seleniumwire_options = {
 			'disable_encoding': True,
 		}
+		self.current_task_id = None
+		logging.basicConfig(level=logging.ERROR, format='%(asctime)s - %(threadName)s - %(message)s')
 
 		# seleniumwire_options = {
 		# 		'request_filter': lambda request: 'product-domain-api/v2/products' in request.url,
@@ -401,6 +404,7 @@ class Scraper:
 		Main entry point that determines which action to take based on the options
 		Currently only processing a single option this could easily be changed to support multiple
 		"""
+		logging.info(f"Running scraper with options: {self.options}")
 		if self.options.get('get_categories'):
 			return self.build_categories_list()
 		elif self.options.get('scrape_products'):
@@ -435,74 +439,150 @@ class Scraper:
 	def process_products_from_csv(self):
 		"""
 		Read product URLs from a CSV file, process each product, and save results to a CSV file.
-
+		Updates progress in cache for real-time tracking.
 		"""
+		import uuid
+		from django.core.cache import cache
+
+		# Generate a unique task ID for this processing run
+		task_id = self.current_task_id
+		logging.info(f"process_products_from_csv() - Task ID: {task_id}")
+		# task_id = str(uuid.uuid4())
+		# self.current_task_id = task_id  # Store task ID on the instance for the view to access
 		self.scraping_setup()
-		print("process_products_from_csv()")
-		print(self.options)
+		print(f"process_products_from_csv() - Task ID: {task_id}")
+		# print(self.options)
+
 		start_row = self.options.get('csv_start_row', 0)
 		test_products = self.options.get('test_products', 0)
 		home_dir = self.options.get('home_directory', '')
 
-		input_file = self.get_url_file_path(home_dir)
-		output_file = self.get_data_file_path(home_dir)
+		# Initialize progress tracking
+		progress_data = {
+			'status': 'processing',
+			'current': 0,
+			'total': 0,
+			'processed': 0,
+			'errors': 0,
+			'current_product': '',
+			'output_file': '',
+			'task_id': task_id
+		}
 
-		if not os.path.exists(input_file):
-			print(f"Error: File {input_file} not found")
-			return f"Error: File {input_file} not found"
+		def update_progress():
+			"""Helper function to update progress in cache"""
+			print(f"Updating progress for task {task_id}: {progress_data}")
+			cache.set(f'product_processing_progress_{task_id}', progress_data, timeout=3600)  # 1 hour timeout
 
-		# Define output CSV file
-		output_filename = output_file
-		file_exists = os.path.exists(output_filename)
-		print(f"Output file exists: {file_exists}")  # Print the value of file_exists)
+		try:
+			input_file = self.get_url_file_path(home_dir)
+			output_file = self.get_data_file_path(home_dir)
+			progress_data['output_file'] = output_file
 
-		# First count total rows for progress tracking
-		with open(input_file, 'r', encoding='utf-8') as csvfile:
-			reader = csv.DictReader(csvfile)
-			total_rows = sum(1 for _ in reader)
-			print(f"Total rows: {total_rows}")
+			if not os.path.exists(input_file):
+				error_msg = f"Error: File {input_file} not found"
+				print(error_msg)
+				progress_data.update({
+					'status': 'error',
+					'error': error_msg
+				})
+				update_progress()
+				return f"Error: File {input_file} not found"
 
-		# Now process the file
-		with open(input_file, 'r', encoding='utf-8') as csvfile:
-			reader = csv.DictReader(csvfile)
+			# Define output CSV file
+			output_filename = output_file
+			file_exists = os.path.exists(output_filename)
+			print(f"Output file exists: {file_exists}")
 
-			# Skip to start_row
-			for _ in range(start_row):
-				next(reader, None)
+			# First count total rows for progress tracking
+			with open(input_file, 'r', encoding='utf-8') as csvfile:
+				reader = csv.DictReader(csvfile)
+				total_rows = sum(1 for _ in reader)
+				progress_data['total'] = total_rows
+				print(f"Total rows: {total_rows}")
+				update_progress()
 
-			for row_num, row in enumerate(reader, start=start_row):
-				row_spec = self.PRODUCT_DATA_SPEC.copy()
-				try:
-					url = row.get('URL', '')
-					if not url:
+			# Now process the file
+			with open(input_file, 'r', encoding='utf-8') as csvfile:
+				reader = csv.DictReader(csvfile)
+
+				# Skip to start_row
+				for _ in range(start_row):
+					next(reader, None)
+
+				for row_num, row in enumerate(reader, start=start_row):
+					row_spec = self.PRODUCT_DATA_SPEC.copy()
+					try:
+						url = row.get('URL', '')
+						if not url:
+							continue
+
+						current_product = f"Row {row_num + 1}/{total_rows}"
+						if (row_num + 1) < (start_row + test_products):
+							print(f"\nProcessing {current_product} - {url}")
+							progress_data.update({
+								'current': row_num + 1,
+								'current_product': current_product,
+								'status': 'processing'
+							})
+							update_progress()
+
+							# Process the product
+							row_spec.update({
+								'subcategory': row.get('Subcategory', ''),
+								'timestamp': row.get('Timestamp', ''),
+								'content_url': url,
+								'sku': row.get('SKU', ''),
+								'category': row.get('Category', '')
+							})
+
+							# Call the product processing function
+							row_spec = self.get_product_details(url, row_spec)
+
+							# Write to CSV
+							product_name = row_spec.get('name', 'Unknown Product')
+							print(f"Saving product {product_name} to {output_filename}")
+							self.write_product_to_csv(row_spec, output_filename)
+							print(f"Saved product {product_name} to {output_filename}")
+
+							# Update progress
+							progress_data['processed'] += 1
+							update_progress()
+
+							# Add a small delay to prevent overwhelming the system
+							# time.sleep(0.1)
+
+					except Exception as e:
+						error_msg = f"Error processing row {row_num + 1}: {str(e)}"
+						print(error_msg)
+						progress_data['errors'] = progress_data.get('errors', 0) + 1
+						progress_data['last_error'] = error_msg
+						update_progress()
 						continue
-					if (row_num + 1) < (start_row + test_products):
-						print(f"\nProcessing row {row_num + 1}/{total_rows} - {url}")
 
-						# Process the product
-						# Copy values from import file
-						row_spec['subcategory'] = row.get('Subcategory', '')
-						row_spec['timestamp'] = row.get('Timestamp', '')
-						row_spec['content_url'] = row.get('URL', '')
-						row_spec['sku'] = row.get('SKU', '')
-						row_spec['category'] = row.get('Category', '')
-						# Call the product processing function
-						row_spec = self.get_product_details(url, row_spec)
+			# Processing complete
+			completion_msg = f"Processing complete. Processed {progress_data['processed']} products. "
+			completion_msg += f"Errors: {progress_data['errors']}. "
+			completion_msg += f"Results saved to {output_filename}"
 
-						# Write to CSV
-						print(f"Saving product {row_spec['name']} to {output_filename}")
-						self.write_product_to_csv(row_spec, output_filename)
+			progress_data.update({
+				'status': 'completed',
+				'message': completion_msg
+			})
+			update_progress()
 
-						print(f"Saved product {row_spec['name']} to {output_filename}")
-						# adjust this if we are making requests too fast
-						# time.sleep(1)
+			print(completion_msg)
+			return f"<p>{completion_msg}</p>"
 
-				except Exception as e:
-					print(f"⛔️⛔️⛔️Error processing row {row_num + 1}: {e}")
-					continue
-		self.driver.quit()
-		print(f"\nProcessing complete. Results saved to {output_filename}")
-		return f"<p>Processing complete. Processed {total_rows - start_row} products. Results saved to {output_filename}</p>"
+		except Exception as e:
+			error_msg = f"Unexpected error in process_products_from_csv: {str(e)}"
+			print(error_msg)
+			progress_data.update({
+				'status': 'error',
+				'error': error_msg
+			})
+			update_progress()
+			return f"<p class='error'>{error_msg}</p>"
 
 	def process_extra_data_from_csv(self):
 		"""

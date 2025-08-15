@@ -4,10 +4,11 @@
 
 {% block content %}
     <div class="container mt-4">
+        <h1>Scrapers</h1>
         <div class="row">
             <div class="col-md-6">
-                <h1>Scrapers</h1>
                 <div class="mb-4">
+                    <h5 class="mt-4">Other</h5>
                     <ul class="list-unstyled">
                         <li class="mb-2"><a href="{% url 'sg' %}" class="btn btn-sm btn-outline-primary">Southern Glazier</a></li>
                     </ul>
@@ -140,9 +141,12 @@
                 // Add results for each directory
                 for (const [dirPath, dirData] of Object.entries(data.results)) {
                     html += `
-                        <div class="mb-3 bg-maroon text-white p-2">
+                        <div class="mb-3 bg-maroon text-white p-2 rounded">
                             <h6>${dirPath}</h6>
                             <table class="table striped">
+                                <th>Category File</th>
+                                <th class="text-end">Product Rows</th>
+                                <th class="text-end">Scraped Rows</th>
                                 ${dirData.files.map(file => `
                                     <tr>
                                         <td class="">${file.file_name}</td>

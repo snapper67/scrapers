@@ -6,7 +6,7 @@
             <div class="container mt-4">
                 <h2>{% block name %}{% endblock name %}</h2>
                 {% block top %}{% endblock top %}
-                <form method="post" class="mt-4" id="scraperForm">
+                <form method="post" class="mt-4" id="scraperForm" onsubmit="return handleFormSubmit(event)">
                     {% csrf_token %}
                     <!-- Scraping Functions Card -->
                     <div class="row mt-1">
@@ -383,20 +383,213 @@
                     <button type="submit" class="btn btn-primary mt-3">Run</button>
                 </form>
             </div>
+            <!-- Progress Modal -->
+            <div class="modal fade" id="progressModal" tabindex="-1" aria-labelledby="progressModalLabel" aria-hidden="true" data-bs-backdrop="static">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header bg-primary text-white">
+                            <h5 class="modal-title" id="progressModalLabel">Processing Products</h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div id="progressError" class="alert alert-danger d-none" role="alert">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                <span id="progressErrorMessage"></span>
+                            </div>
+
+                            <div id="progressContent">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span id="statusText">Starting...</span>
+                                    <span id="progressText">0%</span>
+                                </div>
+                                <div class="progress" style="height: 25px;">
+                                    <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated"
+                                         role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                                </div>
+                                <div class="mt-3">
+                                    <p class="mb-1"><small class="text-muted">Processed:</small> <span id="processedCount">0</span> / <span id="totalCount">0</span></p>
+                                    <p class="mb-1"><small class="text-muted">Current:</small> <span id="currentItem">-</span></p>
+                                    <p class="mb-0"><small class="text-muted">Errors:</small> <span id="errorCount" class="text-danger">0</span></p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         {% endblock common %}
     {% endblock scrape_content %}
     {% block scripts %}
         <script>
             {% block file_mapping %}
-        // Define the file name mappings
-        const fileMappings = {
-            {% for category in categories %}
-            "{{ category.id }}": {
-                "url_file": "{{ category.url_file }}",
-                "data_file": "{{ category.data_file }}"
-            }{% if not forloop.last %},{% endif %}
-            {% endfor %}
-        };{% endblock file_mapping %}
+                // Define the file name mappings
+                const fileMappings = {
+                    {% for category in categories %}
+                    "{{ category.id }}": {
+                        "url_file": "{{ category.url_file }}",
+                        "data_file": "{{ category.data_file }}"
+                    }{% if not forloop.last %},{% endif %}
+                    {% endfor %}
+                };
+        {% endblock file_mapping %}
+            // Global variable to track the progress polling
+    let progressInterval = null;
+    let currentTaskId = null;
+
+    // Function to show the progress modal
+    function showProgressModal(taskId) {
+        currentTaskId = taskId;
+        const modal = new bootstrap.Modal(document.getElementById('progressModal'));
+        modal.show();
+        startProgressPolling();
+    }
+
+    // Function to start polling for progress updates
+    function startProgressPolling() {
+        // Clear any existing interval
+        if (progressInterval) {
+            clearInterval(progressInterval);
+        }
+
+        // Start polling every second
+        progressInterval = setInterval(updateProgress, 3000);
+    }
+
+    // Function to update progress
+    function updateProgress() {
+        if (!currentTaskId) return;
+
+        fetch('{% url "get_processing_progress" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFTTOKEN': '{{ csrf_token }}',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({ task_id: currentTaskId })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                showProgressError(data.error);
+                return;
+            }
+
+            const progress = data.progress;
+            if (!progress) return;
+
+            // Update progress bar
+            const progressPercent = progress.total > 0
+                ? Math.round((progress.current / progress.total) * 100)
+                : 0;
+
+            document.getElementById('progressBar').style.width = `${progressPercent}%`;
+            document.getElementById('progressText').textContent = `${progressPercent}%`;
+
+            // Update status text
+            document.getElementById('statusText').textContent =
+                progress.status === 'completed' ? 'Processing Complete!' : 'Processing...';
+
+            // Update counts
+            document.getElementById('processedCount').textContent = progress.processed || 0;
+            document.getElementById('totalCount').textContent = progress.total || 0;
+            document.getElementById('errorCount').textContent = progress.errors || 0;
+            document.getElementById('currentItem').textContent = progress.current_product || '-';
+
+            // Handle completion or errors
+            if (progress.status === 'completed' || progress.status === 'error') {
+                clearInterval(progressInterval);
+                progressInterval = null;
+
+                if (progress.status === 'error') {
+                    showProgressError(progress.error || 'An unknown error occurred');
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching progress:', error);
+            showProgressError('Failed to fetch progress updates');
+        });
+    }
+
+    // Function to show error in progress modal
+    function showProgressError(message) {
+        clearInterval(progressInterval);
+        progressInterval = null;
+
+        document.getElementById('progressErrorMessage').textContent = message;
+        document.getElementById('progressError').classList.remove('d-none');
+        document.getElementById('progressContent').classList.add('d-none');
+    }
+
+    // Close modal handler
+    document.getElementById('progressModal').addEventListener('hidden.bs.modal', function () {
+        clearInterval(progressInterval);
+        progressInterval = null;
+        currentTaskId = null;
+    });
+
+        // Function to handle form submission
+        function handleFormSubmit(event) {
+            const form = event.target;
+            const processCsvChecked = document.getElementById('process_csv').checked;
+            
+            if (processCsvChecked) {
+                // Prevent default form submission
+                event.preventDefault();
+                console.log('Processing CSV...');
+                // Show loading state
+                const submitBtn = form.querySelector('button[type="submit"]');
+                const originalBtnText = submitBtn.innerHTML;
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Starting...';
+                
+                // Submit form data via fetch
+                const formData = new FormData(form);
+                
+                fetch(form.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.task_id) {
+                        // Show progress modal with the task ID
+                        showProgressModal(data.task_id);
+                        console.log('showProgressModal...');
+                    } else if (data.redirect_url) {
+                        // If no task_id but has redirect_url, redirect to that URL
+                        window.location.href = data.redirect_url;
+                        console.log('redirect...');
+                    } else {
+                        // Fallback to default form submission
+                        form.submit();
+                        console.log('submit...');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    // Fallback to default form submission on error
+                    form.submit();
+                })
+                .finally(() => {
+                    // Reset button state
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalBtnText;
+                });
+                
+                return false;
+            }
+            
+            // Default form submission for non-CSV processing
+            return true;
+        }
+        
         // Function to update file names based on selected category
         function updateFilenames(categoryId) {
             const mapping = fileMappings[categoryId];

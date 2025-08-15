@@ -1,5 +1,9 @@
 from django.shortcuts import render
 from django.views.generic import TemplateView
+from django.views.decorators.http import require_http_methods
+from django.views.decorators.csrf import csrf_exempt
+from django.core.cache import cache
+import json
 
 from scrapers.cut.birite import BiRiteScraper
 from scrapers.cut.primizie import PrimizieScraper
@@ -502,6 +506,7 @@ def scrape_sg(request):
 
 def process_cut_post(request, scraper):
     print(request.POST)
+    print("process_cut_post()")
     distributor_options = scraper.get_options()
 
     # Update options from form data
@@ -519,6 +524,81 @@ def process_cut_post(request, scraper):
 
     # Run the scraper if not just cleaning URLs
     scraper.set_options(options)
+    print(f"checking request {options}")
+    # Check if this is an AJAX request for processing CSV
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest' and options.get('process_csv'):
+        # Generate a task ID immediately
+        import uuid
+        task_id = str(uuid.uuid4())
+
+        print(f"Got - Task ID: {task_id}")
+        
+        # Store the necessary options in cache instead of the scraper instance
+        from django.core.cache import cache
+        cache_key = f'scraper_options_{task_id}'
+        print(f"setting options in cache: {options}")
+        # Store only the options we need for the scraper
+        cache.set(cache_key, {
+            'home_directory': options.get('home_directory', ''),
+            'csv_start_row': options.get('csv_start_row', 0),
+            'test_products': options.get('test_products', 0),
+            'url_output_file': options.get('url_output_file', ''),
+            'data_output_file': options.get('data_output_file', ''),
+            'process_csv': options.get('process_csv', ''),
+            'attempts': options.get('attempts', 40)
+        }, timeout=3600)  # 1 hour timeout
+        
+        # Start the scraper in a background thread
+        import threading
+        from importlib import import_module
+        
+        def run_scraper_async(task_id, module_name, class_name):
+            print(f"run_scraper_async()")
+            try:
+                # Import the scraper class dynamically
+                module = import_module(module_name)
+                ScraperClass = getattr(module, class_name)
+                print(f"Imported scraper class: {ScraperClass}")
+                # Create a new scraper instance in the background thread
+                with ScraperClass() as scraper:  # Create a new instance of the ScraperClass()
+                    scraper.current_task_id = task_id
+
+                    # Get the options from cache
+                    options = cache.get(f'scraper_options_{task_id}', {})
+                    scraper.set_options(options)
+
+                    # Run the scraper
+                    print(f"Running scraper with options: {options}")
+                    scraper.run()
+                
+            except Exception as e:
+                # Update progress with error
+                print(f"Error running scraper: {e}")
+                progress_data = {
+                    'status': 'error',
+                    'error': str(e),
+                    'task_id': task_id
+                }
+                cache.set(f'product_processing_progress_{task_id}', progress_data, timeout=3600)
+        
+        # Get the module and class name for dynamic import
+        scraper_module = scraper.__class__.__module__
+        scraper_class = scraper.__class__.__name__
+        
+        # Start the scraper in a background thread
+        thread = threading.Thread(
+            target=run_scraper_async,
+            args=(task_id, scraper_module, scraper_class),
+            daemon=True  # Allow the thread to be terminated when the main thread exits
+        )
+        print("Starting thread")
+        thread.start()
+        
+        # Return the task ID to the client immediately
+        print(f"Returning task ID: {task_id}")
+        return JsonResponse({'task_id': task_id}, status=200)
+    
+    # Normal synchronous processing
     result = scraper.run()
     return result
 
@@ -927,12 +1007,14 @@ def scrape_christ_panos(request):
     })
 
 def scrape_derstines(request):
+    print("Calling scrape_derstines()")
     options = {}
 
     if request.method == 'POST':
         with DerstinesScraper(options) as scraper:
+            print("Calling process_cut_post from scrape_derstines()")
             result = process_cut_post(request, scraper)
-            return render(request, 'scrape_products/scrape_results.html', {'result': result})
+            return result
 
     # GET request - show form
     scraper = DerstinesScraper()
@@ -954,6 +1036,7 @@ def scrape_driscoll(request):
 
     if request.method == 'POST':
         with DriscollScraper(options) as scraper:
+            print("Calling process_cut_post from ()")
             result = process_cut_post(request, scraper)
             return render(request, 'scrape_products/scrape_results.html', {'result': result})
 
@@ -966,9 +1049,33 @@ def scrape_driscoll(request):
     defaults.update({'attempts': 40})
 
     return render(request, 'scrape_products/scrape_cut.html', {
-        'categories': categories,
+        'distributor': 'Driscoll',
+        'distributor_options': distributor_options,
         'defaults': defaults,
-        'name': scraper.get_name(),
+        'categories': categories,
         'total_products': total_products
     })
 
+@csrf_exempt
+@require_http_methods(["POST"])
+def get_processing_progress(request):
+    """
+    Endpoint to get the current progress of product processing.
+    Expected POST data: {"task_id": "unique_task_id"}
+    """
+    try:
+        data = json.loads(request.body)
+        task_id = data.get('task_id')
+        print("checking progress for task_id:", task_id)
+        if not task_id:
+            return JsonResponse({'error': 'task_id is required'}, status=400)
+            
+        progress = cache.get(f'product_processing_progress_{task_id}', {})
+        return JsonResponse({
+            'status': 'success',
+            'progress': progress
+        })
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
