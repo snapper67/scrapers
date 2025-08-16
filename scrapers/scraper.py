@@ -659,6 +659,16 @@ class Scraper:
 
 		except Exception as e:
 			return f"Error in process_extra_data_from_csv: {str(e)}"
+		
+	def get_unique_keys(self, data_file):
+		keys = set()
+		if os.path.exists(data_file):
+			with open(data_file, 'r', newline='', encoding='utf-8') as f:
+				reader = csv.DictReader(f)
+				csv.field_size_limit(sys.maxsize)
+				if 'sku' in reader.fieldnames:
+					keys = {row['sku'] for row in reader}
+		return keys
 
 	def process_missing_skus(self, url_file=URL_OUTPUT_FILE, data_file=DATA_OUTPUT_FILE,
 		                         home_dir=DEFAULT_DIRECTORY):
@@ -677,13 +687,7 @@ class Scraper:
 		print(f"url_file: {url_file}")
 		print(f"data_file: {data_file}")
 		# Read existing data to check which SKUs we already have
-		existing_skus = set()
-		if os.path.exists(data_file):
-			with open(data_file, 'r', newline='', encoding='utf-8') as f:
-				reader = csv.DictReader(f)
-				csv.field_size_limit(sys.maxsize)
-				if 'sku' in reader.fieldnames:
-					existing_skus = {row['sku'] for row in reader}
+		existing_skus = self.get_unique_keys(data_file)
 
 		# Read URL file to get URL for each SKU
 		print(f"Existing SKUs: {len(existing_skus)}")

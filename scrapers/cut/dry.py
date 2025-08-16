@@ -1,5 +1,7 @@
-
+import csv
 import json
+import os
+import sys
 import time
 from urllib.parse import quote
 
@@ -310,6 +312,16 @@ class CutScraper(Scraper):
 		"""Scrape products from the website"""
 		print("scraping_setup()")
 		return
+
+	def get_unique_keys(self, data_file):
+		keys = set()
+		if os.path.exists(data_file):
+			with open(data_file, 'r', newline='', encoding='utf-8') as f:
+				reader = csv.DictReader(f)
+				csv.field_size_limit(sys.maxsize)
+				if 'id' in reader.fieldnames:
+					keys = {row['id'] for row in reader}
+		return keys
 
 	# ************************************************************************
 
