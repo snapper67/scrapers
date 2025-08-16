@@ -14,6 +14,7 @@ urlpatterns = [
     path("sg/", views.scrape_sg, name="sg"),
     path("birite/", views.scrape_birite, name="birite"),
     path("driscoll/", views.scrape_driscoll, name="driscoll"),
+    path("foodpro/", views.scrape_foodpro, name="foodpro"),
     path("primizie/", views.scrape_primizie, name="primizie"),
     path("sardilli/", views.scrape_sardilli, name="sardilli"),
     path("maple_vale/", views.scrape_maple_vale, name="maple_vale"),

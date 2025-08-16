@@ -107,7 +107,9 @@ class SouthernGlazierScraper(Scraper):
 	CSV_START_ROW = 0
 	TEST_TABS = 2
 	MAX_API_PRODUCTS = 999  # Maximum number to change the search request page size
-	DEFAULT_DIRECTORY = '/Users/mark/Downloads/scrapers/sg'
+	DEFAULT_DIRECTORY = '/Users/mark/Downloads/scrapers/southern_glazier/'
+	URL_OUTPUT_FILE = 'product_urls.csv'
+	DATA_OUTPUT_FILE = 'product_data.csv'
 
 	BASE_URL = 'https://shop.sgproof.com/'
 	VENDOR_NAME = 'Southern Glazier'
