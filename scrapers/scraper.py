@@ -722,7 +722,7 @@ class Scraper:
 								print(f"⛔️⛔️⛔️Error processing SKU {sku}: {str(e)}")
 								not_found_skus.append(sku)
 
-		return processed_skus, not_found_skus
+		return f"<div>Processed SKUs{processed_skus}. </div><div>Not found SKUs: {not_found_skus}<div>"
 
 	def remove_duplicate_skus(self, input_file=None, output_file=None, home_dir=DEFAULT_DIRECTORY):
 		"""

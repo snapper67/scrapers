@@ -503,7 +503,14 @@
                 clearInterval(progressInterval);
                 progressInterval = null;
 
-                if (progress.status === 'error') {
+                // Change favicon to checkmark when task is completed
+                if (progress.status === 'completed') {
+                    const link = document.querySelector("link[rel*='icon']") || document.createElement('link');
+                    link.type = 'image/x-icon';
+                    link.rel = 'icon';
+                    link.href = 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">✓</text></svg>';
+                    document.getElementsByTagName('head')[0].appendChild(link);
+                } else if (progress.status === 'error') {
                     showProgressError(progress.error || 'An unknown error occurred');
                 }
             }
@@ -599,10 +606,25 @@
             }
         }
 
+
         // Initialize file names on page load
         document.addEventListener('DOMContentLoaded', function() {
             const initialCategory = document.getElementById('category_id').value;
             updateFilenames(initialCategory);
+
+            // Handle checkbox behavior - only allow one checkbox to be checked at a time
+            document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    if (this.checked) {
+                        // Uncheck all other checkboxes when one is checked
+                        document.querySelectorAll('input[type="checkbox"]').forEach(otherCheckbox => {
+                            if (otherCheckbox !== this) {
+                                otherCheckbox.checked = false;
+                            }
+                        });
+                    }
+                });
+            });
 
             // Use event delegation for the count CSV rows button
             document.addEventListener('click', function(event) {

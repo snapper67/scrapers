@@ -33,7 +33,6 @@
                                 <li class="mb-2"><a href="{% url 'sierra_meat' %}" class="btn btn-sm btn-outline-primary">Sierra Meat</a></li>
                                 <li class="mb-2"><a href="{% url 'sunbelt' %}" class="btn btn-sm btn-outline-primary">Sun Belt</a></li>
                                 <li class="mb-2"><a href="{% url 'vitco_foods' %}" class="btn btn-sm btn-outline-primary">Vitco Foods</a></li>
-                                                        <li class="mb-2"><a href="{% url 'foodpro' %}" class="btn btn-sm btn-outline-primary">FoodPro</a></li>
 
                             </ul>
                         </div>
@@ -42,24 +41,40 @@
             </div>
             <div class="col-md-6">
                 <h5 class="mt-4">Done</h5>
-                <ul class="list-unstyled">
-                    <li class="mb-2"><a href="{% url 'usfoods' %}" class="btn btn-sm btn-outline-success">US Foods</a></li>
-                    <li class="mb-2"><a href="{% url 'cw' %}" class="btn btn-sm btn-outline-success">Chefs' Warehouse</a></li>
-                    <li class="mb-2"><a href="{% url 'breakthru' %}" class="btn btn-sm btn-outline-success">Breakthru</a></li>
-                    <li class="mb-2"><a href="{% url 'sg' %}" class="btn btn-sm btn-outline-primary">Southern Glazier</a></li>
+                <div class="row">
+                    <div class="col-md-6">
+                        <ul class="list-unstyled">
+                            <li class="mb-2"><a href="{% url 'breakthru' %}" class="btn btn-sm btn-outline-success">Breakthru</a></li>
+                            <li class="mb-2"><a href="{% url 'cw' %}" class="btn btn-sm btn-outline-success">Chefs' Warehouse</a></li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <ul class="list-unstyled">
+                            <li class="mb-2"><a href="{% url 'sg' %}" class="btn btn-sm btn-outline-success">Southern Glazier</a></li>
+                            <li class="mb-2"><a href="{% url 'usfoods' %}" class="btn btn-sm btn-outline-success">US Foods</a></li>
+                        </ul>
+                    </div>
+                </div>
 
-                </ul>
                 <h5 class="mt-4">Cut & Dry</h5>
-                <ul class="list-unstyled">
-                    <li class="mb-2"><a href="{% url 'birite' %}" class="btn btn-sm btn-outline-success">BiRite</a></li>
-                    <li class="mb-2"><a href="{% url 'sardilli' %}" class="btn btn-sm btn-outline-success">Sardilli</a></li>
-                    <li class="mb-2"><a href="{% url 'manson' %}" class="btn btn-sm btn-outline-success">Manson</a></li>
-                    <li class="mb-2"><a href="{% url 'primizie' %}" class="btn btn-sm btn-outline-success">Primizie</a></li>
-                    <li class="mb-2"><a href="{% url 'ab' %}" class="btn btn-sm btn-outline-success">A & B</a></li>
-                    <li class="mb-2"><a href="{% url 'cooks_company' %}" class="btn btn-sm btn-outline-success">Cooks Company</a></li>
-                    <li class="mb-2"><a href="{% url 'southwest_traders' %}" class="btn btn-sm btn-outline-success">Southwest Traders</a></li>
-
-                </ul>
+                <div class="row">
+                    <div class="col-md-6">
+                        <ul class="list-unstyled">
+                            <li class="mb-2"><a href="{% url 'ab' %}" class="btn btn-sm btn-outline-success">A & B</a></li>
+                            <li class="mb-2"><a href="{% url 'birite' %}" class="btn btn-sm btn-outline-success">BiRite</a></li>
+                            <li class="mb-2"><a href="{% url 'cooks_company' %}" class="btn btn-sm btn-outline-success">Cooks Company</a></li>
+                            <li class="mb-2"><a href="{% url 'foodpro' %}" class="btn btn-sm btn-outline-success">FoodPro</a></li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <ul class="list-unstyled">
+                            <li class="mb-2"><a href="{% url 'manson' %}" class="btn btn-sm btn-outline-success">Manson</a></li>
+                            <li class="mb-2"><a href="{% url 'primizie' %}" class="btn btn-sm btn-outline-success">Primizie</a></li>
+                            <li class="mb-2"><a href="{% url 'sardilli' %}" class="btn btn-sm btn-outline-success">Sardilli</a></li>
+                            <li class="mb-2"><a href="{% url 'southwest_traders' %}" class="btn btn-sm btn-outline-success">Southwest Traders</a></li>
+                        </ul>
+                    </div>
+                </div>
             </div>
 
         </div>
@@ -108,6 +123,8 @@
     {% block extra_js %}
     <script>
     document.addEventListener('DOMContentLoaded', function() {
+
+
         const form = document.getElementById('csvRowCounterForm');
         const loadingIndicator = document.getElementById('loadingIndicator');
         const resultsContainer = document.getElementById('resultsContainer');

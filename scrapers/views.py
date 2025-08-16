@@ -1285,25 +1285,29 @@ def scrape_sierra_meat(request):
 	})
 
 def scrape_foodpro(request):
-    options = {}
+	print("Calling scrape_foodpro()")
+	options = {}
 
-    if request.method == 'POST':
-        with FoodProScraper(options) as scraper:
-            result = process_cut_post(request, scraper)
-            return render(request, 'scrape_products/scrape_results.html', {'result': result})
+	if request.method == 'POST':
+		with FoodProScraper(options) as scraper:
+			print("Calling process_cut_post from scrape_foodpro()")
+			result = process_cut_post(request, scraper)
+			if isinstance(result, str):
+				return render(request, 'scrape_products/scrape_results.html', {'result': result})
+			else:
+				return result
 
-    # GET request - show form
-    scraper = FoodProScraper()
-    distributor_options = scraper.get_options()
-    categories, total_products = update_cut_categories(request.POST, scraper)
+	# GET request - show form
+	scraper = FoodProScraper()
+	distributor_options = scraper.get_options()
+	categories, total_products = update_cut_categories(request.POST, scraper)
 
-    defaults = set_defaults(distributor_options)
-    defaults.update({'attempts': 40})
+	defaults = set_defaults(distributor_options)
+	defaults.update({'attempts': 40})
 
-    return render(request, 'scrape_products/scrape_cut.html', {
-        'categories': categories,
-        'defaults': defaults,
-        'name': scraper.get_name(),
-        'total_products': total_products
-    })
-
+	return render(request, 'scrape_products/scrape_cut.html', {
+		'categories': categories,
+		'defaults': defaults,
+		'name': scraper.get_name(),
+		'total_products': total_products
+	})
