@@ -1,11 +1,12 @@
 from django.urls import path
 from . import views
 
-from .views import ScrapeProductsPageView, get_processing_progress
+from .views import ScrapeProductsPageView, get_processing_progress, stop_processing
 
 # app_name = 'machine'
 urlpatterns = [
     path("scrape_products/", ScrapeProductsPageView.as_view(), name="scrape_products"),
+    path("api/stop_processing/", stop_processing, name="stop_processing"),
     path("get_processing_progress/", get_processing_progress, name="get_processing_progress"),
     # path("sysco_api/", SyscoApiPageView.as_view(), name="sysco_api"),
     path("usfoods/", views.scrape_usfoods, name="usfoods"),
@@ -23,6 +24,7 @@ urlpatterns = [
     path("manson/", views.scrape_manson, name="manson"),
     path("indianhead/", views.scrape_indianhead, name="indianhead"),
     path("ab/", views.scrape_ab, name="ab"),
+    path("apito/", views.scrape_apito, name="apito"),
     path("sandw/", views.scrape_sandw, name="sandw"),
     path("southwest_traders/", views.scrape_southwest_traders, name="southwest_traders"),
     path("caruso/", views.scrape_caruso, name="caruso"),

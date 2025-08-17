@@ -3,6 +3,7 @@ import json
 import os
 import sys
 import time
+from operator import truediv
 from urllib.parse import quote
 
 import pandas as pd
@@ -589,69 +590,65 @@ class CutScraper(Scraper):
 			self.driver.get(url)
 			print(f"URL Loaded")
 			print(f"Page : {page}")
-			filter_criteria = "/api/1431646/store/"
-			try:
-				# Wait for the request we think is one of the last
-				request = self.driver.wait_for_request(filter_criteria, 50)
-			except Exception as e:
-				print(f"⛔️⛔️⛔️Request failed: {e}")
-				html += f"<h2>{category_name} -> {subcat_name} -> Page {page}</h2>"
-				html += "<div>TIme Out </div>"
-				break
+
+			first_found = False
+			attempts = 0
 
 			print("Processing Requests")
-			# while (not first_found or not second_found) and attempts < self.options['attempts']:
-			# 	time.sleep(1)
-			# 	attempts += 1
-			# 	print(f"attempt: {attempts}")
-			filter_criteria = self.GRAPHQL_API_FILTER
-			for request in self.driver.requests:
-				if request.response and filter_criteria in request.url:  # Filter for API requests
-					current_data = request.body.decode('utf-8')
-					# print(f"current_data: {current_data}")
-					payload = json.loads(current_data)
-					if payload.get('operationName', '') == self.SEARCH_API_OPERATION:
-						print(f"{self.SEARCH_API_OPERATION} found")
-						print(f"URL: {request.url}")
-						print(f"Status Code: {request.response.status_code}")
-						print(f"Content Type: {request.response.headers.get('Content-Type')}")
-						try:
-							body = decode(request.response.body,
-							              request.response.headers.get('Content-Encoding', 'identity'))
+			while not first_found and attempts < self.options['attempts']:
+				time.sleep(1)
+				attempts += 1
+				print(f"attempt: {attempts}")
+				filter_criteria = self.GRAPHQL_API_FILTER
+				for request in self.driver.requests:
+					if request.response and filter_criteria in request.url:  # Filter for API requests
+						current_data = request.body.decode('utf-8')
+						# print(f"current_data: {current_data}")
+						payload = json.loads(current_data)
+						print(f"Payload Method: {payload.get('operationName', '')}")
+						if payload.get('operationName', '') == self.SEARCH_API_OPERATION:
+							print(f"{self.SEARCH_API_OPERATION} found")
+							print(f"URL: {request.url}")
+							print(f"Status Code: {request.response.status_code}")
+							print(f"Content Type: {request.response.headers.get('Content-Type')}")
+							try:
+								body = decode(request.response.body,
+								              request.response.headers.get('Content-Encoding', 'identity'))
 
-							# If the body is JSON, parse it
-							if 'application/json' in request.response.headers.get('Content-Type', ''):
-								data = json.loads(body)
-								# https://app.salsify.com/catalogs/a256467d-fc0a-4bce-8971-1d14466fd28f/products/9258080
-								if 'canonicalProducts' in data.get('data', {}).get('catalogProductsRootQuery', {}):
-									print(f"Response products: {'canonicalProducts' in data} ")
-									detail_urls = [
-										self.build_product_url(product.get('id', ''))
-										for product in data.get('data', {}).get('catalogProductsRootQuery', {}).get(
-											'canonicalProducts', [])]
-									print(f"== Number of products: {len(detail_urls)}")
-									all_urls.extend(detail_urls)
-									html += f"<h2>{category_name} -> {subcat_name} -> page {page}</h2>"
-									html += "<div>Products found: " + str(len(detail_urls)) + "</div>"
-									self.save_urls_to_csv(detail_urls, category_name, subcat_name)
-									print(f"=== Number of products: {len(detail_urls)}")
+								# If the body is JSON, parse it
+								if 'application/json' in request.response.headers.get('Content-Type', ''):
+									data = json.loads(body)
+									# https://app.salsify.com/catalogs/a256467d-fc0a-4bce-8971-1d14466fd28f/products/9258080
+									if 'canonicalProducts' in data.get('data', {}).get('catalogProductsRootQuery', {}):
+										print(f"Response products: {'canonicalProducts' in data} ")
+										first_found = True
+										detail_urls = [
+											self.build_product_url(product.get('id', ''))
+											for product in data.get('data', {}).get('catalogProductsRootQuery', {}).get(
+												'canonicalProducts', [])]
+										print(f"== Number of products: {len(detail_urls)}")
+										all_urls.extend(detail_urls)
+										html += f"<h2>{category_name} -> {subcat_name} -> page {page}</h2>"
+										html += "<div>Products found: " + str(len(detail_urls)) + "</div>"
+										self.save_urls_to_csv(detail_urls, category_name, subcat_name)
+										print(f"=== Number of products: {len(detail_urls)}")
 
-									if len(detail_urls) < self.options['max_products']:
-										still_looking = False
-									break
+										if len(detail_urls) < self.options['max_products']:
+											still_looking = False
+										break
+									else:
+										print(f"Response products missing: {'canonicalProducts' in data} ")
+								# print(f"data: {data} ")
+
 								else:
-									print(f"Response products missing: {'canonicalProducts' in data} ")
-							# print(f"data: {data} ")
+									print(f"Response Body (Text): ")
+									print(f"Response not JSON  ")
 
-							else:
-								print(f"Response Body (Text): ")
-								print(f"Response not JSON  ")
+							except Exception as e:
+								print(f"⛔️⛔️⛔️Error decoding detail response body: {e}")
 
-						except Exception as e:
-							print(f"⛔️⛔️⛔️Error decoding detail response body: {e}")
-
-				# del self.driver.request_interceptor
-				del self.driver.requests
+					# del self.driver.request_interceptor
+			del self.driver.requests
 		print(f"wait_and_process_products() complete")
 		return html, all_urls
 
