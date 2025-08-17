@@ -823,7 +823,7 @@ class CutScraper(Scraper):
 						print(f"⛔️⛔️⛔️Error decoding search response body: {e}")
 
 		print(f"")
-		print(f"categories : {json.dumps(data)}")
+		print(f"categories : {json.dumps(data, indent=2, sort_keys=True)}")
 		del self.driver.requests
 
-		return f"<div>{json.dumps(data)}</div>"
+		return f"<div>{json.dumps(data, indent=2, sort_keys=True)}</div>"
