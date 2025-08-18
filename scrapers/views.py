@@ -23,6 +23,7 @@ from .cut.crookbros import CrookBrosScraper
 from .cut.cusumanoandsons import CusumanoAndSonsScraper
 from .cut.dwcspecialties import DWCSpecialtiesScraper
 from .cut.fourstarmeat import FourStarMeatScraper
+from .cut.hearty import HeartyScraper
 from .cut.hooktofork import HookToForkScraper
 from .cut.jordanpaige import JordanPaigeScraper
 from .cut.manson import MansonScraper
@@ -37,6 +38,7 @@ from .cut.socomeatco import SoCoMeatCoScraper
 from .cut.sutters import SuttersScraper
 from .cut.thefishguys import TheFishGuysScraper
 from .cut.tolteca import ToltecaScraper
+from .cut.totalfoods import TotalFoodsScraper
 from .cut.valleygold import ValleyGoldScraper
 from .cut.whatchefswant_south import WhatChefsWantSouthScraper
 from .csvProcessor import CSVProcessor
@@ -64,6 +66,7 @@ from .cut.sunbelt import SunbeltScraper
 from .cut.vitco_foods import VitcoScraper
 from .cut.wagner import WagnerScraper
 from .misc.cheneybrothers import CheneyBrothersScraper
+from .cut.woolcofoods import WoolcoFoodsScraper
 from .scraper import Scraper
 
 
@@ -1486,7 +1489,6 @@ def scrape_apito(request):
         'total_products': total_products
     })
 
-
 def scrape_sierra_meat(request):
     print("Calling scrape_derstines()")
     options = {}
@@ -2223,6 +2225,93 @@ def scrape_whatchefswant_south(request):
 
     # GET request - show form
     scraper = WhatChefsWantSouthScraper()
+    distributor_options = scraper.get_options()
+    categories, total_products = update_cut_categories(request.POST, scraper)
+
+    defaults = set_defaults(distributor_options)
+    defaults.update({'attempts': 40})
+
+    return render(request, 'scrape_products/scrape_cut.html', {
+        'categories': categories,
+        'defaults': defaults,
+        'name': scraper.get_name(),
+        'total_products': total_products
+    })
+
+def scrape_hearty(request):
+    """View for scraping Hearty"""
+    print("Calling scrape_hearty()")
+    options = {}
+
+    if request.method == 'POST':
+        with HeartyScraper(options) as scraper:
+            print("Calling process_cut_post from scrape_hearty()")
+            result = process_cut_post(request, scraper)
+            if isinstance(result, str):
+                return render(request, 'scrape_products/scrape_results.html', {'result': result})
+            else:
+                return result
+
+    # GET request - show form
+    scraper = HeartyScraper()
+    distributor_options = scraper.get_options()
+    categories, total_products = update_cut_categories(request.POST, scraper)
+
+    defaults = set_defaults(distributor_options)
+    defaults.update({'attempts': 40})
+
+    return render(request, 'scrape_products/scrape_cut.html', {
+        'categories': categories,
+        'defaults': defaults,
+        'name': scraper.get_name(),
+        'total_products': total_products
+    })
+
+def scrape_totalfoods(request):
+    """View for scraping Total Foods"""
+    print("Calling scrape_totalfoods()")
+    options = {}
+
+    if request.method == 'POST':
+        with TotalFoodsScraper(options) as scraper:
+            print("Calling process_cut_post from scrape_totalfoods()")
+            result = process_cut_post(request, scraper)
+            if isinstance(result, str):
+                return render(request, 'scrape_products/scrape_results.html', {'result': result})
+            else:
+                return result
+
+    # GET request - show form
+    scraper = TotalFoodsScraper()
+    distributor_options = scraper.get_options()
+    categories, total_products = update_cut_categories(request.POST, scraper)
+
+    defaults = set_defaults(distributor_options)
+    defaults.update({'attempts': 40})
+
+    return render(request, 'scrape_products/scrape_cut.html', {
+        'categories': categories,
+        'defaults': defaults,
+        'name': scraper.get_name(),
+        'total_products': total_products
+    })
+
+def scrape_woolcofoods(request):
+    """View for scraping Woolco Foods"""
+    print("Calling scrape_woolcofoods()")
+    options = {}
+
+    if request.method == 'POST':
+        with WoolcoFoodsScraper(options) as scraper:
+            print("Calling process_cut_post from scrape_woolcofoods()")
+            result = process_cut_post(request, scraper)
+            if isinstance(result, str):
+                return render(request, 'scrape_products/scrape_results.html', {'result': result})
+            else:
+                return result
+
+    # GET request - show form
+    scraper = WoolcoFoodsScraper()
     distributor_options = scraper.get_options()
     categories, total_products = update_cut_categories(request.POST, scraper)
 

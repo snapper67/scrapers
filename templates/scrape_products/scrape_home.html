@@ -44,6 +44,9 @@
                                 <li class="mb-2"><a href="{% url 'sutters' %}" class="btn btn-sm btn-outline-primary">Sutter's Food Group</a></li>
                                 <li class="mb-2"><a href="{% url 'thefishguys' %}" class="btn btn-sm btn-outline-primary">The Fish Guys</a></li>
                                 <li class="mb-2"><a href="{% url 'tolteca' %}" class="btn btn-sm btn-outline-primary">Tolteca</a></li>
+                                <li class="mb-2"><a href="{% url 'totalfoods' %}" class="btn btn-sm btn-outline-primary">Total Foods</a></li>
+                                <li class="mb-2"><a href="{% url 'hearty' %}" class="btn btn-sm btn-outline-primary">Hearty</a></li>
+                                <li class="mb-2"><a href="{% url 'woolcofoods' %}" class="btn btn-sm btn-outline-primary">Woolco</a></li>
                                 <li class="mb-2"><a href="{% url 'valleygold' %}" class="btn btn-sm btn-outline-primary">Valley Gold</a></li>
                                 <li class="mb-2"><a href="{% url 'whatchefswant_south' %}" class="btn btn-sm btn-outline-primary">What Chefs Want - South</a></li>
 
@@ -52,7 +55,6 @@
                         </div>
                         <div class="col-md-6">
                             <ul class="list-unstyled">
-                                <li class="mb-2"><a href="{% url 'maple_vale' %}" class="btn btn-sm btn-outline-primary">Maple Vale</a></li>
                                 <li class="mb-2"><a href="{% url 'wagner' %}" class="btn btn-sm btn-outline-primary">Wagner</a></li>
                                 <li class="mb-2"><a href="{% url 'carmela' %}" class="btn btn-sm btn-outline-primary">Carmela</a></li>
                                 <li class="mb-2"><a href="{% url 'driscoll' %}" class="btn btn-sm btn-outline-primary">Driscoll</a></li>
@@ -60,7 +62,6 @@
                                 <li class="mb-2"><a href="{% url 'caruso' %}" class="btn btn-sm btn-outline-primary">Caruso</a></li>
                                 <li class="mb-2"><a href="{% url 'chefs_kitchen' %}" class="btn btn-sm btn-outline-primary">Chef's Kitchen</a></li>
                                 <li class="mb-2"><a href="{% url 'derstines' %}" class="btn btn-sm btn-outline-primary">Derstines</a></li>
-                                <li class="mb-2"><a href="{% url 'driscoll' %}" class="btn btn-sm btn-outline-primary">Driscoll</a></li>
                                 <li class="mb-2"><a href="{% url 'foodandpaper' %}" class="btn btn-sm btn-outline-primary">Food and Paper</a></li>
 
 
@@ -100,9 +101,11 @@
                         <ul class="list-unstyled">
                             <li class="mb-2"><a href="{% url 'indianhead' %}" class="btn btn-sm btn-outline-primary">Indianhead</a></li>
                             <li class="mb-2"><a href="{% url 'manson' %}" class="btn btn-sm btn-outline-success">Manson</a></li>
+                            <li class="mb-2"><a href="{% url 'maple_vale' %}" class="btn btn-sm btn-outline-primary">Maple Vale</a></li>
                             <li class="mb-2"><a href="{% url 'primizie' %}" class="btn btn-sm btn-outline-success">Primizie</a></li>
                             <li class="mb-2"><a href="{% url 'sardilli' %}" class="btn btn-sm btn-outline-success">Sardilli</a></li>
                             <li class="mb-2"><a href="{% url 'southwest_traders' %}" class="btn btn-sm btn-outline-success">Southwest Traders</a></li>
+
 
                         </ul>
                     </div>
@@ -162,17 +165,17 @@
         const resultsContainer = document.getElementById('resultsContainer');
         const resultsContent = document.getElementById('resultsContent');
         const errorContainer = document.getElementById('errorContainer');
-        
+
         form.addEventListener('submit', function(e) {
             e.preventDefault();
-            
+
             // Show loading, hide previous results and errors
             loadingIndicator.classList.remove('d-none');
             resultsContainer.classList.add('d-none');
             errorContainer.classList.add('d-none');
-            
+
             const formData = new FormData(form);
-            
+
             fetch('{% url "count_csv_rows" %}', {
                 method: 'POST',
                 body: formData,
@@ -191,7 +194,7 @@
                 if (data.error) {
                     throw new Error(data.error);
                 }
-                
+
                 // Display results
                 let html = `
                     <div class="mb-3">
@@ -202,7 +205,7 @@
                         <i class="bi bi-eye-slash"></i> Hide Details
                     </button>
                 `;
-                
+
                 // Add results for each directory
                 for (const [dirPath, dirData] of Object.entries(data.results)) {
                     html += `
@@ -227,8 +230,8 @@
                                 `).join('')}
                                 <td class="list-group-item d-flex justify-content-between align-items-center fw-bold">
                                     Total
-                                    <td class="text-end"><span class="badge bg-dark rounded-pill">${dirData.url_rows.toLocaleString()}</span></td>
-                                    <td class="text-end"><span class="badge bg-dark rounded-pill">${dirData.data_rows.toLocaleString()}</span></td>
+                                    <td class="text-end"><span class="">${dirData.url_rows.toLocaleString()}</span></td>
+                                    <td class="text-end"><span class="badge ${dirData.data_rows === dirData.url_rows ? 'bg-success' : 'bg-maroon'}  ${dirData.data_rows  > dirData.url_rows ? 'bg-warning' : ''} rounded-pill">${dirData.data_rows.toLocaleString()}</span></td>
                                 </td>
                                 </tr>
                             </table>
