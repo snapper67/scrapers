@@ -1,0 +1,137 @@
+{% extends '_base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Scraper Status{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Scraper Status</h1>
+        <div class="text-end">
+            <a href="{% url 'scrape_products' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Scrapers
+            </a>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-4 mb-3">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <h6 class="card-subtitle mb-2 text-muted">Total Scrapers</h6>
+                    <h2 class="mb-0">{{ scrapers|length }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <h6 class="card-subtitle mb-2 text-muted">Total URLs</h6>
+                    <h2 class="mb-0">{{ total_urls|intcomma }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <h6 class="card-subtitle mb-2 text-muted">Total Scraped</h6>
+                    <h2 class="mb-0">{{ total_data|intcomma }}</h2>
+                    <div class="progress mt-2" style="height: 10px;">
+                        <div class="progress-bar bg-success" role="progressbar"
+                             style="width: {{ total_percent }}%"
+                             aria-valuenow="{{ total_percent }}"
+                             aria-valuemin="0"
+                             aria-valuemax="100">
+                        </div>
+                    </div>
+                    <small class="text-muted">{{ total_percent }}% Complete</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scraper Table -->
+    <div class="card">
+        <div class="card-header bg-maroon text-white">
+            <h5 class="mb-0">Scraper Progress</h5>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Scraper</th>
+                        <th class="text-end">URLs</th>
+                        <th class="text-end">Scraped</th>
+                        <th class="text-center">Status</th>
+                        <th style="width: 30%;">Progress</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for scraper in scrapers %}
+                    <tr>
+                        <td class="align-middle">
+                            <strong>{{ scraper.name|title }}</strong>
+                        </td>
+                        <td class="text-end align-middle">
+                            {{ scraper.url_rows|intcomma }}
+                        </td>
+                        <td class="text-end align-middle">
+                            {{ scraper.data_rows|intcomma }}
+                        </td>
+                        <td class="text-center align-middle">
+                            <span class="badge rounded-pill {% if scraper.status == 'Complete' %}bg-success{% else %}bg-warning{% endif %}">
+                                {{ scraper.status }}
+                            </span>
+                        </td>
+                        <td class="align-middle">
+                            <div class="d-flex align-items-center">
+                                <div class="progress flex-grow-1 me-2" style="height: 10px;">
+                                    <div class="progress-bar {% if scraper.percent_complete == 100 %}bg-success{% else %}bg-primary{% endif %}"
+                                         role="progressbar"
+                                         style="width: {{ scraper.percent_complete }}%"
+                                         aria-valuenow="{{ scraper.percent_complete }}"
+                                         aria-valuemin="0"
+                                         aria-valuemax="100">
+                                    </div>
+                                </div>
+                                <small class="text-muted" style="min-width: 45px;">{{ scraper.percent_complete }}%</small>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot class="table-light">
+                    <tr>
+                        <th>Total</th>
+                        <th class="text-end">{{ total_urls|intcomma }}</th>
+                        <th class="text-end">{{ total_data|intcomma }}</th>
+                        <th class="text-center">{{ total_percent }}%</th>
+                        <th>
+                            <div class="progress" style="height: 10px;">
+                                <div class="progress-bar bg-success"
+                                     role="progressbar"
+                                     style="width: {{ total_percent }}%"
+                                     aria-valuenow="{{ total_percent }}"
+                                     aria-valuemin="0"
+                                     aria-valuemax="100">
+                                </div>
+                            </div>
+                        </th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add any client-side functionality here
+    console.log('Scraper status page loaded');
+});
+</script>
+{% endblock %}

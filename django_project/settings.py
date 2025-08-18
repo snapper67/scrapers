@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     "whitenoise.runserver_nostatic",
     "django.contrib.staticfiles",
     "django.contrib.sites",
+    "django.contrib.humanize",  # Add this line for number formatting
     # Third-party
     "allauth",
     "allauth.account",

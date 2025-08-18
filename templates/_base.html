@@ -176,6 +176,9 @@
             <li class="nav-item">
                 <a class="nav-link" href="{% url 'scrape_products' %}">Scrapers</a>
               </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'scraper_status' %}">Status</a>
+            </li>
         </ul>
         {% if user.is_authenticated %}
         <div class="mr-auto">

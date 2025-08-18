@@ -9,7 +9,7 @@ from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from django.views.generic import TemplateView
-
+from django.contrib.humanize.templatetags.humanize import intcomma
 from scrapers.cut.birite import BiRiteScraper
 from scrapers.cut.primizie import PrimizieScraper
 from scrapers.cut.sardilli import SardilliScraper
@@ -68,6 +68,9 @@ from .cut.wagner import WagnerScraper
 from .misc.cheneybrothers import CheneyBrothersScraper
 from .cut.woolcofoods import WoolcoFoodsScraper
 from .scraper import Scraper
+import glob
+import pandas as pd
+from pathlib import Path
 
 
 class ScrapeProductsPageView(TemplateView):
@@ -2324,3 +2327,78 @@ def scrape_woolcofoods(request):
         'name': scraper.get_name(),
         'total_products': total_products
     })
+
+def scraper_status(request):
+    """
+    Display a status page showing summary information for all scrapers.
+    """
+    # Base directory where scraper data is stored
+    base_dir = '/Users/mark/Downloads/scrapers'
+    
+    # Get all subdirectories (each represents a scraper)
+    try:
+        scraper_dirs = [d for d in os.listdir(base_dir) 
+                      if os.path.isdir(os.path.join(base_dir, d)) and not d.startswith('.')]
+    except FileNotFoundError:
+        return render(request, 'scrape_products/status.html', {
+            'error': f'Directory not found: {base_dir}'
+        })
+    
+    scraper_data = []
+    
+    for scraper_dir in sorted(scraper_dirs):
+        dir_path = os.path.join(base_dir, scraper_dir)
+        data_files = glob.glob(os.path.join(dir_path, '*_data.csv'))
+        url_files = glob.glob(os.path.join(dir_path, '*_urls.csv'))
+        
+        # Count rows in data files
+        data_rows = 0
+        for file in data_files:
+            try:
+                df = pd.read_csv(file, on_bad_lines='skip')
+                data_rows += len(df)
+            except Exception as e:
+                print(f"Error reading {file}: {e}")
+        
+        # Count rows in URL files
+        url_rows = 0
+        for file in url_files:
+            try:
+                df = pd.read_csv(file, on_bad_lines='skip')
+                url_rows += len(df)
+            except Exception as e:
+                print(f"Error reading {file}: {e}")
+        
+        # Calculate percentage complete
+        percent_complete = 0
+        if url_rows > 0:
+            percent_complete = min(100, int((data_rows / url_rows) * 100))
+        
+        scraper_data.append({
+            'name': scraper_dir,
+            'data_rows': data_rows,
+            'url_rows': url_rows,
+            'percent_complete': percent_complete,
+            'status': 'Complete' if url_rows > 0 and data_rows >= url_rows else 'In Progress',
+            'formatted_data_rows': intcomma(data_rows),
+            'formatted_url_rows': intcomma(url_rows)
+        })
+    
+    # Sort by status (In Progress first) then by name
+    scraper_data.sort(key=lambda x: (x['status'] == 'Complete', x['name']))
+    
+    # Calculate totals
+    total_data = sum(d['data_rows'] for d in scraper_data)
+    total_urls = sum(d['url_rows'] for d in scraper_data)
+    total_percent = min(100, int((total_data / total_urls * 100))) if total_urls > 0 else 0
+    
+    context = {
+        'scrapers': scraper_data,
+        'total_data': total_data,
+        'total_urls': total_urls,
+        'total_percent': total_percent,
+        'formatted_total_data': intcomma(total_data),
+        'formatted_total_urls': intcomma(total_urls),
+    }
+    
+    return render(request, 'scrape_products/status.html', context)

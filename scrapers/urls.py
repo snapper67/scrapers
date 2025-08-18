@@ -68,5 +68,6 @@ urlpatterns = [
     path("cheney_brothers/", views.scrape_cheney_brothers, name="cheney_brothers"),
     path("vitco_foods/", views.scrape_vitco_foods, name="vitco_foods"),
     path("wagner/", views.scrape_wagner, name="wagner"),
+    path("status/", views.scraper_status, name="scraper_status"),
 
 ]
