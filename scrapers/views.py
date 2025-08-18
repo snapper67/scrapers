@@ -25,6 +25,7 @@ from .cut.dwcspecialties import DWCSpecialtiesScraper
 from .cut.fourstarmeat import FourStarMeatScraper
 from .cut.hooktofork import HookToForkScraper
 from .cut.jordanpaige import JordanPaigeScraper
+from .cut.manson import MansonScraper
 from .cut.misterproduce import MisterProduceScraper
 from .cut.pacificprovisions import PacificProvisionsScraper
 from .cut.prdeli import PRDeliScraper
@@ -62,6 +63,7 @@ from .cut.southwest_traders import SouthwestTradersScraper
 from .cut.sunbelt import SunbeltScraper
 from .cut.vitco_foods import VitcoScraper
 from .cut.wagner import WagnerScraper
+from .misc.cheneybrothers import CheneyBrothersScraper
 from .scraper import Scraper
 
 
@@ -458,7 +460,7 @@ def scrape_cw(request):
             return render(request, 'scrape_products/scrape_results.html', {'result': result})
 
     # GET request - show form
-    from scrapers.misc.chefswarehouse import ChefWarehouseScraper
+
     scraper = ChefWarehouseScraper()
     distributor_options = scraper.get_options()
     category_ids = scraper.get_category_ids()
@@ -492,12 +494,90 @@ def update_breakthru_options(post_data, current_options):
     """
     # Update category and file names if category
     # changes
+    scraper = BreakthruScraper()
     category_id = post_data.get('category_id')
     if category_id and int(category_id) != 0:
         categories = scraper.get_categories()
         for category in categories:
             if category['id'] == int(category_id):
                 category_name = category['name']
+                current_options['category_url'] = category['url']
+                break
+        current_options['chosen_category'] = category_id
+        category_name = ''
+        current_options['category_url'] = ''
+        current_options['url_output_file'] = str(post_data.get('url_file', ''))
+        current_options['data_output_file'] = str(post_data.get('data_file', ''))
+    else:
+        category_name = 'All'
+        current_options['chosen_category'] = 0
+        current_options['url_output_file'] = current_options['home_directory']
+        current_options['data_output_file'] = ''
+    current_options['category_name'] = category_name
+
+    print(current_options)
+    return current_options
+
+
+def scrape_cheney_brothers(request):
+    print("scrape_cheney_brothers()")
+    options = {}
+
+    if request.method == 'POST':
+        with CheneyBrothersScraper(options) as scraper:
+            distributor_options = scraper.get_options()
+            # Create a copy of options for this request
+            options = update_cheney_brothers(request.POST, distributor_options)
+            options = update_common_options(request.POST, options)
+            # Run the scraper
+            scraper.set_options(options)
+            print("running scraper")
+            result = scraper.run()
+            return render(request, 'scrape_products/scrape_results.html', {'result': result})
+
+    # GET request - show form
+
+    scraper = CheneyBrothersScraper()
+    distributor_options = scraper.get_options()
+    category_ids = scraper.get_category_ids()
+    categories = []
+    for category in category_ids:
+        categories.append({
+            'id': category["Id"],
+            'name': category["Name"],
+            'url_file': f"{category['Name'].lower()}_urls.csv",
+            'data_file': f"{category['Name'].lower()}_data.csv"
+        })
+
+    defaults = set_defaults(distributor_options)
+
+    return render(request, 'scrape_products/scrape_cheney_brothers.html', {
+        'categories': categories,
+        'defaults': defaults,
+        'name': 'Cheney Brothers'
+    })
+
+
+def update_cheney_brothers(post_data, current_options):
+    """
+    Update usfoods_options based on form POST data.
+
+    Args:
+        post_data: request.POST dictionary
+        current_options: Current usfoods_options to update
+
+    Returns:
+        Updated usfoods_options dictionary
+    """
+    # Update category and file names if category
+    # changes
+    scraper = CheneyBrothersScraper()
+    category_id = post_data.get('category_id')
+    if category_id and int(category_id) != 0:
+        categories = scraper.get_categories()
+        for category in categories:
+            if category['Id'] == int(category_id):
+                category_name = category['Name']
                 current_options['category_url'] = category['url']
                 break
         current_options['chosen_category'] = category_id

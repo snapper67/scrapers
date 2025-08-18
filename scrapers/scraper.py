@@ -180,7 +180,7 @@ class Scraper:
 				seleniumwire_options=self.seleniumwire_options
 			)
 		self.driver.command_executor.set_timeout(1000)
-		self.wait = WebDriverWait(self.driver, 30)
+		self.wait = WebDriverWait(self.driver, 60)
 
 	def cleanup(self):
 		"""Clean up resources"""

@@ -62,6 +62,7 @@ urlpatterns = [
     path("southwest_traders/", views.scrape_southwest_traders, name="southwest_traders"),
     path("sunbelt/", views.scrape_sunbelt, name="sunbelt"),
     path("usfoods/", views.scrape_usfoods, name="usfoods"),
+    path("cheney_brothers/", views.scrape_cheney_brothers, name="cheney_brothers"),
     path("vitco_foods/", views.scrape_vitco_foods, name="vitco_foods"),
     path("wagner/", views.scrape_wagner, name="wagner"),
 
