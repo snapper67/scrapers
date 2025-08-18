@@ -12,7 +12,7 @@ class SavalFoodserviceScraper(CutScraper):
 
     # These values are pulled from the base URL
     SUB_DOMAIN = "https://savalfoodservice.cutanddry.com"
-    VENDOR_URL_NAME = 'savalfoodservice'
+    VENDOR_URL_NAME = 'Saval%20Foodservice'
     VERIFIED_VENDOR_ID = 1862167
 
     # This the name of the vendor

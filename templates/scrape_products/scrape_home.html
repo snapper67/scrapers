@@ -198,6 +198,9 @@
                         <h6 class="text-maroon">Total DataRows: ${data.total_data_rows.toLocaleString()}</h6>
                         <h6 class="text-maroon">Total URL Rows: ${data.total_url_rows.toLocaleString()}</h6>
                     </div>
+                    <button type="button" id="toggleDetailsBtn" class="btn btn-sm btn-outline-maroon">
+                        <i class="bi bi-eye-slash"></i> Hide Details
+                    </button>
                 `;
                 
                 // Add results for each directory
@@ -210,7 +213,7 @@
                                 <th class="text-end">Product Rows</th>
                                 <th class="text-end">Scraped Rows</th>
                                 ${dirData.files.map(file => `
-                                    <tr>
+                                    <tr class="detail-row">
                                         <td class="">${file.file_name}</td>
                                         <td class="text-end">
                                             <span class="">${file.url_row_count.toLocaleString()}</span>
@@ -235,6 +238,27 @@
                 
                 resultsContent.innerHTML = html;
                 resultsContainer.classList.remove('d-none');
+
+                // Add event listener for the toggle details button
+                const toggleBtn = document.getElementById('toggleDetailsBtn');
+                if (toggleBtn) {
+                    let showDetails = true;
+
+                    toggleBtn.addEventListener('click', function() {
+                        showDetails = !showDetails;
+                        const detailRows = document.querySelectorAll('.detail-row');
+
+                        detailRows.forEach(row => {
+                            row.style.display = showDetails ? '' : 'none';
+                        });
+
+                        if (showDetails) {
+                            toggleBtn.innerHTML = '<i class="bi bi-eye-slash"></i> Hide Details';
+                        } else {
+                            toggleBtn.innerHTML = '<i class="bi bi-eye"></i> Show Details';
+                        }
+                    });
+                }
             })
             .catch(error => {
                 console.error('Error:', error);

@@ -8,11 +8,11 @@ class SafraDistributionScraper(CutScraper):
     DEFAULT_DIRECTORY = '/Users/mark/Downloads/scrapers/safradistribution/'
 
     # Values to change
-    BASE_URL = "https://app.cutanddry.com/catalog/Safra%20Distribution/?verifiedVendorId=52007581&categoryId=1&page=1"
+    BASE_URL = "https://app.cutanddry.com/catalog/Safra%20Distribution/?categoryId=1&%3BverifiedVendorId=52007581&%3Bpage=1"
 
     # These values are pulled from the base URL
     SUB_DOMAIN = "https://app.cutanddry.com"
-    VENDOR_URL_NAME = 'safradistribution'
+    VENDOR_URL_NAME = 'Safra%20Distribution'
     VERIFIED_VENDOR_ID = 52007581
 
     # This the name of the vendor
