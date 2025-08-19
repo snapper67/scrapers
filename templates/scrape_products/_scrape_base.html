@@ -451,6 +451,16 @@
                                     <p class="mb-1"><small class="text-muted">Current:</small> <span id="currentItem">-</span></p>
                                     <p class="mb-0"><small class="text-muted">Errors:</small> <span id="errorCount" class="text-danger">0</span></p>
                                 </div>
+                                <div id="skuLists" class="d-none">
+                                    <h6>Processed SKUs:</h6>
+                                    <ul id="processedSkusList" class="list-group list-group-flush"></ul>
+                                    <h6>Not Found SKUs:</h6>
+                                    <ul id="notFoundSkusList" class="list-group list-group-flush"></ul>
+                                </div>
+                                <div id="currentSkuContainer" class="d-none">
+                                    <h6>Current SKU:</h6>
+                                    <p id="currentSku"></p>
+                                </div>
                             </div>
                         </div>
                         <div class="modal-footer">
@@ -484,10 +494,10 @@
         let link = document.querySelector("link[rel*='icon']") || document.createElement('link');
         link.type = 'image/x-icon';
         link.rel = 'icon';
-        
+
         if (icon === 'spinner') {
             // Spinner SVG (rotating circle)
-            link.href = 'data:image/svg+xml,' + 
+            link.href = 'data:image/svg+xml,' +
                 encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">' +
                     '<circle cx="50" cy="50" r="45" fill="none" stroke="#0d6efd" stroke-width="10" ' +
                     'stroke-dasharray="212.0575 70.6858" transform="rotate(0 50 50)">' +
@@ -495,20 +505,20 @@
                     'dur="1s" values="0 50 50;360 50 50" keyTimes="0;1"></animateTransform></circle></svg>');
         } else if (icon === 'check') {
             // Checkmark SVG
-            link.href = 'data:image/svg+xml,' + 
+            link.href = 'data:image/svg+xml,' +
                 encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">' +
                     '<path fill="#198754" d="M38 80L10 52l8-8 20 20 40-40 8 8z"></path></svg>');
         } else if (icon === 'default') {
             // Default favicon (can be customized)
             link.href = '/favicon.ico';
         }
-        
+
         // Remove existing favicon if it exists
         const oldLink = document.querySelector("link[rel*='icon']");
         if (oldLink) {
             oldLink.remove();
         }
-        
+
         // Add the new favicon
         document.getElementsByTagName('head')[0].appendChild(link);
     }
@@ -521,7 +531,7 @@
         modal.show();
         updateFavicon('spinner'); // Set spinner favicon when progress starts
         startProgressPolling();
-        
+
         // Enable stop button
         const stopBtn = document.getElementById('stopTaskBtn');
         if (stopBtn) {
@@ -544,14 +554,14 @@
     // Function to stop the current task
     function stopCurrentTask() {
         if (!currentTaskId || isStopped) return;
-        
+
         isStopped = true;
         const stopBtn = document.getElementById('stopTaskBtn');
         if (stopBtn) {
             stopBtn.disabled = true;
             stopBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Stopping...';
         }
-        
+
         fetch('/api/stop_processing/', {
             method: 'POST',
             headers: {
@@ -569,11 +579,11 @@
             } else {
                 showProgressError(data.error || 'Failed to stop task');
             }
-            
+
             // Clear the interval to stop polling
             clearInterval(progressInterval);
             progressInterval = null;
-            
+
             // Re-enable the stop button with original text
             if (stopBtn) {
                 stopBtn.disabled = false;
@@ -609,23 +619,76 @@
             const progress = data.progress;
             if (!progress) return;
 
-            // Update progress bar
-            const progressPercent = progress.total > 0
-                ? Math.round((progress.current / progress.total) * 100)
-                : 0;
+            // Update progress bar - handle both regular progress and missing SKUs progress
+            let progressPercent = 0;
+            if (progress.total > 0) {
+                progressPercent = progress.current_sku ?
+                    Math.round((progress.processed_skus.length / progress.total) * 100) :
+                    Math.round((progress.current / progress.total) * 100);
+            }
 
             document.getElementById('progressBar').style.width = `${progressPercent}%`;
             document.getElementById('progressText').textContent = `${progressPercent}%`;
 
             // Update status text
-            document.getElementById('statusText').textContent =
-                progress.status === 'completed' ? 'Processing Complete!' : 'Processing...';
+            let statusText = 'Processing...';
+            if (progress.status === 'completed') {
+                statusText = 'Processing Complete!';
+            } else if (progress.status === 'error') {
+                statusText = 'Error Occurred';
+            } else if (progress.status === 'stopped') {
+                statusText = 'Stopped by User';
+            }
+            document.getElementById('statusText').textContent = statusText;
 
-            // Update counts
-            document.getElementById('processedCount').textContent = progress.processed || 0;
-            document.getElementById('totalCount').textContent = progress.total || 0;
-            document.getElementById('errorCount').textContent = progress.errors || 0;
-            document.getElementById('currentItem').textContent = progress.current_product || '-';
+            // Update counts and current item
+            if (progress.current_sku !== undefined) {
+                // For process_missing_skus task
+                document.getElementById('currentItem').textContent = progress.current_sku || '-';
+                document.getElementById('processedCount').textContent = progress.processed_skus ? progress.processed_skus.length : 0;
+                document.getElementById('totalCount').textContent = progress.total || 0;
+                document.getElementById('errorCount').textContent = progress.not_found_skus ? progress.not_found_skus.length : 0;
+
+                // Update the current SKU being processed
+                if (progress.current_sku) {
+                    document.getElementById('currentSkuContainer').classList.remove('d-none');
+                    document.getElementById('currentSku').textContent = progress.current_sku;
+                }
+
+                // Show/hide the SKU lists
+                const skuLists = document.getElementById('skuLists');
+                if (progress.processed_skus?.length > 0 || progress.not_found_skus?.length > 0) {
+                    skuLists.classList.remove('d-none');
+
+                    // Update processed SKUs list
+                    const processedList = document.getElementById('processedSkusList');
+                    if (progress.processed_skus?.length > 0) {
+                        processedList.innerHTML = progress.processed_skus
+                            .map(sku => `<li class="list-group-item py-1">${sku}</li>`)
+                            .join('');
+                    } else {
+                        processedList.innerHTML = '<li class="list-group-item py-1 text-muted">No SKUs processed yet</li>';
+                    }
+
+                    // Update not found SKUs list
+                    const notFoundList = document.getElementById('notFoundSkusList');
+                    if (progress.not_found_skus?.length > 0) {
+                        notFoundList.innerHTML = progress.not_found_skus
+                            .map(sku => `<li class="list-group-item py-1 text-danger">${sku}</li>`)
+                            .join('');
+                    } else {
+                        notFoundList.innerHTML = '<li class="list-group-item py-1 text-muted">All SKUs found</li>';
+                    }
+                } else {
+                    skuLists.classList.add('d-none');
+                }
+            } else {
+                // For regular progress
+                document.getElementById('currentItem').textContent = progress.current_product || '-';
+                document.getElementById('processedCount').textContent = progress.processed || 0;
+                document.getElementById('totalCount').textContent = progress.total || 0;
+                document.getElementById('errorCount').textContent = progress.errors || 0;
+            }
 
             // Handle completion or errors
             if (progress.status === 'completed' || progress.status === 'error' || progress.status === 'stopped') {
@@ -684,8 +747,9 @@
         function handleFormSubmit(event) {
             const form = event.target;
             const processCsvChecked = document.getElementById('process_csv').checked;
-            
-            if (processCsvChecked) {
+            const reprocessCsvChecked = document.getElementById('reprocess_csv').checked;
+
+            if (processCsvChecked || reprocessCsvChecked) {
                 // Prevent default form submission
                 event.preventDefault();
                 console.log('Processing CSV...');

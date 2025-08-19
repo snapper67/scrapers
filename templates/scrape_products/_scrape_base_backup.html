@@ -1,0 +1,848 @@
+{% extends '../_base.html' %}
+
+{% block content %}
+    {% block scrape_content %}
+        {% block common %}
+            <div class="container mt-4">
+                <h2>{% block name %}{% endblock name %}</h2>
+                <div><a href="{{ defaults.base_url }}">Website</a></div>
+                {% block top %}{% endblock top %}
+                <form method="post" class="mt-4" id="scraperForm" onsubmit="return handleFormSubmit(event)">
+                    {% csrf_token %}
+                    <!-- Scraping Functions Card -->
+                    <div class="row mt-1">
+                        <div class="col-md-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <div>Scraping Options</div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="form-group mb-3">
+                                            <label for="category_id" title="Select a product category to scrape">Category:</label>
+                                            <select class="form-control" id="category_id" name="category_id" required
+                                                    onchange="updateFilenames(this.value)">
+                                                {% for category in categories %}
+                                                <option value="{{ category.id }}">{{ category.name }} ({{ category.id }})</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-check mb-3">
+                                                <input class="form-check-input" type="checkbox" id="get_categories" name="get_categories"
+                                                       {% if defaults.get_categories %}checked{% endif %}>
+                                                <label class="form-check-label" for="get_categories" title="Check to enable scraping of product URLs from the selected category">1. Get Categories List</label>
+                                            </div>
+                                            <div class="form-check mb-3">
+                                                <input class="form-check-input" type="checkbox" id="scrape_products" name="scrape_products"
+                                                       {% if defaults.scrape_products %}checked{% endif %}>
+                                                <label class="form-check-label" for="scrape_products" title="Check to enable scraping of product URLs from the selected category">2. Get Product URLs</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-check mb-3">
+                                                <input class="form-check-input" type="checkbox" id="process_csv" name="process_csv"
+                                                       {% if defaults.process_csv %}checked{% endif %}>
+                                                <label class="form-check-label" for="process_csv" title="Process the URLs in the specified CSV file to extract product data">3. Process URLs</label>
+                                            </div>
+                                            <div class="form-check mb-3">
+                                                <input class="form-check-input" type="checkbox" id="reprocess_csv" name="reprocess_csv"
+                                                       {% if defaults.reprocess_csv %}checked{% endif %}>
+                                                <label class="form-check-label" for="reprocess_csv" title="Only process URLs that haven't been processed yet (not found in results)">4. Processes URLS not in Results</label>
+                                            </div>
+                                            <div class="form-check mb-3">
+                                                <input class="form-check-input" type="checkbox" id="process_extra" name="process_extra"
+                                                       {% if defaults.process_csv %}checked{% endif %}>
+                                                <label class="form-check-label" for="process_extra" title="Reprocess the data file to extract extra data">Process Extra Data</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="url_file" title="Name of the CSV file containing product URLs (will be auto-filled based on category)">URLs CSV File:</label>
+                                                <input type="text" class="form-control" id="url_file" name="url_file"
+                                                       value="{{ defaults.url_file }}">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="data_file" title="Name of the CSV file where product data will be saved (will be auto-filled based on category)">Data CSV File:</label>
+                                                <input type="text" class="form-control" id="data_file" name="data_file"
+                                                       value="{{ defaults.data_file }}">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <button type="submit" class="btn btn-primary mt-3">Run</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- CSV Functions Card -->
+                    <div class="row mt-1">
+                        <div class="col-md-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <div>CSV Functions</div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-check mb-3">
+                                                <input class="form-check-input" type="checkbox" id="dedupe_csv" name="dedupe_csv"
+                                                       {% if defaults.dedupe_csv %}checked{% endif %}>
+                                                <label class="form-check-label" for="dedupe_csv"
+                                                       title="Remove duplicate entries from the specified CSV file (use URL Filename field)">
+                                                    Dedupe a CSV
+                                                </label>
+                                            </div>
+                                            <div class="form-check mb-3">
+                                                <input class="form-check-input" type="checkbox" id="count_csv" name="count_csv"
+                                                       {% if defaults.count_csv %}checked{% endif %}>
+                                                <label class="form-check-label" for="count_csv"
+                                                       title="Count rows in all  CSV files in the specified directory">
+                                                    Count Rows in All CSVs in home directory
+                                                </label>
+                                            </div>
+                                            <div class="form-check mb-3">
+                                                <input class="form-check-input" type="checkbox" id="clean_data" name="clean_data"
+                                                       {% if defaults.clean_data %}checked{% endif %}>
+                                                <label class="form-check-label" for="clean_data"
+                                                       title="Clean the data file by removing rows without values in the specified field">
+                                                    Clean Data (remove empty rows)
+                                                </label>
+                                                <div class="row mt-2">
+                                                    <div class="col-md-6">
+                                                        <div class="input-group mb-2">
+                                                            <span class="input-group-text">Field:</span>
+                                                            <input type="text" class="form-control" id="clean_field" name="clean_field"
+                                                                   value="{{ defaults.clean_field|default:'name' }}"
+                                                                   placeholder="Field name (e.g., name, sku)">
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="radio" name="file_type" id="clean_url_file"
+                                                                   value="url" checked>
+                                                            <label class="form-check-label" for="clean_url_file">
+                                                                URL File
+                                                            </label>
+                                                        </div>
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="radio" name="file_type" id="clean_data_file"
+                                                                   value="data">
+                                                            <label class="form-check-label" for="clean_data_file">
+                                                                Data File
+                                                            </label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <button type="submit" class="btn btn-primary mt-3">Run</button>
+                                        </div>
+                                        <div class="col-md-6">
+{#                                            <div class="form-group">#}
+{#                                                <label for="distributor_name" class="form-label">Distributor Name:</label>#}
+{#                                                <div class="input-group">#}
+{#                                                    <input type="text" class="form-control" id="distributor_name"#}
+{#                                                           placeholder="Enter distributor name">#}
+{#                                                    <button class="btn btn-outline-secondary" type="button"#}
+{#                                                            id="#test">#}
+{#                                                        Update All CSVs#}
+{#                                                    </button>#}
+{#                                                </div>#}
+{#                                                <small class="form-text text-muted">#}
+{#                                                    Updates the 'distributor_name' column in all CSV files in the home directory.#}
+{#                                                </small>#}
+{#                                            </div>#}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- General Configuration Card -->
+                    <div class="row mt-1">
+                        <div class="col-md-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <div>General Configuration</div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="home_directory" title="Base directory where files will be saved (defaults to current directory)">Home Directory:</label>
+                                                <input type="text" class="form-control" id="home_directory" name="home_directory"
+                                                       value="{{ defaults.home_directory|default:'.' }}" placeholder="Enter home directory path">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="max_products" title="Maximum number of products to request from the API in a single call">Max Products to Force in API Call:</label>
+                                                <input type="number" class="form-control" id="max_products" name="max_products"
+                                                       value="{{ defaults.max_products }}" min="1">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Testing Card -->
+                    <div class="row mt-1">
+                        <div class="col-md-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <div>Target a specific category or row</div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="start_row" title="Start processing from this row number (0-based index)">Start Row:</label>
+                                                <input type="number" class="form-control" id="start_row" name="start_row"
+                                                       value="{{ defaults.start_row }}" min="0">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="category_to_process" title="Process only this specific category (0 = process all categories)">Category to Process: </label>
+                                                <input type="number" class="form-control" id="category_to_process" name="category_to_process"
+                                                       value="{{ defaults.category_to_process }}" min="0">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="test_products" title="Maximum number of products to scrape (for testing purposes)">Number of Products to Scrape:</label>
+                                <input type="number" class="form-control" id="test_products" name="test_products"
+                                       value="{{ defaults.test_products }}" min="1">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="test_categories" title="Maximum number of categories to process (for testing purposes)">Number of Categories to Scrape:</label>
+                                <input type="number" class="form-control" id="test_categories" name="test_categories"
+                                       value="{{ defaults.test_categories }}" min="1">
+                            </div>
+                        </div>
+                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Utilities Card -->
+                    <div class="row mt-1">
+                        <div class="col-md-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <div>Utilities</div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="row mb-4">
+                                            <div class="col-md-12">
+                                                <div class="card">
+                                                    <div class="card-header">
+                                                        <div>Update Distributor Name</div>
+                                                    </div>
+                                                    <div class="card-body">
+                                                        <div class="row">
+                                                            <div class="col-md-8">
+                                                                <div class="form-group">
+                                                                    <label for="distributor_name" class="form-label">Distributor Name:</label>
+                                                                    <div class="input-group">
+                                                                        <input type="text" class="form-control" id="distributor_name"
+                                                                               placeholder="Enter distributor name">
+                                                                        <button type="button" class="btn btn-primary" id="update_distributor_btn">
+                                                                            <i class="bi bi-tag"></i> Update Distributor
+                                                                        </button>
+                                                                    </div>
+                                                                    <small class="form-text text-muted">
+                                                                        This will update/add the 'distributor_name' column in all CSV files in the home directory.
+                                                                    </small>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div id="distributor_results" class="mt-3" style="display: none;">
+                                                            <div class="alert alert-success" id="distributor_success" style="display: none;"></div>
+                                                            <div class="alert alert-danger" id="distributor_error" style="display: none;"></div>
+                                                            <div id="distributor_details" style="display: none;">
+                                                                <p class="mb-1"><strong>Updated files:</strong> <span id="updated_files_count">0</span></p>
+                                                                <p class="mb-1"><strong>Total files processed:</strong> <span id="total_files_count">0</span></p>
+                                                                <div id="distributor_errors" class="mt-2" style="display: none;">
+                                                                    <h6>Errors:</h6>
+                                                                    <ul id="error_list" class="text-danger small"></ul>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div id="distributor_loading" class="text-center my-3" style="display: none;">
+                                                            <div class="spinner-border text-primary" role="status">
+                                                                <span class="visually-hidden">Loading...</span>
+                                                            </div>
+                                                            <p class="mt-2">Updating distributor names, please wait...</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                        <div class="col-md-12">
+                                            <div class="card mb-4">
+                                                <div class="card-header">
+                                                    <div>CSV Row Counter</div>
+                                                </div>
+                                                <div class="card-body">
+                                                    <div class="row">
+                                                        <div class="col-md-8">
+                                                            <div class="form-group">
+                                                                <label for="csv_dir" class="form-label">Directory to Scan:</label>
+                                                                <div class="input-group">
+                                                                    <input type="text" class="form-control" id="csv_dir" name="csv_dir"
+                                                                           placeholder="Enter directory path" value="{{ defaults.home_directory|default:'.' }}">
+                                                                    <button type="button" class="btn btn-primary" id="count_csv_btn">
+                                                                        <i class="bi bi-calculator"></i> Count Rows</button>
+                                                                </div>
+                                                                <small class="form-text text-muted">
+                                                                    Will scan all subdirectories for CSV files containing 'data' in their names.
+                                                                </small>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div id="csv_results" class="mt-3" style="display: none;">
+                                                        <div class="table-responsive">
+                                                            <table class="table table-sm table-striped">
+                                                                <thead class="table-light">
+                                                                    <tr>
+                                                                        <th>Directory</th>
+                                                                        <th>File</th>
+                                                                        <th class="text-end">Rows</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody id="csv_results_body">
+                                                                    <!-- Results will be inserted here by JavaScript -->
+                                                                </tbody>
+                                                                <tfoot>
+                                                                    <tr class="table-active">
+                                                                        <td colspan="2" class="text-end fw-bold">Total Rows:</td>
+                                                                        <td class="text-end fw-bold" id="total_rows">0</td>
+                                                                    </tr>
+                                                                </tfoot>
+                                                            </table>
+                                                        </div>
+                                                    </div>
+                                                    <div id="csv_loading" class="text-center my-3" style="display: none;">
+                                                        <div class="spinner-border text-primary" role="status">
+                                                            <span class="visually-hidden">Loading...</span>
+                                                        </div>
+                                                        <p class="mt-2">Counting rows, please wait...</p>
+                                                    </div>
+                                                    <div id="csv_error" class="alert alert-danger mt-3" style="display: none;"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="row mb-4">
+                                            <div class="col-md-12">
+                                                <div class="card">
+                                                    <div class="card-header">
+                                                        <div>Search Requests</div>
+                                                    </div>
+                                                    <div class="card-body">
+                                                        <div class="row">
+                                                            <div class="col-md-5">
+                                                                <div class="form-group">
+                                                                    <label for="url" class="form-label">URL to test:</label>
+                                                                    <input type="text" class="form-control" id="url" name="url"
+                                                                           placeholder="Enter URL to search" value="{{ defaults.url }}">
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-md-5">
+                                                                <div class="form-group">
+                                                                    <label for="search_term" class="form-label">Search term:</label>
+                                                                    <div class="input-group">
+                                                                        <input type="text" class="form-control" id="search_term" name="search_term"
+                                                                               placeholder="Enter search term" value="{{ defaults.search_term }}">
+                                                                        <button type="button" class="btn btn-primary" id="search_requests_btn">
+                                                                            <i class="bi bi-search"></i> Search
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        <!-- Search Results -->
+                                                        <div id="search_results" class="mt-4" style="display: none;">
+                                                            <div class="alert alert-success" id="search_success" style="display: none;"></div>
+                                                            <div class="alert alert-danger" id="search_error" style="display: none;"></div>
+                                                            <div id="search_details" class="mt-3">
+                                                                <p><strong>URL:</strong> <span id="searched_url"></span></p>
+                                                                <p><strong>Status Code:</strong> <span id="status_code"></span></p>
+                                                                <p><strong>Content Length:</strong> <span id="content_length"></span> bytes</p>
+                                                                <p><strong>Term Found:</strong> <span id="term_found"></span></p>
+                                                                <p><strong>Occurrences:</strong> <span id="occurrences"></span></p>
+                                                                <div id="sample_container" class="mt-3" style="display: none;">
+                                                                    <h6>List of URLs:</h6>
+                                                                    <div class="p-3 bg-light rounded" id="sample_content">
+                                                                        <!-- Sample content will be inserted here -->
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            <!-- Loading Indicator -->
+                                                            <div id="search_loading" class="text-center my-3" style="display: none;">
+                                                                <div class="spinner-border text-primary" role="status">
+                                                                    <span class="visually-hidden">Loading...</span>
+                                                                </div>
+                                                                <p class="mt-2">Searching, please wait...</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% block custom %}{% endblock custom %}
+                    <button type="submit" class="btn btn-primary mt-3">Run</button>
+                </form>
+            </div>
+            <!-- Progress Modal -->
+            <div class="modal fade" id="progressModal" tabindex="-1" aria-labelledby="progressModalLabel" aria-hidden="true" data-bs-backdrop="static">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="progressModalLabel">Processing Missing SKUs</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" onclick="stopCurrentTask()"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="progress mb-3">
+                                <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated"
+                                     role="progressbar" style="width: 0%"
+                                     aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span id="progressText">Starting...</span>
+                                <span id="progressCounter">0/0</span>
+                            </div>
+                            <div class="mb-3">
+                                <div class="fw-bold">Current SKU:</div>
+                                <div id="currentSku" class="text-muted">-</div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="fw-bold">Status:</div>
+                                <div id="statusMessage" class="text-muted">Initializing...</div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-danger" id="stopTaskBtn" onclick="stopCurrentTask()">
+                                <i class="bi bi-stop-fill"></i> Stop Processing
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endblock common %}
+    {% endblock scrape_content %}
+    {% block scripts %}
+        <script>
+            // Global variables
+            let currentTaskId = null;
+            let progressUpdateInterval = null;
+            let isStopped = false;
+
+            // File mappings from Django template
+            {% block file_mapping %}
+            const fileMappings = {
+                {% for category in categories %}
+                "{{ category.id }}": {
+                    "url_file": "{{ category.url_file }}",
+                    "data_file": "{{ category.data_file }}"
+                }{% if not forloop.last %},{% endif %}
+                {% endfor %}
+            };
+            {% endblock %}
+
+            // DOM Ready Handler
+            document.addEventListener('DOMContentLoaded', function() {
+                // Initialize file names
+                const initialCategory = document.getElementById('category_id');
+                if (initialCategory) {
+                    updateFilenames(initialCategory.value);
+                    initialCategory.addEventListener('change', function() {
+                        updateFilenames(this.value);
+                    });
+                }
+
+                // Handle checkbox behavior - only allow one checkbox to be checked at a time
+                document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                    checkbox.addEventListener('change', function() {
+                        if (this.checked) {
+                            document.querySelectorAll('input[type="checkbox"]').forEach(other => {
+                                if (other !== this) other.checked = false;
+                            });
+                        }
+                    });
+                });
+
+                // Form submission
+                const scraperForm = document.getElementById('scraperForm');
+                if (scraperForm) {
+                    scraperForm.addEventListener('submit', handleFormSubmit);
+                }
+
+                // Process missing SKUs form
+                const processForm = document.querySelector('form[action*="process_missing_skus"]');
+                if (processForm) {
+                    processForm.addEventListener('submit', handleProcessMissingSkus);
+                }
+
+                // Stop task button
+                const stopBtn = document.getElementById('stopTaskBtn');
+                if (stopBtn) {
+                    stopBtn.addEventListener('click', stopCurrentTask);
+                }
+
+                // CSV Row Counter
+                document.addEventListener('click', function(event) {
+                    const countBtn = event.target.closest('#count_csv_btn');
+                    if (countBtn) handleCountCsvRows();
+                });
+            });
+
+            // Progress Modal Functions
+            function showProgressModal(taskId) {
+                console.log('=== SHOWING PROGRESS MODAL ===');
+                console.log('Task ID received in showProgressModal:', taskId);
+
+                if (!taskId) {
+                    console.error('No taskId provided to showProgressModal');
+                    return;
+                }
+
+                currentTaskId = taskId;
+                isStopped = false;
+                console.log('Current task ID set to:', currentTaskId);
+
+                const modal = new bootstrap.Modal(document.getElementById('progressModal'));
+                modal.show();
+                updateFavicon('spinner');
+                startProgressPolling();
+
+                const stopBtn = document.getElementById('stopTaskBtn');
+                if (stopBtn) {
+                    stopBtn.disabled = false;
+                    stopBtn.innerHTML = '<i class="fas fa-stop-circle me-1"></i> Stop Task';
+                }
+            }
+
+            function startProgressPolling() {
+                console.log('=== STARTING PROGRESS POLLING ===');
+                console.log('Current task ID at start of polling:', currentTaskId);
+
+                if (progressUpdateInterval) {
+                    console.log('Clearing existing progress interval');
+                    clearInterval(progressUpdateInterval);
+                }
+
+                updateProgress(); // Initial update
+                progressUpdateInterval = setInterval(updateProgress, 2000);
+                console.log('Progress polling interval set to 2000ms');
+            }
+
+            // Task Management
+            async function stopCurrentTask() {
+                if (!currentTaskId || isStopped) return;
+
+                if (!confirm('Are you sure you want to stop the current task?')) return;
+
+                isStopped = true;
+                const stopBtn = document.getElementById('stopTaskBtn');
+                if (stopBtn) {
+                    stopBtn.disabled = true;
+                    stopBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Stopping...';
+                }
+
+                try {
+                    const response = await fetch(`/api/stop-task/${currentTaskId}/`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCookie('csrftoken'),
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        showProgressError('Task was stopped by user');
+                        updateFavicon('default');
+                    } else {
+                        showProgressError(data.error || 'Failed to stop task');
+                    }
+                } catch (error) {
+                    console.error('Error stopping task:', error);
+                    showProgressError('Error stopping task');
+                } finally {
+                    if (progressUpdateInterval) {
+                        clearInterval(progressUpdateInterval);
+                        progressUpdateInterval = null;
+                    }
+                }
+            }
+
+            // Progress Updates
+            async function updateProgress() {
+                console.log('=== PROGRESS UPDATE ===');
+                console.log('Current task ID:', currentTaskId, '| Is stopped:', isStopped);
+
+                if (!currentTaskId || isStopped) {
+                    console.log('Skipping progress update - no task ID or task is stopped');
+                    return;
+                }
+
+                try {
+                    const url = `/api/task-progress/${currentTaskId}/`;
+                    console.log('Fetching progress from:', url);
+
+                    const response = await fetch(url);
+                    console.log('Progress response status:', response.status);
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    console.log('Progress data received:', data);
+
+                    if (data.error) {
+                        console.error('Error in progress response:', data.error);
+                        showProgressError(data.error);
+                        return;
+                    }
+
+                    const progress = data.progress || data; // Handle both formats
+                    if (!progress) {
+                        console.error('No progress data in response');
+                        return;
+                    }
+
+                    console.log('Updating UI with progress:', progress);
+
+                    // Update progress UI
+                    const progressPercent = progress.total > 0
+                        ? Math.round((progress.current / progress.total) * 100)
+                        : 0;
+
+                    const progressBar = document.getElementById('progressBar');
+                    const progressText = document.getElementById('progressText') || document.querySelector('#progressText span');
+                    const currentSku = document.getElementById('currentSku') || document.getElementById('currentItem');
+                    const statusMessage = document.getElementById('statusMessage') || document.getElementById('statusText');
+
+                    if (progressBar) progressBar.style.width = `${progressPercent}%`;
+                    if (progressText) progressText.textContent = `${progressPercent}%`;
+                    if (currentSku) currentSku.textContent = progress.current_sku || progress.current_product || '-';
+                    if (statusMessage) {
+                        statusMessage.textContent = progress.status === 'completed'
+                            ? 'Processing Complete!'
+                            : progress.message || 'Processing...';
+                    }
+
+                    // Handle completion
+                    if (['completed', 'error', 'stopped', 'cancelled'].includes(progress.status)) {
+                        if (progressUpdateInterval) {
+                            clearInterval(progressUpdateInterval);
+                            progressUpdateInterval = null;
+                        }
+
+                        if (progress.status === 'completed') {
+                            updateFavicon('check');
+                        } else if (progress.status === 'error') {
+                            showProgressError(progress.error || 'An error occurred');
+                        } else {
+                            updateFavicon('default');
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error updating progress:', error);
+                    showProgressError('Failed to fetch progress updates');
+                }
+            }
+
+            // Form Handlers
+            async function handleFormSubmit(event) {
+                console.log('=== FORM SUBMISSION STARTED ===');
+                const form = event.target;
+                const processCsvChecked = document.getElementById('process_csv')?.checked;
+                const reprocessCsvChecked = document.getElementById('reprocess_csv')?.checked;
+                console.log('Process CSV checked:', processCsvChecked);
+
+                if (!processCsvChecked && !reprocessCsvChecked) {
+                    console.log('Neither CSV processing nor reprocessing checked, submitting form normally');
+                    return true;
+                }
+
+                event.preventDefault();
+                const submitBtn = form.querySelector('button[type="submit"]');
+                const originalBtnText = submitBtn.innerHTML;
+
+                try {
+                    console.log('Preparing to submit form...');
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Starting...';
+
+                    const formData = new FormData(form);
+                    console.log('Sending form data to:', form.action);
+
+                    const response = await fetch(form.action, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    });
+
+                    console.log('Received response status:', response.status);
+                    const data = await response.json();
+                    console.log('Response data:', data);
+
+                    if (data.task_id) {
+                        console.log('Task ID received in response:', data.task_id);
+                        showProgressModal(data.task_id);
+                    } else if (data.redirect_url) {
+                        console.log('Redirecting to:', data.redirect_url);
+                        window.location.href = data.redirect_url;
+                    } else {
+                        console.log('No task_id or redirect_url, submitting form normally');
+                        form.submit();
+                    }
+                } catch (error) {
+                    console.error('Error during form submission:', error);
+                    form.submit();
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalBtnText;
+                }
+
+                return false;
+            }
+
+            async function handleProcessMissingSkus(event) {
+                event.preventDefault();
+                const form = event.target;
+                const submitButton = form.querySelector('button[type="submit"]');
+                const originalButtonText = submitButton.innerHTML;
+
+                try {
+                    submitButton.disabled = true;
+                    submitButton.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Processing...';
+
+                    const formData = new FormData(form);
+                    const response = await fetch(form.action, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRFToken': getCookie('csrftoken')
+                        }
+                    });
+
+                    const data = await response.json();
+
+                    if (data.task_id) {
+                        showProgressModal(data.task_id);
+                    } else if (data.error) {
+                        alert('Error: ' + data.error);
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('An error occurred while processing the request.');
+                } finally {
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = originalButtonText;
+                }
+            }
+
+            // Helper Functions
+            function updateFilenames(categoryId) {
+                const mapping = fileMappings?.[categoryId];
+                if (mapping) {
+                    const urlFileInput = document.getElementById('url_file');
+                    const dataFileInput = document.getElementById('data_file');
+                    if (urlFileInput) urlFileInput.value = mapping.url_file || '';
+                    if (dataFileInput) dataFileInput.value = mapping.data_file || '';
+                }
+            }
+
+            function updateFavicon(icon) {
+                let link = document.querySelector("link[rel*='icon']") || document.createElement('link');
+                link.type = 'image/x-icon';
+                link.rel = 'icon';
+
+                if (icon === 'spinner') {
+                    link.href = 'data:image/svg+xml,' +
+                        encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">' +
+                            '<circle cx="50" cy="50" r="45" fill="none" stroke="#0d6efd" stroke-width="10" ' +
+                            'stroke-dasharray="212.0575 70.6858" transform="rotate(0 50 50)">' +
+                            '<animateTransform attributeName="transform" type="rotate" repeatCount="indefinite" ' +
+                            'dur="1s" values="0 50 50;360 50 50" keyTimes="0;1"></animateTransform></circle></svg>');
+                } else if (icon === 'check') {
+                    link.href = 'data:image/svg+xml,' +
+                        encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">' +
+                            '<path fill="#198754" d="M38 80L10 52l8-8 20 20 40-40 8 8z"></path></svg>');
+                } else {
+                    link.href = '/favicon.ico';
+                }
+
+                const oldLink = document.querySelector("link[rel*='icon']");
+                if (oldLink) oldLink.remove();
+                document.head.appendChild(link);
+            }
+
+            function showProgressError(message) {
+                if (progressUpdateInterval) {
+                    clearInterval(progressUpdateInterval);
+                    progressUpdateInterval = null;
+                }
+
+                const errorElement = document.getElementById('progressError') || document.getElementById('progressErrorMessage');
+                if (errorElement) {
+                    errorElement.textContent = message;
+                    errorElement.classList.remove('d-none');
+                }
+
+                const contentElement = document.getElementById('progressContent');
+                if (contentElement) {
+                    contentElement.classList.add('d-none');
+                }
+            }
+
+            function getCookie(name) {
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i].trim();
+                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
+            }
+        </script>
+    {% endblock scripts %}
+{% endblock content %}

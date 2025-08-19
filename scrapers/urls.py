@@ -1,11 +1,18 @@
 from django.urls import path
 from . import views
 
-from .views import ScrapeProductsPageView, get_processing_progress, stop_processing
+from .views import (
+    ScrapeProductsPageView, 
+    get_processing_progress, 
+    stop_processing,
+    task_progress,
+    stop_task,
+    # process_missing_skus_view
+)
 
 # app_name = 'machine'
 urlpatterns = [
-	path("cooks_company/", views.scrape_cooks_company, name="cooks_company"),
+    path("cooks_company/", views.scrape_cooks_company, name="cooks_company"),
     # path("sysco_api/", SyscoApiPageView.as_view(), name="sysco_api"),
     path("ab/", views.scrape_ab, name="ab"),
     path("acme_steak/", views.scrape_acme_steak, name="acme_steak"),
@@ -71,4 +78,9 @@ urlpatterns = [
     path("status/", views.scraper_status, name="scraper_status"),
     path('task-status/', views.task_status, name='task_status'),
     path('stop-task/<str:task_id>/', views.stop_task, name='stop_task'),
+    
+    # Task progress and control endpoints
+    path('api/task-progress/<str:task_id>/', task_progress, name='api_task_progress'),
+    path('api/stop-task/<str:task_id>/', stop_task, name='api_stop_task'),
+    # path('api/process-missing-skus/<str:distributor>/', process_missing_skus_view, name='api_process_missing_skus'),
 ]

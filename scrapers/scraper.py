@@ -27,6 +27,7 @@ from collections import OrderedDict
 import sys
 import glob
 import pandas as pd
+from django.core.cache import cache
 
 class SkuNotFound(Exception):
 	"""Exception raised when a product cannot be found during scraping.
@@ -445,7 +446,6 @@ class Scraper:
 		Updates progress in cache for real-time tracking.
 		"""
 		import uuid
-		from django.core.cache import cache
 
 		# Generate a unique task ID for this processing run
 		task_id = self.current_task_id
@@ -674,61 +674,117 @@ class Scraper:
 
 	def process_missing_skus(self, url_file=URL_OUTPUT_FILE, data_file=DATA_OUTPUT_FILE,
 		                         home_dir=DEFAULT_DIRECTORY):
+		"""
+		Process SKUs that are in the URL file but not in the data file.
+		Reports progress through the task's progress tracking.
+		"""
+		print("Starting process_missing_skus()")
+		task_id = self.current_task_id
+		logging.info(f"process_missing_skus() - Task ID: {task_id}")
+		if not task_id:
+			return "Error: Task ID not provided"
 
-		print("Starting Processing missing SKUs")
-		self.scraping_setup()
-		print(self.options)
-		skus_to_check = self.options.get('skus_to_check', [])
-		specified_skus = len(skus_to_check) > 0
+		# Initialize progress
+		progress = {
+			'status': 'running',
+			'current': 0,
+			'total': 0,
+			'current_sku': '',
+			'processed_skus': [],
+			'not_found_skus': [],
+			'message': 'Initializing...'
+		}
+		
+		# Update progress in cache
+		cache.set(f'product_processing_progress_{task_id}', progress, timeout=3600)
 
-		url_file = self.options.get('url_output_file', url_file)
-		data_file = self.options.get('data_output_file', url_file)
-
-		url_file = self.get_file_path(url_file, self.options['home_directory'])
-		data_file = self.get_file_path(data_file, self.options['home_directory'])
-		print(f"url_file: {url_file}")
-		print(f"data_file: {data_file}")
-		# Read existing data to check which SKUs we already have
-		existing_skus = self.get_unique_keys(data_file)
-
-		# Read URL file to get URL for each SKU
-		print(f"Existing SKUs: {len(existing_skus)}")
-		# Process missing SKUs
-		processed_skus = []
-		not_found_skus = []
-
-		if os.path.exists(url_file):
-			print("Path Exists")
-			with open(url_file, 'r', newline='', encoding='utf-8') as f:
-				reader = csv.DictReader(f)
-				print("Here 2")
-
-				if 'SKU' in reader.fieldnames and 'URL' in reader.fieldnames:
-					print("Here 3")
-					for row in reader:
-						sku = row['SKU']
-						print(f"SKU: {sku}")
-						if (sku in skus_to_check or not specified_skus) and sku not in existing_skus:
-							row_spec = self.get_product_spec()
-							try:
-								print(f"Processing missing SKU: {sku}")
-								# Copy values from import file
-								row_spec['subcategory'] = row['Subcategory']
-								row_spec['timestamp'] = row['Timestamp']
-								row_spec['content_url'] = row['URL']
-								row_spec['sku'] = row['SKU']
-								row_spec['category'] = row['Category']
-								row_spec = self.get_product_details(row['URL'], row_spec)
-								processed_skus.append(row['SKU'])
-
-								# Write to CSV
-								print(f"Saving product {row_spec['name']} to {data_file}")
-								self.write_product_to_csv(row_spec, data_file)
-							except Exception as e:
-								print(f"⛔️⛔️⛔️Error processing SKU {sku}: {str(e)}")
-								not_found_skus.append(sku)
-
-		return f"<div>Processed SKUs{processed_skus}. </div><div>Not found SKUs: {not_found_skus}<div>"
+		try:
+			# Get file paths
+			url_file = self.get_file_path(self.options.get('url_output_file', url_file), 
+                                       self.options.get('home_directory', home_dir))
+			data_file = self.get_file_path(self.options.get('data_output_file', data_file), 
+                                        self.options.get('home_directory', home_dir))
+			
+			# Read existing data to check which SKUs we already have
+			existing_skus = self.get_unique_keys(data_file)
+			
+			# Read URL file to get URL for each SKU
+			missing_skus = []
+			sku_url_map = {}
+			
+			if os.path.exists(url_file):
+				with open(url_file, 'r', newline='', encoding='utf-8') as f:
+					reader = csv.DictReader(f)
+					if 'SKU' in reader.fieldnames and 'URL' in reader.fieldnames:
+						for row in reader:
+							sku = row['SKU']
+							if sku not in existing_skus:
+								missing_skus.append(sku)
+								sku_url_map[sku] = row
+			
+			progress['total'] = len(missing_skus)
+			progress['message'] = f'Found {progress["total"]} missing SKUs to process'
+			cache.set(f'product_processing_progress_{task_id}', progress, timeout=3600)
+			
+			# Process missing SKUs
+			for i, sku in enumerate(missing_skus, 1):
+				# Check if task was cancelled
+				if cache.get(f'task_cancelled_{task_id}'):
+					progress['status'] = 'cancelled'
+					progress['message'] = 'Processing was cancelled by user'
+					cache.set(f'product_processing_progress_{task_id}', progress, timeout=3600)
+					return "Processing cancelled"
+				
+				try:
+					row = sku_url_map[sku]
+					progress['current'] = i
+					progress['current_sku'] = sku
+					progress['message'] = f'Processing SKU: {sku} ({i} of {progress["total"]})'
+					cache.set(f'product_processing_progress_{task_id}', progress, timeout=3600)
+					
+					# Process the product
+					row_spec = self.get_product_spec()
+					row_spec['subcategory'] = row.get('Subcategory', '')
+					row_spec['timestamp'] = row.get('Timestamp', '')
+					row_spec['content_url'] = row['URL']
+					row_spec['sku'] = sku
+					row_spec['category'] = row.get('Category', '')
+					
+					# Get product details
+					row_spec = self.get_product_details(row['URL'], row_spec)
+					
+					# Write to CSV
+					self.write_product_to_csv(row_spec, data_file)
+					
+					progress['processed_skus'].append(sku)
+					progress['message'] = f'Successfully processed SKU: {sku}'
+					
+				except Exception as e:
+					error_msg = f"Error processing SKU {sku}: {str(e)}"
+					print(error_msg)
+					progress['not_found_skus'].append(sku)
+					progress['message'] = f'Error processing SKU {sku}: {str(e)[:100]}...'
+				
+				# Update progress
+				cache.set(f'product_processing_progress_{task_id}', progress, timeout=3600)
+			
+			# Final status
+			progress['status'] = 'completed'
+			progress['message'] = (
+				f'Processing complete. Success: {len(progress["processed_skus"])}, '
+				f'Failed: {len(progress["not_found_skus"])}'
+			)
+			cache.set(f'product_processing_progress_{task_id}', progress, timeout=3600)
+			
+			return progress['message']
+			
+		except Exception as e:
+			error_msg = f"Error in process_missing_skus: {str(e)}"
+			print(error_msg)
+			progress['status'] = 'error'
+			progress['message'] = error_msg
+			cache.set(f'product_processing_progress_{task_id}', progress, timeout=3600)
+			return error_msg
 
 	def remove_duplicate_skus(self, input_file=None, output_file=None, home_dir=DEFAULT_DIRECTORY):
 		"""
@@ -923,5 +979,3 @@ class Scraper:
 		del self.driver.requests
 		html = html + "</ul>"
 		return html, found
-
-

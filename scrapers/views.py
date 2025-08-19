@@ -1,7 +1,9 @@
-import os
 import importlib
 import inspect
-from pathlib import Path
+import os
+import uuid
+from importlib import import_module
+
 import requests
 from django.core.cache import cache
 from django.views.decorators.csrf import csrf_exempt
@@ -18,10 +20,7 @@ from scrapers.misc.chefswarehouse import ChefWarehouseScraper
 from scrapers.misc.sg import SouthernGlazierScraper
 from scrapers.misc.usfoods import USFoodsScraper
 from .csvProcessor import CSVProcessor
-from .cut.ab import ABScraper
-from .cut.acme_steak import AcmeSteakScraper
 from .cut.all_fresh_seafood import AllFreshSeafoodScraper
-from .cut.alpeake import AlpeakeScraper
 from .cut.apito import ApitoScraper
 from .cut.carmela import CarmelaScraper
 from .cut.caruso import CarusoScraper
@@ -66,6 +65,20 @@ from .cut.whatchefswant_south import WhatChefsWantSouthScraper
 from .cut.woolcofoods import WoolcoFoodsScraper
 from .misc.cheneybrothers import CheneyBrothersScraper
 from .scraper import Scraper
+from .thread_manager import start_background_task
+
+from django.http import JsonResponse
+from django.contrib.humanize.templatetags.humanize import intcomma
+import os
+import json
+import glob
+import pandas as pd
+
+# Import all scraper classes
+from .cut.acme_steak import AcmeSteakScraper
+from .cut.ab import ABScraper
+from .cut.alpeake import AlpeakeScraper
+# Import other scrapers here...
 
 # List of all scraper classes
 SCRAPER_CLASSES = [
@@ -770,15 +783,12 @@ def process_cut_post(request, scraper):
     # Run the scraper if not just cleaning URLs
     scraper.set_options(options)
     print(f"checking request {options}")
-    # Check if this is an AJAX request for processing CSV
-    if request.headers.get('X-Requested-With') == 'XMLHttpRequest' and options.get('process_csv'):
-        # Import the thread manager
-        from .thread_manager import start_background_task
-        from importlib import import_module
-
+    # Check if this is an AJAX request for processing CSV or reprocessing a CSV
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest' and (
+            options.get('process_csv') or options.get('reprocess_csv')):
         # Define the scraper function that will run in the background
         def run_scraper(module_name, class_name, options):
-            print(f"Starting scraper in background()")
+            print(f"🧵 Starting scraper in background()")
             try:
                 # Import the scraper class dynamically
                 module = import_module(module_name)
@@ -814,6 +824,7 @@ def process_cut_post(request, scraper):
             'url_output_file': options.get('url_output_file', ''),
             'data_output_file': options.get('data_output_file', ''),
             'process_csv': options.get('process_csv', ''),
+            'reprocess_csv': options.get('reprocess_csv', ''),
             'attempts': options.get('attempts', 40)
         }
 
@@ -821,11 +832,23 @@ def process_cut_post(request, scraper):
         scraper_module = scraper.__class__.__module__
         scraper_class = scraper.__class__.__name__
 
-        import uuid
+        # Generate a task ID
         task_id = str(uuid.uuid4())
 
-        # Start the scraper in a background thread using the thread manager
-        task_id = start_background_task(
+        # Initialize progress data in cache
+        initial_progress = {
+            'status': 'starting',
+            'message': 'Starting processing...',
+            'current': 0,
+            'total': 0,
+            'current_sku': '',
+            'processed_skus': [],
+            'not_found_skus': []
+        }
+        cache.set(f'product_processing_progress_{task_id}', initial_progress, 3600)
+
+        # Start the task in a background thread
+        thread_manager.start_thread(
             target=run_scraper,
             task_id=task_id,
             args=(scraper_module, scraper_class, scraper_options),
@@ -833,7 +856,11 @@ def process_cut_post(request, scraper):
         )
 
         print(f"Started background task with ID: {task_id}")
-        return JsonResponse({'task_id': task_id}, status=200)
+        return JsonResponse({
+            'task_id': task_id,
+            'status': 'started',
+            'message': 'Task started successfully'
+        }, status=200)
 
     print(f"skipping processing CSV")
     # Normal synchronous processing
@@ -2365,23 +2392,23 @@ def scraper_status(request):
     """
     # Base directory where scraper data is stored
     base_dir = '/Users/mark/Downloads/scrapers'
-    
+
     # Get all subdirectories (each represents a scraper)
     try:
-        scraper_dirs = [d for d in os.listdir(base_dir) 
+        scraper_dirs = [d for d in os.listdir(base_dir)
                       if os.path.isdir(os.path.join(base_dir, d)) and not d.startswith('.')]
     except FileNotFoundError:
         return render(request, 'scrape_products/status.html', {
             'error': f'Directory not found: {base_dir}'
         })
-    
+
     scraper_data = []
-    
+
     for scraper_dir in sorted(scraper_dirs):
         dir_path = os.path.join(base_dir, scraper_dir)
         data_files = glob.glob(os.path.join(dir_path, '*_data.csv'))
         url_files = glob.glob(os.path.join(dir_path, '*_urls.csv'))
-        
+
         # Count rows in data files
         data_rows = 0
         for file in data_files:
@@ -2390,7 +2417,7 @@ def scraper_status(request):
                 data_rows += len(df)
             except Exception as e:
                 print(f"Error reading {file}: {e}")
-        
+
         # Count rows in URL files
         url_rows = 0
         for file in url_files:
@@ -2399,12 +2426,12 @@ def scraper_status(request):
                 url_rows += len(df)
             except Exception as e:
                 print(f"Error reading {file}: {e}")
-        
+
         # Calculate percentage complete
         percent_complete = 0
         if url_rows > 0:
             percent_complete = min(100, int((data_rows / url_rows) * 100))
-        
+
         scraper_data.append({
             'name': scraper_dir,
             'data_rows': data_rows,
@@ -2414,15 +2441,15 @@ def scraper_status(request):
             'formatted_data_rows': intcomma(data_rows),
             'formatted_url_rows': intcomma(url_rows)
         })
-    
+
     # Sort by status (In Progress first) then by name
     scraper_data.sort(key=lambda x: (x['status'] == 'Complete', x['name']))
-    
+
     # Calculate totals
     total_data = sum(d['data_rows'] for d in scraper_data)
     total_urls = sum(d['url_rows'] for d in scraper_data)
     total_percent = min(100, int((total_data / total_urls * 100))) if total_urls > 0 else 0
-    
+
     context = {
         'scrapers': scraper_data,
         'total_data': total_data,
@@ -2431,22 +2458,8 @@ def scraper_status(request):
         'formatted_total_data': intcomma(total_data),
         'formatted_total_urls': intcomma(total_urls),
     }
-    
+
     return render(request, 'scrape_products/status.html', context)
-
-from django.shortcuts import render
-from django.http import JsonResponse
-from django.contrib.humanize.templatetags.humanize import intcomma
-import os
-import json
-import glob
-import pandas as pd
-
-# Import all scraper classes
-from .cut.acme_steak import AcmeSteakScraper
-from .cut.ab import ABScraper
-from .cut.alpeake import AlpeakeScraper
-# Import other scrapers here...
 
 
 def get_scraper_data(scraper_class):
@@ -2503,39 +2516,37 @@ def get_scraper_data(scraper_class):
         print(f"Error processing {scraper_class.__name__}: {e}")
         return None
 
-def scraper_status(request):
-    """
-    Display a status page showing summary information for all scrapers.
-    """
-    # Get data for all scrapers
-    scraper_data = []
-    
-    for scraper_class in SCRAPER_CLASSES:
-        data = get_scraper_data(scraper_class)
-        if data:
-            scraper_data.append(data)
-    
-    # Sort by status (In Progress first) then by name
-    scraper_data.sort(key=lambda x: (x['status'] == 'Complete', x['name']))
-    
-    # Calculate totals
-    total_data = sum(d['data_rows'] for d in scraper_data)
-    total_urls = sum(d['url_rows'] for d in scraper_data)
-    total_percent = min(100, int((total_data / total_urls * 100))) if total_urls > 0 else 0
-    
-    context = {
-        'scrapers': scraper_data,
-        'total_data': total_data,
-        'total_urls': total_urls,
-        'total_percent': total_percent,
-        'formatted_total_data': intcomma(total_data),
-        'formatted_total_urls': intcomma(total_urls),
-    }
-    
-    return render(request, 'scrape_products/status.html', context)
+# def scraper_status(request):
+#     """
+#     Display a status page showing summary information for all scrapers.
+#     """
+#     # Get data for all scrapers
+#     scraper_data = []
+#
+#     for scraper_class in SCRAPER_CLASSES:
+#         data = get_scraper_data(scraper_class)
+#         if data:
+#             scraper_data.append(data)
+#
+#     # Sort by status (In Progress first) then by name
+#     scraper_data.sort(key=lambda x: (x['status'] == 'Complete', x['name']))
+#
+#     # Calculate totals
+#     total_data = sum(d['data_rows'] for d in scraper_data)
+#     total_urls = sum(d['url_rows'] for d in scraper_data)
+#     total_percent = min(100, int((total_data / total_urls * 100))) if total_urls > 0 else 0
+#
+#     context = {
+#         'scrapers': scraper_data,
+#         'total_data': total_data,
+#         'total_urls': total_urls,
+#         'total_percent': total_percent,
+#         'formatted_total_data': intcomma(total_data),
+#         'formatted_total_urls': intcomma(total_urls),
+#     }
+#
+#     return render(request, 'scrape_products/status.html', context)
 
-from django.shortcuts import render
-from .thread_manager import thread_manager
 
 def task_status(request):
     """View to display the status of all background tasks."""
@@ -2579,3 +2590,187 @@ def stop_task(request, task_id):
             messages.error(request, f'Failed to stop task {task_id} or task was not found.')
     
     return redirect('task_status')
+
+@require_http_methods(["GET"])
+def task_progress(request, task_id):
+    """
+    View to get the progress of a background task.
+    """
+    import logging
+    from django.core.cache import cache
+    from django.utils import timezone
+
+    # Set up logging
+    logger = logging.getLogger(__name__)
+
+    # Log the incoming request
+    logger.info("\n" + "=" * 80)
+    logger.info(f"TASK PROGRESS REQUEST")
+    logger.info(f"Time: {timezone.now().isoformat()}")
+    logger.info(f"Task ID: {task_id}")
+    logger.info(f"Request path: {request.path}")
+    logger.info(f"Request method: {request.method}")
+    logger.info(f"Request GET params: {dict(request.GET)}")
+
+    # Validate task_id
+    if not task_id:
+        logger.error("ERROR: No task_id provided in the URL")
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Task ID not provided',
+            'request_path': request.path,
+            'provided_task_id': str(task_id)
+        }, status=400)
+
+    # Get the progress from cache
+    cache_key = f'product_processing_progress_{task_id}'
+    logger.info(f"Looking up cache with key: {cache_key}")
+
+    try:
+        # Get the progress data from cache
+        progress = cache.get(cache_key)
+
+        if progress is None:
+            logger.warning(f"No progress found in cache for task_id: {task_id}")
+
+            # Try to list all cache keys (works with some backends)
+            try:
+                if hasattr(cache, '_cache') and hasattr(cache._cache, 'keys'):
+                    all_keys = list(cache._cache.keys())
+                    logger.info(f"Found {len(all_keys)} total cache keys")
+
+                    # Look for any keys that might be related to our task
+                    related_keys = [k for k in all_keys if 'progress' in str(k).lower()]
+                    if related_keys:
+                        logger.info(f"Found {len(related_keys)} related cache keys:")
+                        for key in related_keys[:10]:  # Show first 10 to avoid log spam
+                            logger.info(f"  - {key}")
+            except Exception as e:
+                logger.error(f"Error listing cache keys: {e}")
+
+            return JsonResponse({
+                'status': 'not_found',
+                'message': f'Task {task_id} not found or has expired',
+                'cache_key_used': cache_key,
+                'current': 0,
+                'total': 0,
+                'current_sku': '',
+                'processed_skus': [],
+                'not_found_skus': []
+            })
+
+        # Log successful progress retrieval
+        logger.info(f"Successfully retrieved progress for task_id: {task_id}")
+        logger.debug(f"Progress data: {progress}")
+
+        # Ensure the response includes the task_id for debugging
+        if isinstance(progress, dict):
+            progress['task_id'] = task_id
+            progress['cache_key_used'] = cache_key
+
+        return JsonResponse(progress)
+
+    except Exception as e:
+        logger.exception(f"ERROR in task_progress view for task_id {task_id}")
+        return JsonResponse({
+            'status': 'error',
+            'message': f'Internal server error: {str(e)}',
+            'task_id': str(task_id),
+            'cache_key': cache_key
+        }, status=500)
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def stop_task(request, task_id):
+    """
+    View to stop a running task.
+    """
+    try:
+        # Set a flag in cache to signal the task to stop
+        cache.set(f'task_cancelled_{task_id}', True, timeout=3600)
+        
+        # Try to stop the thread if it's still running
+        thread_manager.stop_thread(task_id)
+        
+        # Update the progress to reflect the cancellation
+        progress = cache.get(f'product_processing_progress_{task_id}', {})
+        progress.update({
+            'status': 'cancelled',
+            'message': 'Task was cancelled by user',
+        })
+        cache.set(f'product_processing_progress_{task_id}', progress, timeout=3600)
+        
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+# def process_missing_skus_view(request):
+#     """
+#     View to handle the process missing SKUs form submission.
+#     """
+#     print("process_missing_skus_view()")
+#     if request.method == 'POST':
+#         try:
+#             # Generate a unique task ID
+#             task_id = str(uuid.uuid4())
+#
+#             # Get form data
+#             form_data = request.POST.dict()
+#
+#             # Create the scraper instance with options
+#             scraper_class = get_scraper_class(form_data.get('distributor'))
+#             if not scraper_class:
+#                 return JsonResponse({'error': 'Invalid distributor'}, status=400)
+#
+#             # Initialize scraper with options
+#             options = {
+#                 'task_id': task_id,
+#                 'home_directory': form_data.get('home_directory', ''),
+#                 'url_output_file': form_data.get('url_file', ''),
+#                 'data_output_file': form_data.get('data_file', ''),
+#                 'process_missing_skus': True,
+#             }
+#
+#             # Start the task in a background thread
+#             def run_task():
+#                 try:
+#                     with scraper_class(options) as scraper:
+#                         scraper.process_missing_skus()
+#                 except Exception as e:
+#                     progress = cache.get(f'product_processing_progress_{task_id}', {})
+#                     progress.update({
+#                         'status': 'error',
+#                         'message': f'Error in task: {str(e)}',
+#                     })
+#                     cache.set(f'product_processing_progress_{task_id}', progress, timeout=3600)
+#
+#             # Start the task in a background thread
+#             import threading
+#             thread = threading.Thread(target=run_task)
+#             thread.daemon = True
+#             thread.start()
+#
+#             # Return the task ID to the client
+#             return JsonResponse({'task_id': task_id})
+#
+#         except Exception as e:
+#             return JsonResponse({'error': str(e)}, status=500)
+#
+#     return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+def get_scraper_class(distributor_name):
+    """
+    Helper function to get the scraper class by distributor name.
+    """
+    # Import all scraper classes
+
+    # Get all scraper classes
+    scraper_classes = [cls for name, cls in globals().items() 
+                      if name.endswith('Scraper') and hasattr(cls, 'VENDOR_NAME')]
+    
+    # Find the scraper class that matches the distributor name
+    for cls in scraper_classes:
+        if cls.VENDOR_NAME.lower() == distributor_name.lower():
+            return cls
+    
+    return None
