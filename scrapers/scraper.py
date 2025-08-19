@@ -69,6 +69,8 @@ class Scraper:
 	# Class variables for default values
 	PRODUCT_DATA_SPEC = {}
 
+	BASE_URL = ''
+
 	TEST_CATEGORIES = 100
 	TEST_PRODUCTS = 20000
 	CSV_START_ROW = 0

@@ -1,5 +1,9 @@
 
 import json
+
+
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
 from scrapers.cut.dry import CutScraper
 
 
@@ -414,8 +418,32 @@ class SierraMeatScraper(CutScraper):
 	VENDOR_URL_NAME = 'sierra%20meat%20&%20seafood'
 	VERIFIED_VENDOR_ID = 21262898
 
+	JSON_CANONICAL_PRODUCTS = 'contextualProducts'
+
 	def __init__(self, options=None):
 		super().__init__(options)
 		self.options = {**self.DEFAULT_OPTIONS, **(options or {})}
 		self.options['home_directory'] = self.DEFAULT_DIRECTORY
+		self.options['base_url'] = self.BASE_URL
+
+	def scraping_setup(self):
+		"""Scrape products from the website"""
+		print("scraping_setup()")
+		return self.bypass_customer_popup
+
+
+	def bypass_customer_popup(self, url):
+		print("bypass_customer_popup()")
+		try:
+			self.driver.get(url)
+			modal = self.wait.until(
+				EC.visibility_of_element_located((By.CSS_SELECTOR, '.modal-content'))
+			)
+			# Yes button should be activated so click it
+			modal.find_element(By.CSS_SELECTOR, '.fa-xmark').click()
+
+			print("Bypassed age gate")
+		except Exception as e:
+			print(f"Error: {e}")
+			# time.sleep(200)
 

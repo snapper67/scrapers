@@ -54,6 +54,7 @@ class CutScraper(Scraper):
 	}
 
 	ENCODING = "utf-8"
+	API_VERSION = "62aa9c6b39498222ac7c5d6e649ae3f9ab4465af"
 
 	BASE_URL = 'https://app.cutanddry.com'
 	SUB_DOMAIN = "https://app.cutanddry.com"
@@ -100,6 +101,9 @@ class CutScraper(Scraper):
 		'search_term': '',
 		'attempts': '40',
 	}
+
+	JSON_CANONICAL_PRODUCTS = 'canonicalProducts'
+	JSON_CONTEXTUAL_PRODUCTS = 'contextualProducts'
 
 	def __init__(self, options=None):
 		super().__init__(options)
@@ -174,6 +178,7 @@ class CutScraper(Scraper):
 		from urllib.parse import quote_plus
 
 		# URL encode the vendor name and other string parameters
+		print(f"Product ID : {product_id}")
 		encoded_vendor_name = quote(self.VENDOR_URL_NAME)
 
 		base_url = f"{self.SUB_DOMAIN}/catalog/{encoded_vendor_name}/product/{product_id}?srcPge=Public%20Catalog&srcLoc=General&verifiedVendorId={self.VERIFIED_VENDOR_ID}"
@@ -202,6 +207,9 @@ class CutScraper(Scraper):
 		print(f"Categories: {categories}")
 		return categories
 
+	def get_base_url(self):
+		return self.BASE_URL
+
 	def get_category_names(self):
 		return self.CATEGORY_NAMES
 
@@ -211,7 +219,7 @@ class CutScraper(Scraper):
 	def get_name(self):
 		return self.VENDOR_NAME
 
-	def clean_data_file(self, input_file=None, output_file=None):
+	def clean_data_file(self, input_file=None, output_file=None, field='name'):
 		"""
 		Clean the URL file by removing rows that don't have a value in the 'name' column.
 
@@ -222,6 +230,7 @@ class CutScraper(Scraper):
 		Returns:
 			tuple: (success: bool, message: str) indicating the result of the operation
 		"""
+		print(f"Cleaning data file: {input_file}")
 		try:
 			# Get input file path
 			if input_file is None:
@@ -235,15 +244,15 @@ class CutScraper(Scraper):
 			# df = pd.read_csv(csv_file, encoding=ENCODING)
 			df = pd.read_csv(input_file, dtype=str, keep_default_na=False, encoding=self.ENCODING, on_bad_lines='skip')
 
-			# Check if 'name' column exists
-			if 'name' not in df.columns:
-				return False, f"Error: 'name' column not found in {input_file}"
+			# Check if field column exists
+			if field not in df.columns:
+				return False, f"Error: {field} column not found in {input_file}"
 
 			# Count rows before cleaning
 			initial_count = len(df)
 
 			# Remove rows where name is empty or whitespace
-			clean_df = df[df['name'].str.strip().astype(bool)]
+			clean_df = df[df[field].str.strip().astype(bool)]
 
 			# Count rows after cleaning
 			final_count = len(clean_df)
@@ -254,9 +263,9 @@ class CutScraper(Scraper):
 
 			# If we removed any rows, return success with count
 			if removed_count > 0:
-				return True, f"Removed {removed_count} rows without names. {final_count} rows remaining in {output_file}"
+				return True, f"Removed {removed_count} rows without {field}s. {final_count} rows remaining in {output_file}"
 			else:
-				return True, "No rows without names found. File was not modified."
+				return True, f"No rows without {field}s found. File was not modified."
 
 		except Exception as e:
 			return False, f"Error cleaning URL file: {str(e)}"
@@ -618,14 +627,16 @@ class CutScraper(Scraper):
 								# If the body is JSON, parse it
 								if 'application/json' in request.response.headers.get('Content-Type', ''):
 									data = json.loads(body)
-									# https://app.salsify.com/catalogs/a256467d-fc0a-4bce-8971-1d14466fd28f/products/9258080
-									if 'canonicalProducts' in data.get('data', {}).get('catalogProductsRootQuery', {}):
-										print(f"Response products: {'canonicalProducts' in data} ")
+
+									# 08/18/25 new api was released a contextual product wrapper was added
+									if self.JSON_CONTEXTUAL_PRODUCTS in data.get('data', {}).get('catalogProductsRootQuery', {}):
+										print(f"Response contextual products: TRUE ")
+										print(f"Response: {json.dumps(data)}")
 										first_found = True
 										detail_urls = [
-											self.build_product_url(product.get('id', ''))
+											self.build_product_url(product.get('canonicalProduct', {}).get('id', ''))
 											for product in data.get('data', {}).get('catalogProductsRootQuery', {}).get(
-												'canonicalProducts', [])]
+												self.JSON_CONTEXTUAL_PRODUCTS, [])]
 										print(f"== Number of products: {len(detail_urls)}")
 										all_urls.extend(detail_urls)
 										html += f"<h2>{category_name} -> {subcat_name} -> page {page}</h2>"
@@ -637,7 +648,28 @@ class CutScraper(Scraper):
 											still_looking = False
 										break
 									else:
-										print(f"Response products missing: {'canonicalProducts' in data} ")
+										print(
+											f"Response contextual products ({self.JSON_CONTEXTUAL_PRODUCTS}) missing: {self.JSON_CONTEXTUAL_PRODUCTS in data} ")
+
+									if self.JSON_CANONICAL_PRODUCTS in data.get('data', {}).get('catalogProductsRootQuery', {}):
+										print(f"Response products: TRUE")
+										first_found = True
+										detail_urls = [
+											self.build_product_url(product.get('id', ''))
+											for product in data.get('data', {}).get('catalogProductsRootQuery', {}).get(
+												self.JSON_CANONICAL_PRODUCTS, [])]
+										print(f"== Number of products: {len(detail_urls)}")
+										all_urls.extend(detail_urls)
+										html += f"<h2>{category_name} -> {subcat_name} -> page {page}</h2>"
+										html += "<div>Products found: " + str(len(detail_urls)) + "</div>"
+										self.save_urls_to_csv(detail_urls, category_name, subcat_name)
+										print(f"=== Number of products: {len(detail_urls)}")
+
+										if len(detail_urls) < self.options['max_products']:
+											still_looking = False
+										break
+									else:
+										print(f"Response canonical products ({self.JSON_CANONICAL_PRODUCTS}) missing: {self.JSON_CANONICAL_PRODUCTS in data} ")
 								# print(f"data: {data} ")
 
 								else:
@@ -655,6 +687,7 @@ class CutScraper(Scraper):
 	def build_products_list(self):
 		"""Scrape product links from the website"""
 		print(f"build_products_list()")
+		self.scraping_setup()
 		html = ''
 		html_table = ''
 		all_urls = []

@@ -15,6 +15,12 @@
         </div>
     </div>
 
+    {% if error %}
+    <div class="alert alert-danger">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        {{ error }}
+    </div>
+    {% else %}
     <!-- Summary Cards -->
     <div class="row mb-4">
         <div class="col-md-4 mb-3">
@@ -55,13 +61,19 @@
     <!-- Scraper Table -->
     <div class="card">
         <div class="card-header bg-maroon text-white">
-            <h5 class="mb-0">Scraper Progress</h5>
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Scraper Progress</h5>
+                <div class="form-check form-switch mb-0">
+                    <input class="form-check-input" type="checkbox" id="showDetails">
+                    <label class="form-check-label" for="showDetails">Show Details</label>
+                </div>
+            </div>
         </div>
         <div class="table-responsive">
             <table class="table table-hover mb-0">
                 <thead class="table-light">
                     <tr>
-                        <th>Scraper</th>
+                        <th>Distributor</th>
                         <th class="text-end">URLs</th>
                         <th class="text-end">Scraped</th>
                         <th class="text-center">Status</th>
@@ -72,7 +84,11 @@
                     {% for scraper in scrapers %}
                     <tr>
                         <td class="align-middle">
-                            <strong>{{ scraper.name|title }}</strong>
+                            <strong>{{ scraper.name }}</strong>
+                            <div class="text-muted small scraper-details" style="display: none;">
+                                <div><strong>Class:</strong> {{ scraper.class_name }}</div>
+                                <div><strong>Directory:</strong> {{ scraper.directory }}</div>
+                            </div>
                         </td>
                         <td class="text-end align-middle">
                             {{ scraper.url_rows|intcomma }}
@@ -124,14 +140,27 @@
             </table>
         </div>
     </div>
+    {% endif %}
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Add any client-side functionality here
-    console.log('Scraper status page loaded');
+    // Toggle details visibility
+    const showDetailsCheckbox = document.getElementById('showDetails');
+    const detailsElements = document.querySelectorAll('.scraper-details');
+
+    showDetailsCheckbox.addEventListener('change', function() {
+        detailsElements.forEach(el => {
+            el.style.display = this.checked ? 'block' : 'none';
+        });
+    });
+
+    // Auto-refresh the page every 5 minutes
+    setTimeout(function() {
+        window.location.reload();
+    }, 5 * 60 * 1000);
 });
 </script>
 {% endblock %}

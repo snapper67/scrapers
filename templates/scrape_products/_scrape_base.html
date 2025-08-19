@@ -5,6 +5,7 @@
         {% block common %}
             <div class="container mt-4">
                 <h2>{% block name %}{% endblock name %}</h2>
+                <div><a href="{{ defaults.base_url }}">Website</a></div>
                 {% block top %}{% endblock top %}
                 <form method="post" class="mt-4" id="scraperForm" onsubmit="return handleFormSubmit(event)">
                     {% csrf_token %}
@@ -106,6 +107,40 @@
                                                        title="Count rows in all  CSV files in the specified directory">
                                                     Count Rows in All CSVs in home directory
                                                 </label>
+                                            </div>
+                                            <div class="form-check mb-3">
+                                                <input class="form-check-input" type="checkbox" id="clean_data" name="clean_data"
+                                                       {% if defaults.clean_data %}checked{% endif %}>
+                                                <label class="form-check-label" for="clean_data"
+                                                       title="Clean the data file by removing rows without values in the specified field">
+                                                    Clean Data (remove empty rows)
+                                                </label>
+                                                <div class="row mt-2">
+                                                    <div class="col-md-6">
+                                                        <div class="input-group mb-2">
+                                                            <span class="input-group-text">Field:</span>
+                                                            <input type="text" class="form-control" id="clean_field" name="clean_field"
+                                                                   value="{{ defaults.clean_field|default:'name' }}"
+                                                                   placeholder="Field name (e.g., name, sku)">
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="radio" name="file_type" id="clean_url_file"
+                                                                   value="url" checked>
+                                                            <label class="form-check-label" for="clean_url_file">
+                                                                URL File
+                                                            </label>
+                                                        </div>
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="radio" name="file_type" id="clean_data_file"
+                                                                   value="data">
+                                                            <label class="form-check-label" for="clean_data_file">
+                                                                Data File
+                                                            </label>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
                                             <button type="submit" class="btn btn-primary mt-3">Run</button>
                                         </div>

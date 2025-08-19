@@ -1,76 +1,104 @@
-import json
 import os
-import datetime
-
+import importlib
+import inspect
+from pathlib import Path
 import requests
 from django.core.cache import cache
-from django.http import JsonResponse
-from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from django.views.generic import TemplateView
-from django.contrib.humanize.templatetags.humanize import intcomma
+
 from scrapers.cut.birite import BiRiteScraper
+from scrapers.cut.cheese_importers import CheeseImportersScraper
+from scrapers.cut.creamco import CreamCoScraper
 from scrapers.cut.primizie import PrimizieScraper
 from scrapers.cut.sardilli import SardilliScraper
 from scrapers.misc.breakthru import BreakthruScraper
 from scrapers.misc.chefswarehouse import ChefWarehouseScraper
 from scrapers.misc.sg import SouthernGlazierScraper
 from scrapers.misc.usfoods import USFoodsScraper
-from scrapers.cut.cheese_importers import CheeseImportersScraper
-from scrapers.cut.creamco import CreamCoScraper
-from .cut.crookbros import CrookBrosScraper
-from .cut.cusumanoandsons import CusumanoAndSonsScraper
-from .cut.dwcspecialties import DWCSpecialtiesScraper
-from .cut.fourstarmeat import FourStarMeatScraper
-from .cut.hearty import HeartyScraper
-from .cut.hooktofork import HookToForkScraper
-from .cut.jordanpaige import JordanPaigeScraper
-from .cut.manson import MansonScraper
-from .cut.misterproduce import MisterProduceScraper
-from .cut.pacificprovisions import PacificProvisionsScraper
-from .cut.prdeli import PRDeliScraper
-from .cut.rarefoods import RareFoodsScraper
-from .cut.realityfoods import RealityFoodsScraper
-from .cut.safradistribution import SafraDistributionScraper
-from .cut.savalfoodservice import SavalFoodserviceScraper
-from .cut.socomeatco import SoCoMeatCoScraper
-from .cut.sutters import SuttersScraper
-from .cut.thefishguys import TheFishGuysScraper
-from .cut.tolteca import ToltecaScraper
-from .cut.totalfoods import TotalFoodsScraper
-from .cut.valleygold import ValleyGoldScraper
-from .cut.whatchefswant_south import WhatChefsWantSouthScraper
 from .csvProcessor import CSVProcessor
 from .cut.ab import ABScraper
-from .cut.alpeake import AlpeakeScraper
 from .cut.acme_steak import AcmeSteakScraper
 from .cut.all_fresh_seafood import AllFreshSeafoodScraper
+from .cut.alpeake import AlpeakeScraper
 from .cut.apito import ApitoScraper
 from .cut.carmela import CarmelaScraper
 from .cut.caruso import CarusoScraper
 from .cut.chefs_kitchen import ChefsKitchenScraper
 from .cut.christ_panos import ChristPanosScraper
 from .cut.cooks import CooksCompanyScraper
+from .cut.crookbros import CrookBrosScraper
+from .cut.cusumanoandsons import CusumanoAndSonsScraper
 from .cut.derstines import DerstinesScraper
 from .cut.driscoll import DriscollScraper
+from .cut.dwcspecialties import DWCSpecialtiesScraper
 from .cut.food_paper import FoodAndPaperScraper
 from .cut.food_pro import FoodProScraper
+from .cut.fourstarmeat import FourStarMeatScraper
+from .cut.hearty import HeartyScraper
+from .cut.hooktofork import HookToForkScraper
 from .cut.indianhead import IndianheadScraper
+from .cut.jordanpaige import JordanPaigeScraper
+from .cut.manson import MansonScraper
 from .cut.maple_vale import MapleValeScraper
 from .cut.market_406 import Market406Scraper
+from .cut.misterproduce import MisterProduceScraper
+from .cut.pacificprovisions import PacificProvisionsScraper
+from .cut.prdeli import PRDeliScraper
+from .cut.rarefoods import RareFoodsScraper
+from .cut.realityfoods import RealityFoodsScraper
+from .cut.safradistribution import SafraDistributionScraper
 from .cut.sandw import SandWScraper
+from .cut.savalfoodservice import SavalFoodserviceScraper
 from .cut.sierra_meat import SierraMeatScraper
+from .cut.socomeatco import SoCoMeatCoScraper
 from .cut.southwest_traders import SouthwestTradersScraper
 from .cut.sunbelt import SunbeltScraper
+from .cut.sutters import SuttersScraper
+from .cut.thefishguys import TheFishGuysScraper
+from .cut.tolteca import ToltecaScraper
+from .cut.totalfoods import TotalFoodsScraper
+from .cut.valleygold import ValleyGoldScraper
 from .cut.vitco_foods import VitcoScraper
 from .cut.wagner import WagnerScraper
-from .misc.cheneybrothers import CheneyBrothersScraper
+from .cut.whatchefswant_south import WhatChefsWantSouthScraper
 from .cut.woolcofoods import WoolcoFoodsScraper
+from .misc.cheneybrothers import CheneyBrothersScraper
 from .scraper import Scraper
-import glob
-import pandas as pd
-from pathlib import Path
+
+# List of all scraper classes
+SCRAPER_CLASSES = [
+]
+
+# Get the directory containing the scrapers
+scrapers_cut_dir = os.path.join(os.path.dirname(__file__), 'cut')
+scrapers_misc_dir = os.path.join(os.path.dirname(__file__), 'misc')
+
+# Import all Python files in the cut directory
+for filename in os.listdir(scrapers_cut_dir):
+    if filename.endswith('.py') and not filename.startswith('_') and filename != 'dry.py':
+        module_name = filename[:-3]  # Remove .py extension
+        try:
+            module = importlib.import_module(f'scrapers.cut.{module_name}')
+            # Get all classes in the module that end with 'Scraper'
+            for name, obj in inspect.getmembers(module, inspect.isclass):
+                if name.endswith('Scraper') and hasattr(obj, 'VENDOR_NAME') and hasattr(obj, 'DEFAULT_DIRECTORY') and name != 'CutScraper':
+                    SCRAPER_CLASSES.append(obj)
+        except Exception as e:
+            print(f"Error importing {module_name}: {e}")
+for filename in os.listdir(scrapers_misc_dir):
+    if filename.endswith('.py') and not filename.startswith('_'):
+        module_name = filename[:-3]  # Remove .py extension
+        try:
+            module = importlib.import_module(f'scrapers.misc.{module_name}')
+            # Get all classes in the module that end with 'Scraper'
+            for name, obj in inspect.getmembers(module, inspect.isclass):
+                if name.endswith('Scraper') and hasattr(obj, 'VENDOR_NAME') and hasattr(obj, 'DEFAULT_DIRECTORY') and name != 'CutScraper':
+                    SCRAPER_CLASSES.append(obj)
+        except Exception as e:
+            print(f"Error importing {module_name}: {e}")
+print(SCRAPER_CLASSES)
 
 
 class ScrapeProductsPageView(TemplateView):
@@ -351,6 +379,7 @@ def set_defaults(distributor_options):
         'search_requests': distributor_options.get('search_requests'),
         'url': distributor_options.get('url'),
         'search_term': distributor_options.get('search_term'),
+        'base_url': distributor_options.get('base_url'),
         # 'url_file': f"{usfoods_options.get('category_name').lower()}_product_urls.csv",
         # 'data_file': f"{usfoods_options.get('category_name').lower()}_product_data.csv"
     }
@@ -577,15 +606,8 @@ def update_cheney_brothers(post_data, current_options):
     """
     # Update category and file names if category
     # changes
-    scraper = CheneyBrothersScraper()
     category_id = post_data.get('category_id')
     if category_id and int(category_id) != 0:
-        categories = scraper.get_categories()
-        for category in categories:
-            if category['Id'] == int(category_id):
-                category_name = category['Name']
-                current_options['category_url'] = category['url']
-                break
         current_options['chosen_category'] = category_id
         category_name = ''
         current_options['category_url'] = ''
@@ -729,7 +751,16 @@ def process_cut_post(request, scraper):
 
     # Handle clean_datas option
     if options.get('clean_data'):
-        success, message = scraper.clean_data_file()
+        clean_field = request.POST.get('clean_field', 'name')  # Default to 'name' if not specified
+        file_type = request.POST.get('file_type', 'url')  # Default to 'url' if not specified
+        
+        # Determine which file to clean based on selection
+        if file_type == 'data':
+            input_file = os.path.join(options.get('home_directory', ''), options.get('data_output_file', ''))
+        else:  # 'url' or default
+            input_file = os.path.join(options.get('home_directory', ''), options.get('url_output_file', ''))
+            
+        success, message = scraper.clean_data_file(input_file=input_file, field=clean_field)
         if success:
             result = f"<div class='alert alert-success'>{message}</div>"
         else:
@@ -2383,6 +2414,106 @@ def scraper_status(request):
             'formatted_data_rows': intcomma(data_rows),
             'formatted_url_rows': intcomma(url_rows)
         })
+    
+    # Sort by status (In Progress first) then by name
+    scraper_data.sort(key=lambda x: (x['status'] == 'Complete', x['name']))
+    
+    # Calculate totals
+    total_data = sum(d['data_rows'] for d in scraper_data)
+    total_urls = sum(d['url_rows'] for d in scraper_data)
+    total_percent = min(100, int((total_data / total_urls * 100))) if total_urls > 0 else 0
+    
+    context = {
+        'scrapers': scraper_data,
+        'total_data': total_data,
+        'total_urls': total_urls,
+        'total_percent': total_percent,
+        'formatted_total_data': intcomma(total_data),
+        'formatted_total_urls': intcomma(total_urls),
+    }
+    
+    return render(request, 'scrape_products/status.html', context)
+
+from django.shortcuts import render
+from django.http import JsonResponse
+from django.contrib.humanize.templatetags.humanize import intcomma
+import os
+import json
+import glob
+import pandas as pd
+
+# Import all scraper classes
+from .cut.acme_steak import AcmeSteakScraper
+from .cut.ab import ABScraper
+from .cut.alpeake import AlpeakeScraper
+# Import other scrapers here...
+
+
+def get_scraper_data(scraper_class):
+    """Get data for a single scraper class"""
+    try:
+        # Create an instance of the scraper
+        scraper = scraper_class()
+        
+        # Get the directory and vendor name
+        directory = getattr(scraper, 'DEFAULT_DIRECTORY', None)
+        vendor_name = getattr(scraper, 'VENDOR_NAME', scraper_class.__name__)
+        
+        if not directory or not os.path.exists(directory):
+            return None
+            
+        # Find data and URL files
+        data_files = glob.glob(os.path.join(directory, '*_data.csv'))
+        url_files = glob.glob(os.path.join(directory, '*_urls.csv'))
+        
+        # Count rows in data files
+        data_rows = 0
+        for file in data_files:
+            try:
+                df = pd.read_csv(file, on_bad_lines='skip')
+                data_rows += len(df)
+            except Exception as e:
+                print(f"Error reading {file}: {e}")
+        
+        # Count rows in URL files
+        url_rows = 0
+        for file in url_files:
+            try:
+                df = pd.read_csv(file, on_bad_lines='skip')
+                url_rows += len(df)
+            except Exception as e:
+                print(f"Error reading {file}: {e}")
+        
+        # Calculate percentage complete
+        percent_complete = 0
+        if url_rows > 0:
+            percent_complete = min(100, int((data_rows / url_rows) * 100))
+        
+        return {
+            'name': vendor_name,
+            'directory': directory,
+            'data_rows': data_rows,
+            'url_rows': url_rows,
+            'percent_complete': percent_complete,
+            'status': 'Complete' if url_rows > 0 and data_rows >= url_rows else 'In Progress',
+            'class_name': scraper_class.__name__,
+        }
+        
+    except Exception as e:
+        print(f"Error processing {scraper_class.__name__}: {e}")
+        return None
+
+def scraper_status(request):
+    """
+    Display a status page showing summary information for all scrapers.
+    """
+    # Get data for all scrapers
+    scraper_data = []
+    
+    for scraper_class in SCRAPER_CLASSES:
+        data = get_scraper_data(scraper_class)
+        if data:
+            scraper_data.append(data)
     
     # Sort by status (In Progress first) then by name
     scraper_data.sort(key=lambda x: (x['status'] == 'Complete', x['name']))
