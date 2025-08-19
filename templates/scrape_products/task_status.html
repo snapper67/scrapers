@@ -1,0 +1,100 @@
+{% extends "_base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Task Queue Status</h2>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <span>Task Queue Summary</span>
+                <span class="badge bg-primary">{{ active_tasks }} Active / {{ total_tasks }} Total</span>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>Task ID</th>
+                            <th>Name</th>
+                            <th>Status</th>
+                            <th>Progress</th>
+                            <th>Started</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for task in tasks %}
+                        <tr>
+                            <td><code>{{ task.id|truncatechars:10 }}</code></td>
+                            <td>{{ task.name }}</td>
+                            <td>
+                                <span class="badge {% if task.status == 'running' %}bg-success{% else %}bg-secondary{% endif %}">
+                                    {{ task.status|title }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if task.progress %}
+                                    {% if task.progress.total > 0 %}
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar" role="progressbar"
+                                             style="width: {{ task.progress.percent }}%"
+                                             aria-valuenow="{{ task.progress.current }}"
+                                             aria-valuemin="0"
+                                             aria-valuemax="{{ task.progress.total }}">
+                                            {{ task.progress.current }} / {{ task.progress.total }}
+                                        </div>
+                                    </div>
+                                    {% else %}
+                                        Processing...
+                                    {% endif %}
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </td>
+                            <td>{{ task.start_time|default:"Unknown" }}</td>
+                            <td>
+                                {% if task.is_alive %}
+                                <form method="post" action="{% url 'stop_task' task.id %}" style="display: inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-danger">Stop</button>
+                                </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center">No active tasks found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            Task Queue Information
+        </div>
+        <div class="card-body">
+            <p>This page shows the status of all background tasks in the system.</p>
+            <ul>
+                <li><strong>Running</strong> tasks are actively being processed.</li>
+                <li><strong>Completed</strong> tasks have finished successfully.</li>
+                <li><strong>Failed</strong> tasks encountered an error during execution.</li>
+            </ul>
+            <p>Click the <span class="badge bg-danger">Stop</span> button to terminate a running task.</p>
+            <p>This page refreshes automatically every 10 seconds.</p>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-refresh the page every 10 seconds
+setTimeout(function() {
+    window.location.reload();
+}, 10000);
+</script>
+{% endblock %}
