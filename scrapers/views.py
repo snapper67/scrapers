@@ -2533,3 +2533,49 @@ def scraper_status(request):
     }
     
     return render(request, 'scrape_products/status.html', context)
+
+from django.shortcuts import render
+from .thread_manager import thread_manager
+
+def task_status(request):
+    """View to display the status of all background tasks."""
+    # Get all active tasks from the thread manager
+    active_tasks = thread_manager.get_all_tasks()
+    
+    # Format task data for the template
+    tasks = []
+    for task_id, task_info in active_tasks.items():
+        tasks.append({
+            'id': task_id,
+            'name': task_info.get('name', 'Unnamed Task'),
+            'status': task_info.get('status', 'unknown'),
+            'start_time': task_info.get('start_time'),
+            'progress': task_info.get('progress', {}),
+            'is_alive': task_info.get('thread', {}).is_alive() if task_info.get('thread') else False
+        })
+    
+    # Sort tasks by start time (newest first)
+    tasks.sort(key=lambda x: x.get('start_time') or '', reverse=True)
+    
+    context = {
+        'tasks': tasks,
+        'total_tasks': len(tasks),
+        'active_tasks': sum(1 for task in tasks if task.get('is_alive')),
+    }
+    
+    return render(request, 'scrape_products/task_status.html', context)
+
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from .thread_manager import thread_manager
+
+def stop_task(request, task_id):
+    """View to stop a running task."""
+    if request.method == 'POST':
+        stopped = thread_manager.stop_thread(task_id)
+        if stopped:
+            messages.success(request, f'Task {task_id} has been stopped.')
+        else:
+            messages.error(request, f'Failed to stop task {task_id} or task was not found.')
+    
+    return redirect('task_status')

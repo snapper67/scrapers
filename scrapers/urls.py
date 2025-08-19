@@ -69,5 +69,6 @@ urlpatterns = [
     path("vitco_foods/", views.scrape_vitco_foods, name="vitco_foods"),
     path("wagner/", views.scrape_wagner, name="wagner"),
     path("status/", views.scraper_status, name="scraper_status"),
-
+    path('task-status/', views.task_status, name='task_status'),
+    path('stop-task/<str:task_id>/', views.stop_task, name='stop_task'),
 ]

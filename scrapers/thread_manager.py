@@ -229,6 +229,24 @@ class ThreadManager:
             }
             for task_id, thread in self._threads.items()
         }
+    
+    def get_all_tasks(self) -> dict:
+        """
+        Get all tasks being tracked by the thread manager.
+        
+        Returns:
+            dict: A dictionary of all tasks with their information
+        """
+        tasks = {}
+        for task_id in list(self._threads.keys()):
+            tasks[task_id] = {
+                'thread': self._threads.get(task_id),
+                'stop_event': self._stop_events.get(task_id),
+                'status': cache.get(f'product_processing_progress_{task_id}', {}).get('status', 'unknown'),
+                'progress': cache.get(f'product_processing_progress_{task_id}', {}),
+                'name': cache.get(f'thread_info_{task_id}', {}).get('target', 'Unnamed Task')
+            }
+        return tasks
 
 
 # Global thread manager instance
