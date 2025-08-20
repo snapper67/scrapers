@@ -26,6 +26,7 @@ from .cut.carmela import CarmelaScraper
 from .cut.caruso import CarusoScraper
 from .cut.chefs_kitchen import ChefsKitchenScraper
 from .cut.christ_panos import ChristPanosScraper
+from .cut.citylinefoods import CityLineFoodsScraper
 from .cut.cooks import CooksCompanyScraper
 from .cut.crookbros import CrookBrosScraper
 from .cut.cusumanoandsons import CusumanoAndSonsScraper
@@ -45,6 +46,7 @@ from .cut.market_406 import Market406Scraper
 from .cut.misterproduce import MisterProduceScraper
 from .cut.pacificprovisions import PacificProvisionsScraper
 from .cut.prdeli import PRDeliScraper
+from .cut.primesourcefoods import PrimeSourceFoodsScraper
 from .cut.rarefoods import RareFoodsScraper
 from .cut.realityfoods import RealityFoodsScraper
 from .cut.safradistribution import SafraDistributionScraper
@@ -2386,6 +2388,64 @@ def scrape_woolcofoods(request):
         'total_products': total_products
     })
 
+def scrape_primesourcefoods(request):
+    """View for scraping Woolco Foods"""
+    print("Calling scrape_woolcofoods()")
+    options = {}
+
+    if request.method == 'POST':
+        with PrimeSourceFoodsScraper(options) as scraper:
+            print("Calling process_cut_post from scrape_woolcofoods()")
+            result = process_cut_post(request, scraper)
+            if isinstance(result, str):
+                return render(request, 'scrape_products/scrape_results.html', {'result': result})
+            else:
+                return result
+
+    # GET request - show form
+    scraper = PrimeSourceFoodsScraper()
+    distributor_options = scraper.get_options()
+    categories, total_products = update_cut_categories(request.POST, scraper)
+
+    defaults = set_defaults(distributor_options)
+    defaults.update({'attempts': 40})
+
+    return render(request, 'scrape_products/scrape_cut.html', {
+        'categories': categories,
+        'defaults': defaults,
+        'name': scraper.get_name(),
+        'total_products': total_products
+    })
+
+def scrape_citylinefoods(request):
+    """View for scraping Woolco Foods"""
+    print("Calling scrape_woolcofoods()")
+    options = {}
+
+    if request.method == 'POST':
+        with CityLineFoodsScraper(options) as scraper:
+            print("Calling process_cut_post from scrape_woolcofoods()")
+            result = process_cut_post(request, scraper)
+            if isinstance(result, str):
+                return render(request, 'scrape_products/scrape_results.html', {'result': result})
+            else:
+                return result
+
+    # GET request - show form
+    scraper = CityLineFoodsScraper()
+    distributor_options = scraper.get_options()
+    categories, total_products = update_cut_categories(request.POST, scraper)
+
+    defaults = set_defaults(distributor_options)
+    defaults.update({'attempts': 40})
+
+    return render(request, 'scrape_products/scrape_cut.html', {
+        'categories': categories,
+        'defaults': defaults,
+        'name': scraper.get_name(),
+        'total_products': total_products
+    })
+
 
 def scraper_status(request):
     """
@@ -2547,7 +2607,7 @@ def stop_task(request, task_id):
             messages.success(request, f'Task {task_id} has been stopped.')
         else:
             messages.error(request, f'Failed to stop task {task_id} or task was not found.')
-    
+
     return redirect('task_status')
 
 @require_http_methods(["GET"])
@@ -2647,10 +2707,10 @@ def stop_task(request, task_id):
     try:
         # Set a flag in cache to signal the task to stop
         cache.set(f'task_cancelled_{task_id}', True, timeout=3600)
-        
+
         # Try to stop the thread if it's still running
         thread_manager.stop_thread(task_id)
-        
+
         # Update the progress to reflect the cancellation
         progress = cache.get(f'product_processing_progress_{task_id}', {})
         progress.update({
@@ -2658,7 +2718,7 @@ def stop_task(request, task_id):
             'message': 'Task was cancelled by user',
         })
         cache.set(f'product_processing_progress_{task_id}', progress, timeout=3600)
-        
+
         return JsonResponse({'success': True})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
@@ -2724,12 +2784,12 @@ def get_scraper_class(distributor_name):
     # Import all scraper classes
 
     # Get all scraper classes
-    scraper_classes = [cls for name, cls in globals().items() 
+    scraper_classes = [cls for name, cls in globals().items()
                       if name.endswith('Scraper') and hasattr(cls, 'VENDOR_NAME')]
-    
+
     # Find the scraper class that matches the distributor name
     for cls in scraper_classes:
         if cls.VENDOR_NAME.lower() == distributor_name.lower():
             return cls
-    
+
     return None

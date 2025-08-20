@@ -68,7 +68,7 @@ class CutScraper(Scraper):
 	CSV_START_ROW = 0
 	TEST_TABS = 2
 	MAX_API_PRODUCTS = 45  # Maximum number to change the search request page size
-	DEFAULT_DIRECTORY = '/Users/mark/Downloads/scrapers/primiizie'
+	DEFAULT_DIRECTORY = '/Users/mark/Downloads/scrapers/default'
 
 	SEARCH_API_OPERATION = 'ConsumerCanonicalProductsByCategoriesQuery'
 	PRODUCT_API_OPERATION = 'UniversalProductForPDP'
@@ -631,7 +631,7 @@ class CutScraper(Scraper):
 									# 08/18/25 new api was released a contextual product wrapper was added
 									if self.JSON_CONTEXTUAL_PRODUCTS in data.get('data', {}).get('catalogProductsRootQuery', {}):
 										print(f"Response contextual products: TRUE ")
-										print(f"Response: {json.dumps(data)}")
+										# print(f"Response: {json.dumps(data)}")
 										first_found = True
 										detail_urls = [
 											self.build_product_url(product.get('canonicalProduct', {}).get('id', ''))
