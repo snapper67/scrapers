@@ -2386,61 +2386,19 @@ def scrape_woolcofoods(request):
         'total_products': total_products
     })
 
+
 def scraper_status(request):
     """
     Display a status page showing summary information for all scrapers.
     """
-    # Base directory where scraper data is stored
-    base_dir = '/Users/mark/Downloads/scrapers'
-
-    # Get all subdirectories (each represents a scraper)
-    try:
-        scraper_dirs = [d for d in os.listdir(base_dir)
-                      if os.path.isdir(os.path.join(base_dir, d)) and not d.startswith('.')]
-    except FileNotFoundError:
-        return render(request, 'scrape_products/status.html', {
-            'error': f'Directory not found: {base_dir}'
-        })
-
+    print("scraper_status 2()")
+    # Get data for all scrapers
     scraper_data = []
 
-    for scraper_dir in sorted(scraper_dirs):
-        dir_path = os.path.join(base_dir, scraper_dir)
-        data_files = glob.glob(os.path.join(dir_path, '*_data.csv'))
-        url_files = glob.glob(os.path.join(dir_path, '*_urls.csv'))
-
-        # Count rows in data files
-        data_rows = 0
-        for file in data_files:
-            try:
-                df = pd.read_csv(file, on_bad_lines='skip')
-                data_rows += len(df)
-            except Exception as e:
-                print(f"Error reading {file}: {e}")
-
-        # Count rows in URL files
-        url_rows = 0
-        for file in url_files:
-            try:
-                df = pd.read_csv(file, on_bad_lines='skip')
-                url_rows += len(df)
-            except Exception as e:
-                print(f"Error reading {file}: {e}")
-
-        # Calculate percentage complete
-        percent_complete = 0
-        if url_rows > 0:
-            percent_complete = min(100, int((data_rows / url_rows) * 100))
-
-        scraper_data.append({
-            'name': scraper_dir,
-            'data_rows': data_rows,
-            'url_rows': url_rows,
-            'percent_complete': percent_complete,
-            'status': 'Complete' if url_rows > 0 and data_rows >= url_rows else 'In Progress',
-            'formatted_data_rows': intcomma(data_rows),
-            'formatted_url_rows': intcomma(url_rows)
-        })
+    for scraper_class in SCRAPER_CLASSES:
+        data = get_scraper_data(scraper_class)
+        if data:
+            scraper_data.append(data)
 
     # Sort by status (In Progress first) then by name
     scraper_data.sort(key=lambda x: (x['status'] == 'Complete', x['name']))
@@ -2464,6 +2422,7 @@ def scraper_status(request):
 
 def get_scraper_data(scraper_class):
     """Get data for a single scraper class"""
+    print("Calling get_scraper_data()")
     try:
         # Create an instance of the scraper
         scraper = scraper_class()
