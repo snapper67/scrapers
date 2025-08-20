@@ -1,0 +1,195 @@
+{% extends "scrape_products/_scrape_base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-6">UniPro Foodservice Distributor Search</h1>
+
+    <!-- Search Form -->
+    <div class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-6">
+        <form method="post" class="space-y-4">
+            {% csrf_token %}
+
+            {% if error %}
+                <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4" role="alert">
+                    <p class="font-bold">Error</p>
+                    <p>{{ error }}</p>
+                </div>
+            {% endif %}
+
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="zip_code">
+                        Zip Code
+                    </label>
+                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                           id="zip_code"
+                           name="zip_code"
+                           type="text"
+                           placeholder="Enter zip code"
+                           value="{{ zip_code }}"
+                           required>
+                </div>
+
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="distributor_type">
+                        Distributor Type
+                    </label>
+                    <select class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                            id="distributor_type"
+                            name="distributor_type">
+                        <option value="Broadline Foodservice" {% if distributor_type == 'Broadline Foodservice' %}selected{% endif %}>Broadline Foodservice</option>
+                        <option value="Specialized Foodservice" {% if distributor_type == 'Specialized Foodservice' %}selected{% endif %}>Specialized Foodservice</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="radius">
+                        Search Radius (miles)
+                    </label>
+                    <select class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                            id="radius"
+                            name="radius">
+                        <option value="50" {% if radius == 50 %}selected{% endif %}>50 miles</option>
+                        <option value="100" {% if radius == 100 or not radius %}selected{% endif %}>100 miles</option>
+                        <option value="150" {% if radius == 150 %}selected{% endif %}>150 miles</option>
+                    </select>
+                </div>
+
+                <div class="flex items-end">
+                    <button class="btn btn-primary hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full"
+                            type="submit">
+                        Search
+                    </button>
+                </div>
+            </div>
+        </form>
+    <!-- In unipro.html, after the search form -->
+{% if distributors %}
+<div class="flex justify-end mb-4">
+    <form method="post" class="inline">
+        {% csrf_token %}
+        <input type="hidden" name="zip_code" value="{{ zip_code }}">
+        <input type="hidden" name="distributor_type" value="{{ distributor_type }}">
+        <input type="hidden" name="radius" value="{{ radius }}">
+        <button type="submit"
+                name="export_csv"
+                value="1"
+                class="btn btn-primary hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+            <i class="fas fa-download mr-2"></i>Export to CSV
+        </button>
+    </form>
+</div>
+{% endif %}
+    </div>
+
+    <!-- Results -->
+    {% if distributors %}
+        <div class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-6">
+            <h2 class="text-xl font-semibold mb-4">
+                {{ distributors|length }} Distributors Found Near {{ zip_code }}
+            </h2>
+
+            <div class="overflow-x-auto">
+                <table class="min-w-full bg-white">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="py-2 px-4 border-b border-gray-200 text-left">Name</th>
+                            <th class="py-2 px-4 border-b border-gray-200 text-left">Location</th>
+{#                            <th class="py-2 px-4 border-b border-gray-200 text-left">Distance</th>#}
+                            <th class="py-2 px-4 border-b border-gray-200 text-left">Type</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for dist in distributors %}
+                        <tr class="hover:bg-gray-50 cursor-pointer" onclick="toggleDetails('details-{{ forloop.counter0 }}')">
+                            <td class="py-3 px-4 border-b border-gray-200">
+                                <div class="font-medium">{{ dist.name }}</div>
+                                {% if dist.details and dist.details.website %}
+                                    <a href="{{ dist.details.website }}" target="_blank" class="text-blue-600 text-sm hover:underline" onclick="event.stopPropagation();">
+                                        {{ dist.details.website|truncatechars:30 }}
+                                    </a>
+                                {% endif %}
+                            </td>
+                            <td class="py-3 px-4 border-b border-gray-200">
+                                {{ dist.city }}, {{ dist.state }}
+                                {% if dist.details and dist.details.address %}
+                                    <div class="text-sm text-gray-600">
+                                        {{ dist.details.address.address_1 }}<br>
+                                        {% if dist.details.address.address_2 %}{{ dist.details.address.address_2 }}<br>{% endif %}
+                                        {{ dist.details.address.city }}, {{ dist.details.address.state }} {{ dist.details.address.zip }}
+                                    </div>
+                                {% endif %}
+                            </td>
+{#                            <td class="py-3 px-4 border-b border-gray-200">{{ dist.distance }}</td>#}
+                            <td class="py-3 px-4 border-b border-gray-200">
+                                {{ dist.type }}
+                                {% if dist.details and dist.details.address and dist.details.address.phone %}
+                                    <div class="text-sm text-gray-600 mt-1">
+                                        <i class="fas fa-phone-alt mr-1"></i> {{ dist.details.address.phone }}
+                                    </div>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr id="details-{{ forloop.counter0 }}" class="hidden bg-gray-50">
+                            <td colspan="4" class="px-4 py-3 border-b border-gray-200">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {% if dist.details %}
+                                        <div>
+                                            <h4 class="font-semibold mb-2">Contact Information</h4>
+                                            {% if dist.details.address %}
+                                                <div class="mb-2">
+                                                    <div class="font-medium">Address</div>
+                                                    <div>
+                                                        {{ dist.details.address.address_1 }}<br>
+                                                        {% if dist.details.address.address_2 %}{{ dist.details.address.address_2 }}<br>{% endif %}
+                                                        {{ dist.details.address.city }}, {{ dist.details.address.state }} {{ dist.details.address.zip }}
+                                                    </div>
+                                                </div>
+                                            {% endif %}
+                                            {% if dist.details.address.phone %}
+                                                <div class="mb-2">
+                                                    <div class="font-medium">Phone</div>
+                                                    <div>{{ dist.details.address.phone }}</div>
+                                                </div>
+                                            {% endif %}
+                                            {% if dist.details.website %}
+                                                <div class="mb-2">
+                                                    <div class="font-medium">Website</div>
+                                                    <a href="{{ dist.details.website }}" target="_blank" class="text-blue-600 hover:underline">
+                                                        {{ dist.details.website }}
+                                                    </a>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                        {% if dist.details.logo %}
+                                            <div class="flex items-center justify-center">
+                                                <img src="https://www.uniprofoodservice.com/{{ dist.details.logo }}"
+                                                     alt="{{ dist.name }} Logo"
+                                                     class="max-h-32 max-w-full object-contain">
+                                            </div>
+                                        {% endif %}
+                                    {% else %}
+                                        <div>No additional details available</div>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleDetails(id) {
+    const element = document.getElementById(id);
+    if (element) {
+        element.classList.toggle('hidden');
+    }
+}
+</script>
+{% endblock %}

@@ -1,6 +1,5 @@
 import importlib
 import inspect
-import os
 import uuid
 from importlib import import_module
 
@@ -67,7 +66,6 @@ from .cut.whatchefswant_south import WhatChefsWantSouthScraper
 from .cut.woolcofoods import WoolcoFoodsScraper
 from .misc.cheneybrothers import CheneyBrothersScraper
 from .scraper import Scraper
-from .thread_manager import start_background_task
 
 from django.http import JsonResponse
 from django.contrib.humanize.templatetags.humanize import intcomma
@@ -2793,3 +2791,144 @@ def get_scraper_class(distributor_name):
             return cls
 
     return None
+
+from scrapers.other.unipro import UniProScraper
+
+def scrape_unipro(request):
+    """View for scraping UniPro Foodservice distributor directory."""
+    context = {
+        'title': 'UniPro Foodservice',
+        'distributors': [],
+        'zip_code': '',
+        'distributor_type': 'Broadline Foodservice',  # Default value
+        'radius': 1000,  # Default value
+        'error': None
+    }
+    
+    if request.method == 'POST':
+        zip_code = request.POST.get('zip_code', '').strip()
+        distributor_type = request.POST.get('distributor_type', 'Broadline Foodservice')
+        radius = int(request.POST.get('radius', 1000))
+        
+        if not zip_code:
+            context['error'] = 'Please enter a zip code.'
+        else:
+            try:
+                scraper = UniProScraper()
+                distributors = scraper.get_distributors(zip_code, radius, distributor_type)
+                
+                context.update({
+                    'distributors': distributors,
+                    'zip_code': zip_code,
+                    'distributor_type': distributor_type,
+                    'radius': radius
+                })
+                
+            except Exception as e:
+                context['error'] = f'Error fetching distributors: {str(e)}'
+    
+    return render(request, 'scrape_products/unipro.html', context)
+
+
+# In views.py
+from django.http import HttpResponse
+import csv
+from io import StringIO
+
+
+def export_unipro_csv(distributors):
+    """Helper function to generate CSV data from distributors list."""
+    output = StringIO()
+    writer = csv.writer(output)
+
+    # Write header
+    writer.writerow([
+        'Name', 'City', 'State', 'Type', 'Distance',
+        'Address', 'Phone', 'Website', 'Logo URL'
+    ])
+
+    # Write data rows
+    for dist in distributors:
+        address = ''
+        phone = ''
+        website = ''
+        logo_url = ''
+
+        if dist.get('details'):
+            details = dist['details']
+            if details.get('address'):
+                addr = details['address']
+                address_parts = [
+                    addr.get('address_1', ''),
+                    addr.get('address_2', ''),
+                    f"{addr.get('city', '')}, {addr.get('state', '')} {addr.get('zip', '')}"
+                ]
+                address = ' '.join(filter(None, address_parts))
+                phone = addr.get('phone', '')
+            website = details.get('website', '')
+            if details.get('logo'):
+                logo_url = f"https://www.uniprofoodservice.com/{details['logo']}"
+
+        writer.writerow([
+            dist.get('name', ''),
+            dist.get('city', ''),
+            dist.get('state', ''),
+            dist.get('type', ''),
+            dist.get('distance', ''),
+            address,
+            phone,
+            website,
+            logo_url
+        ])
+
+    return output.getvalue()
+
+
+def scrape_unipro(request):
+    """View for scraping UniPro Foodservice distributor directory."""
+    context = {
+        'title': 'UniPro Foodservice',
+        'distributors': [],
+        'zip_code': '',
+        'distributor_type': 'Broadline Foodservice',
+        'radius': 1000,
+        'error': None
+    }
+
+    if request.method == 'POST':
+        zip_code = request.POST.get('zip_code', '').strip()
+        distributor_type = request.POST.get('distributor_type', 'Broadline Foodservice')
+        radius = int(request.POST.get('radius', 1000))
+
+        if not zip_code:
+            context['error'] = 'Please enter a zip code.'
+        else:
+            try:
+                scraper = UniProScraper()
+                distributors = scraper.get_distributors(zip_code, radius, distributor_type)
+
+                # Handle CSV export
+                if 'export_csv' in request.POST:
+                    # Create a safe filename with zip code and distributor type
+                    safe_zip = zip_code.replace(' ', '_')
+                    safe_type = distributor_type.lower().replace(' ', '_')
+                    filename = f"unipro_distributors_{safe_zip}_{safe_type}.csv"
+
+                    response = HttpResponse(
+                        content_type='text/csv',
+                        headers={'Content-Disposition': f'attachment; filename="{filename}"'},
+                    )
+                    response.write(export_unipro_csv(distributors))
+                    return response
+
+                context.update({
+                    'distributors': distributors,
+                    'zip_code': zip_code,
+                    'distributor_type': distributor_type,
+                    'radius': radius
+                })
+
+            except Exception as e:
+                context['error'] = f'Error: {str(e)}'
+
+    return render(request, 'scrape_products/unipro.html', context)

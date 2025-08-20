@@ -81,7 +81,7 @@ urlpatterns = [
     path("status/", views.scraper_status, name="scraper_status"),
     path('task-status/', views.task_status, name='task_status'),
     path('stop-task/<str:task_id>/', views.stop_task, name='stop_task'),
-
+    path('unipro/', views.scrape_unipro, name='unipro'),
     # Task progress and control endpoints
     path('api/task-progress/<str:task_id>/', task_progress, name='api_task_progress'),
     path('api/stop-task/<str:task_id>/', stop_task, name='api_stop_task'),
