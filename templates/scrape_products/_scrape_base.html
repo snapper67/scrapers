@@ -293,63 +293,63 @@
                                             </div>
                                         </div>
                                         <div class="row">
-                                        <div class="col-md-12">
-                                            <div class="card mb-4">
-                                                <div class="card-header">
-                                                    <div>CSV Row Counter</div>
-                                                </div>
-                                                <div class="card-body">
-                                                    <div class="row">
-                                                        <div class="col-md-8">
-                                                            <div class="form-group">
-                                                                <label for="csv_dir" class="form-label">Directory to Scan:</label>
-                                                                <div class="input-group">
-                                                                    <input type="text" class="form-control" id="csv_dir" name="csv_dir"
-                                                                           placeholder="Enter directory path" value="{{ defaults.home_directory|default:'.' }}">
-                                                                    <button type="button" class="btn btn-primary" id="count_csv_btn">
-                                                                        <i class="bi bi-calculator"></i> Count Rows</button>
+                                            <div class="col-md-12">
+                                                <div class="card mb-4">
+                                                    <div class="card-header">
+                                                        <div>CSV Row Counter</div>
+                                                    </div>
+                                                    <div class="card-body">
+                                                        <div class="row">
+                                                            <div class="col-md-8">
+                                                                <div class="form-group">
+                                                                    <label for="csv_dir" class="form-label">Directory to Scan:</label>
+                                                                    <div class="input-group">
+                                                                        <input type="text" class="form-control" id="csv_dir" name="csv_dir"
+                                                                               placeholder="Enter directory path" value="{{ defaults.home_directory|default:'.' }}">
+                                                                        <button type="button" class="btn btn-primary" id="count_csv_btn">
+                                                                            <i class="bi bi-calculator"></i> Count Rows</button>
+                                                                    </div>
+                                                                    <small class="form-text text-muted">
+                                                                        Will scan all subdirectories for CSV files containing 'data' in their names.
+                                                                    </small>
                                                                 </div>
-                                                                <small class="form-text text-muted">
-                                                                    Will scan all subdirectories for CSV files containing 'data' in their names.
-                                                                </small>
                                                             </div>
                                                         </div>
-                                                    </div>
-                                                    <div id="csv_results" class="mt-3" style="display: none;">
-                                                        <div class="table-responsive">
-                                                            <table class="table table-sm table-striped">
-                                                                <thead class="table-light">
-                                                                    <tr>
-                                                                        <th id="csv_dir_header">Directory</th>
-                                                                        <th>File</th>
-                                                                        <th class="text-end">URLs</th>
-                                                                        <th class="text-end">Data</th>
-                                                                    </tr>
-                                                                </thead>
-                                                                <tbody id="csv_results_body">
-                                                                    <!-- Results will be inserted here by JavaScript -->
-                                                                </tbody>
-                                                                <tfoot>
-                                                                    <tr class="table-active">
-                                                                        <td colspan="2" class="text-end fw-bold">Total Rows:</td>
-                                                                        <td class="text-end fw-bold" id="total_rows">0</td>
-                                                                    </tr>
-                                                                </tfoot>
-                                                            </table>
+                                                        <div id="csv_results" class="mt-3" style="display: none;">
+                                                            <div class="table-responsive">
+                                                                <table class="table table-sm table-striped">
+                                                                    <thead class="table-light">
+                                                                        <tr>
+                                                                            <th id="csv_dir_header">Directory</th>
+                                                                            <th>File</th>
+                                                                            <th class="text-end">URLs</th>
+                                                                            <th class="text-end">Data</th>
+                                                                        </tr>
+                                                                    </thead>
+                                                                    <tbody id="csv_results_body">
+                                                                        <!-- Results will be inserted here by JavaScript -->
+                                                                    </tbody>
+                                                                    <tfoot>
+                                                                        <tr class="table-active">
+                                                                            <td colspan="2" class="text-end fw-bold">Total Rows:</td>
+                                                                            <td class="text-end fw-bold" id="total_rows">0</td>
+                                                                        </tr>
+                                                                    </tfoot>
+                                                                </table>
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                    <div id="csv_loading" class="text-center my-3" style="display: none;">
-                                                        <div class="spinner-border text-primary" role="status">
-                                                            <span class="visually-hidden">Loading...</span>
+                                                        <div id="csv_loading" class="text-center my-3" style="display: none;">
+                                                            <div class="spinner-border text-primary" role="status">
+                                                                <span class="visually-hidden">Loading...</span>
+                                                            </div>
+                                                            <p class="mt-2">Counting rows, please wait...</p>
                                                         </div>
-                                                        <p class="mt-2">Counting rows, please wait...</p>
+                                                        <div id="csv_error" class="alert alert-danger mt-3" style="display: none;"></div>
                                                     </div>
-                                                    <div id="csv_error" class="alert alert-danger mt-3" style="display: none;"></div>
+                                                </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
-                                    </div>
                                     <div class="row">
                                         <div class="row mb-4">
                                             <div class="col-md-12">
@@ -406,6 +406,57 @@
                                                             </div>
                                                             <p class="mt-2">Searching, please wait...</p>
                                                         </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="row mb-4">
+                                            <div class="col-md-12">
+                                                <div class="card">
+                                                    <div class="card-header">
+                                                        <div>Check for zero SKUs</div>
+                                                    </div>
+                                                    <div class="card-body">
+                                                        <div class="form-group">
+                                                            <label for="zero_sku_dir">Directory Path:</label>
+                                                            <div class="input-group">
+                                                                <input type="text" class="form-control" id="zero_sku_dir" value="{{ defaults.home_directory|default:'.' }}">
+                                                                <div class="input-group-append">
+                                                                    <button type="button" class="btn btn-primary" id="find_zero_skus_btn" onclick="event.preventDefault();">Find SKUs</button>
+                                                                </div>
+                                                            </div>
+                                                            <small class="form-text text-muted">Enter the directory containing CSV files to scan</small>
+                                                        </div>
+                                                        <div class="form-group">
+                                                            <label for="column_name">Column Name:</label>
+                                                            <input type="text" class="form-control" id="column_name" value="sku">
+                                                        </div>
+                                                        <div id="zero_sku_loading" class="text-center my-3" style="display: none;">
+                                                            <div class="spinner-border text-primary" role="status">
+                                                                <span class="sr-only visually-hidden">Loading...</span>
+                                                            </div>
+                                                            <p>Scanning files...</p>
+                                                        </div>
+                                                        <div id="zero_sku_results" style="display: none;">
+                                                            <h6>Results:</h6>
+                                                            <div class="table-responsive">
+                                                                <table class="table table-sm table-bordered">
+                                                                    <thead class="thead-light">
+                                                                        <tr>
+                                                                            <th>File</th>
+                                                                            <th>Row</th>
+                                                                            <th>SKU</th>
+                                                                            <th>Data</th>
+                                                                        </tr>
+                                                                    </thead>
+                                                                    <tbody id="zero_sku_results_body"></tbody>
+                                                                </table>
+                                                            </div>
+                                                            <div class="alert alert-info" id="zero_sku_summary"></div>
+                                                        </div>
+                                                        <div id="zero_sku_error" class="alert alert-danger mt-3" style="display: none;"></div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -1024,7 +1075,6 @@
     });
 });
 
-            // Add event listener for the update distributor button
             // Add event listener for the search requests button
             document.getElementById('search_requests_btn').addEventListener('click', function() {
                 const url = document.getElementById('url').value.trim();
@@ -1210,5 +1260,87 @@
             });
         });
         </script>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                // Find SKUs starting with zero functionality
+                const findZeroSkusBtn = document.getElementById('find_zero_skus_btn');
+                if (findZeroSkusBtn) {
+                    findZeroSkusBtn.addEventListener('click', function(event) {
+                        event.preventDefault();
+                        const dirInput = document.getElementById('zero_sku_dir');
+                        const columnInput = document.getElementById('column_name');
+                        const loadingDiv = document.getElementById('zero_sku_loading');
+                        const resultsDiv = document.getElementById('zero_sku_results');
+                        const resultsBody = document.getElementById('zero_sku_results_body');
+                        const errorDiv = document.getElementById('zero_sku_error');
+                        const summaryDiv = document.getElementById('zero_sku_summary');
+
+                        const directory = dirInput.value.trim();
+                        const column = columnInput.value.trim() || 'Sku';
+
+                        if (!directory) {
+                            errorDiv.textContent = 'Please enter a directory path';
+                            errorDiv.style.display = 'block';
+                            return;
+                        }
+
+                        // Show loading, hide results and error
+                        loadingDiv.style.display = 'block';
+                        resultsDiv.style.display = 'none';
+                        errorDiv.style.display = 'none';
+
+                        // Make AJAX request
+                        fetch('/find-zero-skus/', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded',
+                                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                            },
+                            body: `directory=${encodeURIComponent(directory)}&column=${encodeURIComponent(column)}`
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.error) {
+                                throw new Error(data.error);
+                            }
+
+                            // Clear previous results
+                            resultsBody.innerHTML = '';
+
+                            let totalMatches = 0;
+
+                            // Process results
+                            for (const [filename, rows] of Object.entries(data.results)) {
+                                rows.forEach(row => {
+                                    const tr = document.createElement('tr');
+                                    tr.innerHTML = `
+                                        <td>${filename}</td>
+                                        <td>${row.row_number}</td>
+                                        <td>${row[column] || ''}</td>
+                                        <td><pre class="mb-0" style="white-space: pre-wrap;">${JSON.stringify(row.row_data, null, 2)}</pre></td>
+                                    `;
+                                    resultsBody.appendChild(tr);
+                                });
+                                totalMatches += rows.length;
+                            }
+
+                            // Update summary
+                            summaryDiv.textContent = `Found ${totalMatches} SKUs starting with zero in ${Object.keys(data.results).length} files`;
+
+                            // Show results
+                            resultsDiv.style.display = 'block';
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            errorDiv.textContent = `Error: ${error.message || 'An error occurred while scanning files'}`;
+                            errorDiv.style.display = 'block';
+                        })
+                        .finally(() => {
+                loadingDiv.style.display = 'none';
+            });
+        });
+    }
+});
+</script>
     {% endblock scripts %}
 {% endblock content %}

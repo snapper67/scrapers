@@ -191,6 +191,11 @@
             <li class="nav-item">
                 <a class="nav-link" href="{% url 'task_status' %}">Task Status</a>
             </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'all_urls' %}">
+                    <i class="bi bi-link-45deg"></i> All URLs
+                </a>
+            </li>
         </ul>
         {% if user.is_authenticated %}
         <div class="mr-auto">

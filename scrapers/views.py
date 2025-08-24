@@ -3091,3 +3091,51 @@ def json_to_csv(request):
             context['error'] = f'Error: {str(e)}'
 
     return render(request, 'scrape_products/json_to_csv.html', context)
+
+
+# In views.py, add this new view
+def find_zero_skus(request):
+    if request.method == 'POST':
+        directory = request.POST.get('directory', '').strip()
+        column = request.POST.get('column', 'Sku').strip()
+
+        if not directory:
+            return JsonResponse({'error': 'Directory path is required'}, status=400)
+
+        try:
+            csv_processor = CSVProcessor()
+            results = csv_processor.find_skus_starting_with_zero(directory, column)
+            return JsonResponse({
+                'status': 'success',
+                'results': results,
+                'total_matches': sum(len(rows) for rows in results.values())
+            })
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+
+    return JsonResponse({'error': 'Invalid request method'}, status=405)
+
+
+from django.urls import get_resolver
+
+
+def list_all_urls(request):
+    urlconf = __import__('scrapers.urls', {}, None, [''])
+    url_patterns = get_resolver(urlconf).url_patterns
+    urls = []
+
+    def extract_urls(patterns, prefix=''):
+        for pattern in patterns:
+            if hasattr(pattern, 'url_patterns'):
+                extract_urls(pattern.url_patterns, prefix + str(pattern.pattern))
+            else:
+                print(pattern)
+                urls.append({
+                    'url': prefix + str(pattern.pattern),
+                    'name': pattern.name or '',
+                    'view': str(pattern.callback.__module__ + '.' + pattern.callback.__name__)
+                })
+
+    extract_urls(url_patterns)
+    print(urls)
+    return render(request, 'scrape_products/url_list.html', {'urls': sorted(urls, key=lambda x: x['url'])})

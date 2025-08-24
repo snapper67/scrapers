@@ -80,7 +80,7 @@ class USFoodsScraper(Scraper):
 	MAX_API_PRODUCTS = 999  # Maximum number to change the search request page size
 	DEFAULT_DIRECTORY = '/Users/mark/Downloads/scrapers/usfoods'
 
-	BASE_URL = 'https://www.chefswarehouse.com'
+	BASE_URL = 'https://order.usfoods.com/desktop/search/browse'
 	VENDOR_NAME = 'US Foods'
 
 	CATEGORY_IDS = {

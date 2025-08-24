@@ -1,2 +1,6 @@
 {% extends "./_scrape_base.html" %}
 {% block name %}{{ name }}{% endblock name %}
+
+{% block custom %}
+<a href="{% url 'json_to_csv' %}">Process Cheney Brothers Responses</a>
+{% endblock custom %}

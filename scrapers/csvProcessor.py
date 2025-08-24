@@ -419,7 +419,7 @@ class CSVProcessor:
 	import csv
 	from typing import List, Dict, Optional
 
-	def find_skus_starting_with_zero(directory: str, column: str) -> Dict[str, List[Dict]]:
+	def find_skus_starting_with_zero(self, directory: str, column: str) -> Dict[str, List[Dict]]:
 		"""
 		Scans all CSV files in the specified directory and checks for SKUs that start with zero.
 
@@ -448,13 +448,13 @@ class CSVProcessor:
 					reader = csv.DictReader(csvfile)
 
 					# Check if 'Sku' column exists
-					if 'Sku' not in reader.fieldnames:
+					if column not in reader.fieldnames:
 						continue
 
 					# Scan each row
 					for row_num, row in enumerate(reader, 2):  # Start from 2 for 1-based line numbers
 						value = row.get(column, '').strip()
-						if value and value[0] == '0':
+						if value and (value[0] == '0' or (value[0] == '#' and value[1] == '0')):
 							rows_with_zero_skus.append({
 								'row_number': row_num,
 								column : value,

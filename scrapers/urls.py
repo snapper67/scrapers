@@ -7,7 +7,8 @@ from .views import (
     stop_processing,
     task_progress,
     stop_task,
-    # process_missing_skus_view
+    find_zero_skus,
+    list_all_urls,
 )
 from .views import json_to_csv
 
@@ -92,5 +93,8 @@ urlpatterns = [
 
     path('json-to-csv/', json_to_csv, name='json_to_csv'),
 
-    # path('api/process-missing-skus/<str:distributor>/', process_missing_skus_view, name='api_process_missing_skus'),
+    path('find-zero-skus/', find_zero_skus, name='find_zero_skus'),
+
+    path('all-urls/', list_all_urls, name='all_urls'),
+
 ]
