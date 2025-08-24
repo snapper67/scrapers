@@ -2,6 +2,8 @@ import csv
 import json
 import logging
 import re
+from math import trunc
+
 import requests
 import time
 import string
@@ -469,7 +471,8 @@ class Scraper:
 			'errors': 0,
 			'current_product': '',
 			'output_file': '',
-			'task_id': task_id
+			'task_id': task_id,
+			'percent': 0
 		}
 
 		def update_progress():
@@ -526,7 +529,8 @@ class Scraper:
 							progress_data.update({
 								'current': row_num + 1,
 								'current_product': current_product,
-								'status': 'processing'
+								'status': 'processing',
+								'percent': trunc(((row_num + 1) / progress_data['total']) * 100)
 							})
 							update_progress()
 
@@ -692,7 +696,8 @@ class Scraper:
 			'current_sku': '',
 			'processed_skus': [],
 			'not_found_skus': [],
-			'message': 'Initializing...'
+			'message': 'Initializing...',
+            'percent': 0
 		}
 		
 		# Update progress in cache
@@ -757,6 +762,7 @@ class Scraper:
 					self.write_product_to_csv(row_spec, data_file)
 					
 					progress['processed_skus'].append(sku)
+					progress['percent'] = trunc((i / progress['total']) * 100)
 					progress['message'] = f'Successfully processed SKU: {sku}'
 					
 				except Exception as e:
@@ -900,6 +906,7 @@ class Scraper:
 				with open(filepath, 'r', encoding='utf-8') as file:
 					# Count rows (excluding header)
 					row_count = sum(1 for row in csv.reader(file)) - 1
+					print(f"Processed {row_count} rows in {filename}")
 					file_counts[filename] = row_count
 					total_rows += row_count
 					if 'data' in filename:

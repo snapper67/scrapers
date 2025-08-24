@@ -76,65 +76,67 @@ class CSVProcessor:
 		results = {}
 
 		try:
-			# Convert to Path object for easier path handling
-			root_dir = Path(directory)
+			# First, check if there are any subdirectories
+			subdirs = [d for d in os.listdir(directory) if os.path.isdir(os.path.join(directory, d))]
 
-			# Find all CSV files with 'data' or 'urls' in the name
-			for pattern in ['*data*.csv', '*urls*.csv']:
-				is_url_file = 'urls' in pattern
+			if not subdirs:
+				# If no subdirectories, use the base directory
+				dirs_to_scan = [directory]
+				use_base_dir = True
+			else:
+				# Otherwise, scan all subdirectories
+				dirs_to_scan = [os.path.join(directory, d) for d in subdirs]
+				use_base_dir = False
 
-				for csv_file in root_dir.rglob(pattern):
-					print(f"Found {csv_file}")
-					try:
-						# Get relative path from root directory
-						rel_path = csv_file.relative_to(root_dir)
-						parent_dir = str(rel_path.parent)
+			for dir_path in dirs_to_scan:
+				# If we're using the base directory, use its name as the key
+				if use_base_dir:
+					dir_key = os.path.basename(os.path.normpath(directory))
+				else:
+					dir_key = os.path.basename(dir_path)
 
-						# Read the CSV file to count rows (excluding header)
-						with open(csv_file, 'r', encoding='utf-8') as f:
-							reader = csv.reader(f)
-							# Skip header
-							next(reader, None)
-							row_count = sum(1 for _ in reader)
+				if dir_key not in results:
+					results[dir_key] = {
+						'files': {},
+						'total_rows': 0,
+						'url_rows': 0,
+						'data_rows': 0
+					}
 
-						# Initialize subdirectory in results if not exists
-						if parent_dir not in results:
-							results[parent_dir] = {
-								'files': {},
-								'total_rows': 0,
-								'url_rows': 0,
-								'data_rows': 0
+				for root, _, files in os.walk(dir_path):
+					for file in files:
+						if not file.endswith('.csv'):
+							continue
+
+						if 'data' not in file.lower() and 'url' not in file.lower():
+							continue
+
+						csv_file = os.path.join(root, file)
+						try:
+							with open(csv_file, 'r', encoding='utf-8') as f:
+								row_count = sum(1 for row in csv.reader(f)) - 1
+							print(f"Found {row_count} rows in {csv_file}")
+							# print(row_count)
+							file_entry = {
+								'file_name': file,
+								'file_path': csv_file,
+								'row_count': row_count,
+								'type': 'data' if 'data' in file.lower() else 'urls'
 							}
 
-						# Get base filename without _data or _urls suffix
-						base_name = csv_file.stem.replace('_data', '').replace('_urls', '')
+							results[dir_key]['files'][file] = file_entry
+							results[dir_key]['total_rows'] += row_count
 
-						# Initialize file entry if it doesn't exist
-						if base_name not in results[parent_dir]['files']:
-							results[parent_dir]['files'][base_name] = {
-								'file_name': f"{base_name}.csv",
-								'data_row_count': 0,
-								'url_row_count': 0,
-								'type': 'data'  # Default type, will be updated below
-							}
+							if 'url' in file.lower():
+								results[dir_key]['url_rows'] += row_count
+							else:
+								results[dir_key]['data_rows'] += row_count
 
-						# Update the appropriate row count
-						file_entry = results[parent_dir]['files'][base_name]
-						if is_url_file:
-							file_entry['url_row_count'] = row_count
-							file_entry['type'] = 'urls'
-							results[parent_dir]['url_rows'] += row_count
-						else:
-							file_entry['data_row_count'] = row_count
-							file_entry['type'] = 'data'
-							results[parent_dir]['data_rows'] += row_count
+							print(f"Found {row_count} rows in {csv_file}")
 
-						results[parent_dir]['total_rows'] += row_count
-						print(f"Found {row_count} {'URL' if is_url_file else 'Data'} rows in {csv_file}")
-
-					except Exception as e:
-						print(f"Error processing {csv_file}: {e}")
-						continue
+						except Exception as e:
+							print(f"Error processing {csv_file}: {e}")
+							continue
 
 		except Exception as e:
 			print(f"Error scanning directory {directory}: {e}")
@@ -145,7 +147,6 @@ class CSVProcessor:
 
 		return results
 
-	@staticmethod
 	def html_table_to_csv(html_content, output_file='products_export.csv'):
 		"""
 		Convert an HTML table to a CSV file.
@@ -413,3 +414,59 @@ class CSVProcessor:
 			except Exception as e:
 				return f"Failed to update '{file_name}': {str(e)}"
 		return "CSV Files Updated."
+
+	import os
+	import csv
+	from typing import List, Dict, Optional
+
+	def find_skus_starting_with_zero(directory: str, column: str) -> Dict[str, List[Dict]]:
+		"""
+		Scans all CSV files in the specified directory and checks for SKUs that start with zero.
+
+		Args:
+			directory (str): Path to the directory containing CSV files to scan
+
+		Returns:
+			Dict[str, List[Dict]]: Dictionary with filenames as keys and lists of rows with SKUs starting with zero
+		"""
+		results = {}
+
+		# Check if directory exists
+		if not os.path.isdir(directory):
+			raise NotADirectoryError(f"The directory {directory} does not exist")
+
+		# Iterate through all files in the directory
+		for filename in os.listdir(directory):
+			if not filename.lower().endswith('.csv'):
+				continue
+
+			filepath = os.path.join(directory, filename)
+			rows_with_zero_skus = []
+
+			try:
+				with open(filepath, 'r', encoding='utf-8', newline='') as csvfile:
+					reader = csv.DictReader(csvfile)
+
+					# Check if 'Sku' column exists
+					if 'Sku' not in reader.fieldnames:
+						continue
+
+					# Scan each row
+					for row_num, row in enumerate(reader, 2):  # Start from 2 for 1-based line numbers
+						value = row.get(column, '').strip()
+						if value and value[0] == '0':
+							rows_with_zero_skus.append({
+								'row_number': row_num,
+								column : value,
+								'row_data': row
+							})
+
+				# Add to results if we found any matching SKUs
+				if rows_with_zero_skus:
+					results[filename] = rows_with_zero_skus
+
+			except Exception as e:
+				print(f"Error processing {filename}: {str(e)}")
+				continue
+
+		return results

@@ -5,7 +5,7 @@ from scrapers.cut.dry import CutScraper
 
 class PrimizieScraper(CutScraper):
 
-	DEFAULT_DIRECTORY = '/Users/mark/Downloads/scrapers/primizie'
+	DEFAULT_DIRECTORY = '/Users/mark/Downloads/scrapers/primizie_ny'
 
 	# Values to change
 	BASE_URL = "https://app.cutanddry.com/catalog/primizieny?verifiedVendorId=50714839&categoryId=1&page=1"

@@ -9,6 +9,7 @@ from .views import (
     stop_task,
     # process_missing_skus_view
 )
+from .views import json_to_csv
 
 # app_name = 'machine'
 urlpatterns = [
@@ -73,9 +74,12 @@ urlpatterns = [
     path("vitco_foods/", views.scrape_vitco_foods, name="vitco_foods"),
     path("wagner/", views.scrape_wagner, name="wagner"),
     path("whatchefswant-south/", views.scrape_whatchefswant_south, name="whatchefswant_south"),
+    path("whatchefswant_central/", views.scrape_whatchefswant_central, name="whatchefswant_central"),
+    path("whatchefswant_rockies/", views.scrape_whatchefswant_rockies, name="whatchefswant_rockies"),
     path("woolcofoods/", views.scrape_woolcofoods, name="woolcofoods"),
     path("hearty/", views.scrape_hearty, name="hearty"),
-    path("primizie/", views.scrape_primizie, name="primizie"),
+    path("primizie_ny/", views.scrape_primizie_ny, name="primizie_ny"),
+    path("primizie_noca/", views.scrape_primizie_noca, name="primizie_noca"),
     path("sandw/", views.scrape_sandw, name="sandw"),
     path("sardilli/", views.scrape_sardilli, name="sardilli"),
     path("status/", views.scraper_status, name="scraper_status"),
@@ -85,5 +89,8 @@ urlpatterns = [
     # Task progress and control endpoints
     path('api/task-progress/<str:task_id>/', task_progress, name='api_task_progress'),
     path('api/stop-task/<str:task_id>/', stop_task, name='api_stop_task'),
+
+    path('json-to-csv/', json_to_csv, name='json_to_csv'),
+
     # path('api/process-missing-skus/<str:distributor>/', process_missing_skus_view, name='api_process_missing_skus'),
 ]

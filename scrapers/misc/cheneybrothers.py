@@ -68,6 +68,8 @@ class CheneyBrothersScraper(Scraper):
 	MAX_API_PRODUCTS = 999  # Maximum number to change the search request page size
 	DEFAULT_DIRECTORY = '/Users/mark/Downloads/scrapers/cheney_brothers'
 
+	ONLY_DATA = True
+
 	BASE_URL = 'https://www.cheneybrothers.com/product-search/'
 	VENDOR_NAME = 'Cheney Brothers'
 
@@ -238,6 +240,15 @@ class CheneyBrothersScraper(Scraper):
 
 	def scraping_setup(self):
 		"""Scrape products from the website"""
+		print("scraping_setup()")
+		url = f"https://www.cheneybrothers.com/product-search/"
+		self.driver.get(url)
+		try:
+			cookies = self.wait.until(
+				EC.presence_of_element_located((By.CSS_SELECTOR, '.cmplz-btn.cmplz-accept'))
+			).click()
+		except Exception as e:
+			print(f"Error bypassing cookies: {str(e)}")
 		return
 
 	# ************************************************************************
@@ -459,8 +470,7 @@ class CheneyBrothersScraper(Scraper):
 				# Example: change a value in a JSON payload
 				try:
 					payload = json.loads(current_data)
-					search = payload.get('search', {})
-					search['Category'] = value  # Replace 'key_to_change' and 'new_value'
+					payload['Category'] = str(value)  # Replace 'key_to_change' and 'new_value'
 					request.body = json.dumps(payload).encode('utf-8')
 					# Update the Content-Length header to reflect the new body size
 					del request.headers['Content-Length']
@@ -543,6 +553,7 @@ class CheneyBrothersScraper(Scraper):
 
 	def process_products_from_csv(self):
 		print("process_products_from_csv()")
+		self.scraping_setup()
 		url = f"https://www.cheneybrothers.com/product-search/"
 		return self.get_product_details(url)
 
@@ -553,25 +564,19 @@ class CheneyBrothersScraper(Scraper):
 		print(f"Loading page...{url}")
 		self.driver.get(url)
 
-		# category_dropdown = self.driver.find_element(By.CSS_SELECTOR,
-		#                                           '#select-category')
-		# self.driver.execute_script("arguments[0].style.display = 'block';", hidden_element)
-
-		# category_dropdown = self.wait.until(
-		# 	EC.presence_of_element_located((By.ID, 'select-category'))
-		# )
-
-		# cheneybrothers.com/CatSearch/api/Nomc/Get/categories
-
 		request = self.driver.wait_for_request("cheneybrothers.com/CatSearch/api/Nomc/Get/categories", timeout=60)
 		request = self.driver.wait_for_request("apps.cheneybrothers.com/CatSearch/Assets/js/app.js", timeout=60)
 
-		# button = self.wait.until(
-		# 	EC.presence_of_element_located((By.ID, 'btn-search'))
+		# search = self.wait.until(
+		# 	EC.presence_of_element_located((By.ID, 'advanced-search'))
 		# )
+		# button = search.find_element(By.ID, 'btn-search')
+		# button.click()
+
 		print(f"Here")
-		self.driver.request_interceptor = self.create_interceptor()
+		# self.driver.request_interceptor = self.create_interceptor()
 		print(f"Here")
+
 		# image_url = self.driver.find_element(By.CSS_SELECTOR, 'img.product-viewer-image').get_attribute("src")
 
 		# button = self.driver.find_element(By.CLASS_NAME, 'btn-search')
@@ -592,15 +597,10 @@ class CheneyBrothersScraper(Scraper):
 		# select.click()
 		# select = Select(category_dropdown)
 		# select.select_by_value("1")
-		button = self.driver.find_element(By.CLASS_NAME, 'btn-search')
-		button.click()
+
 		data = ''
-		sku = row_spec['sku']
 		request_filter = "cheneybrothers.com/CatSearch/api/Items/Get"
-		# https://www.chefswarehouse.com/products/QZ106085/?expand=*&currentPageUrl=%252Fproducts%252FQZ106085%252F&tz=America%252FNew_York&t=1753508466488
-		# https://www.chefswarehouse.com/products/M502/?expand=*&currentPageUrl=%252Fproducts%252FM502%252F&tz=America%252FNew_York&t=1753510472740
-		# self.driver.get(url)
-		# print(f"Sent Request")
+
 		try:
 			request = self.driver.wait_for_request(request_filter)
 			if request.response and request_filter in request.url:  # Filter for API requests
@@ -616,6 +616,7 @@ class CheneyBrothersScraper(Scraper):
 					# If the body is JSON, parse it
 					if 'application/json' in request.response.headers.get('Content-Type', ''):
 						data = json.loads(body)
+						print(f"Response Body (JSON): {data}")
 					else:
 						print(f"Response Body (Text): {body}")
 
@@ -623,7 +624,19 @@ class CheneyBrothersScraper(Scraper):
 					print(f"⛔️⛔️⛔️Error decoding detail response body: {e}")
 
 			# These use the data if available, then try to scrape from the page
-			row_spec = self.get_product_data(data, row_spec)
+			home_dir = self.options.get('home_directory', '')
+			output_file = self.get_data_file_path(home_dir)
+			output_filename = output_file
+			file_exists = os.path.exists(output_filename)
+			print(f"Output file exists: {file_exists}")
+			for product in data.get('items', []):
+				print(product)
+				row_spec = self.PRODUCT_DATA_SPEC.copy()
+				row_spec['sku'] = product['Number']
+				row_spec['brand'] = product['Brand']
+				row_spec['name'] = product['Description1']
+				row_spec['extra_data_1'] = data
+				self.write_product_to_csv(row_spec, output_filename)
 
 		except Exception as e:
 			print(f"⛔️⛔️⛔️Error waiting for request: {e}")
@@ -632,4 +645,4 @@ class CheneyBrothersScraper(Scraper):
 			# 	print(request.url)
 
 		del self.driver.requests
-		return ''
+		return 'Got Products'

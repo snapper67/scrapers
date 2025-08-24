@@ -1,6 +1,10 @@
 import importlib
 import inspect
 import uuid
+import json
+import csv
+from io import StringIO
+from django.http import HttpResponse
 from importlib import import_module
 
 import requests
@@ -12,7 +16,7 @@ from django.views.generic import TemplateView
 from scrapers.cut.birite import BiRiteScraper
 from scrapers.cut.cheese_importers import CheeseImportersScraper
 from scrapers.cut.creamco import CreamCoScraper
-from scrapers.cut.primizie import PrimizieScraper
+from scrapers.cut.primizie_ny import PrimizieScraper
 from scrapers.cut.sardilli import SardilliScraper
 from scrapers.misc.breakthru import BreakthruScraper
 from scrapers.misc.chefswarehouse import ChefWarehouseScraper
@@ -46,6 +50,7 @@ from .cut.misterproduce import MisterProduceScraper
 from .cut.pacificprovisions import PacificProvisionsScraper
 from .cut.prdeli import PRDeliScraper
 from .cut.primesourcefoods import PrimeSourceFoodsScraper
+from .cut.primizie_noca import PrimizieNoCaScraper
 from .cut.rarefoods import RareFoodsScraper
 from .cut.realityfoods import RealityFoodsScraper
 from .cut.safradistribution import SafraDistributionScraper
@@ -62,6 +67,8 @@ from .cut.totalfoods import TotalFoodsScraper
 from .cut.valleygold import ValleyGoldScraper
 from .cut.vitco_foods import VitcoScraper
 from .cut.wagner import WagnerScraper
+from .cut.whatchefswant_central import WhatChefsWantCentralScraper
+from .cut.whatchefswant_rockies import WhatChefsWantRockiesScraper
 from .cut.whatchefswant_south import WhatChefsWantSouthScraper
 from .cut.woolcofoods import WoolcoFoodsScraper
 from .misc.cheneybrothers import CheneyBrothersScraper
@@ -440,9 +447,18 @@ def scrape_usfoods(request):
             options = update_usfoods_options(request.POST, distributor_options)
             options = update_common_options(request.POST, options)
             # Run the scraper
-            scraper.set_options(options)
-            result = scraper.run()
-            return render(request, 'scrape_products/scrape_results.html', {'result': result})
+            task_id = process_common_post(options, request, scraper)
+            if task_id:
+                return JsonResponse({
+                    'task_id': task_id,
+                    'status': 'started',
+                    'message': 'Task started successfully'
+                }, status=200)
+            else:
+                print(f"skipping processing CSV")
+                # Normal synchronous processing
+                result = scraper.run()
+                return render(request, 'scrape_products/scrape_results.html', {'result': result})
 
     # GET request - show form
     from scrapers.misc.usfoods import USFoodsScraper
@@ -570,21 +586,22 @@ def update_breakthru_options(post_data, current_options):
 def scrape_cheney_brothers(request):
     print("scrape_cheney_brothers()")
     options = {}
-
-    if request.method == 'POST':
-        with CheneyBrothersScraper(options) as scraper:
-            distributor_options = scraper.get_options()
-            # Create a copy of options for this request
-            options = update_cheney_brothers(request.POST, distributor_options)
-            options = update_common_options(request.POST, options)
-            # Run the scraper
-            scraper.set_options(options)
-            print("running scraper")
-            result = scraper.run()
-            return render(request, 'scrape_products/scrape_results.html', {'result': result})
-
+    try:
+        if request.method == 'POST':
+            with CheneyBrothersScraper(options) as scraper:
+                distributor_options = scraper.get_options()
+                # Create a copy of options for this request
+                options = update_cheney_brothers(request.POST, distributor_options)
+                options = update_common_options(request.POST, options)
+                # Run the scraper
+                scraper.set_options(options)
+                print("running scraper")
+                result = scraper.run()
+                return render(request, 'scrape_products/scrape_results.html', {'result': result})
+    except Exception as e:
+        return render(request, 'scrape_products/scrape_results.html', {'result': e})
     # GET request - show form
-
+    print("GET Form")
     scraper = CheneyBrothersScraper()
     distributor_options = scraper.get_options()
     category_ids = scraper.get_category_ids()
@@ -752,27 +769,18 @@ def scrape_sg(request):
         'defaults': defaults,
     })
 
-
-def process_cut_post(request, scraper):
-    print(request.POST)
-    print("process_cut_post()")
-    distributor_options = scraper.get_options()
-
-    # Update options from form data
-    options = update_cut_options(request.POST, distributor_options)
-    options = update_common_options(request.POST, options)
-
+def process_common_post(options, request, scraper):
     # Handle clean_datas option
     if options.get('clean_data'):
         clean_field = request.POST.get('clean_field', 'name')  # Default to 'name' if not specified
         file_type = request.POST.get('file_type', 'url')  # Default to 'url' if not specified
-        
+
         # Determine which file to clean based on selection
         if file_type == 'data':
             input_file = os.path.join(options.get('home_directory', ''), options.get('data_output_file', ''))
         else:  # 'url' or default
             input_file = os.path.join(options.get('home_directory', ''), options.get('url_output_file', ''))
-            
+
         success, message = scraper.clean_data_file(input_file=input_file, field=clean_field)
         if success:
             result = f"<div class='alert alert-success'>{message}</div>"
@@ -856,15 +864,28 @@ def process_cut_post(request, scraper):
         )
 
         print(f"Started background task with ID: {task_id}")
+        return task_id
+
+def process_cut_post(request, scraper):
+    print(request.POST)
+    print("process_cut_post()")
+    distributor_options = scraper.get_options()
+
+    # Update options from form data
+    options = update_cut_options(request.POST, distributor_options)
+    options = update_common_options(request.POST, options)
+
+    task_id = process_common_post(options, request, scraper)
+    if task_id:
         return JsonResponse({
             'task_id': task_id,
             'status': 'started',
             'message': 'Task started successfully'
         }, status=200)
-
-    print(f"skipping processing CSV")
-    # Normal synchronous processing
-    result = scraper.run()
+    else:
+        print(f"skipping processing CSV")
+        # Normal synchronous processing
+        result = scraper.run()
     return result
 
 
@@ -956,7 +977,7 @@ def scrape_birite(request):
     })
 
 
-def scrape_primizie(request):
+def scrape_primizie_ny(request):
     options = {}
 
     if request.method == 'POST':
@@ -982,6 +1003,31 @@ def scrape_primizie(request):
         'total_products': total_products
     })
 
+def scrape_primizie_noca(request):
+    options = {}
+
+    if request.method == 'POST':
+        with PrimizieNoCaScraper(options) as scraper:
+            result = process_cut_post(request, scraper)
+            if isinstance(result, str):
+                return render(request, 'scrape_products/scrape_results.html', {'result': result})
+            else:
+                return result
+
+    # GET request - show form
+    scraper = PrimizieNoCaScraper()
+    distributor_options = scraper.get_options()
+    categories, total_products = update_cut_categories(request.POST, scraper)
+
+    defaults = set_defaults(distributor_options)
+    defaults.update({'attempts': 40})
+
+    return render(request, 'scrape_products/scrape_cut.html', {
+        'categories': categories,
+        'defaults': defaults,
+        'name': scraper.get_name(),
+        'total_products': total_products
+    })
 
 def scrape_sardilli(request):
     options = {}
@@ -2299,6 +2345,64 @@ def scrape_whatchefswant_south(request):
         'total_products': total_products
     })
 
+def scrape_whatchefswant_central(request):
+    """View for scraping What Chefs Want - South"""
+    print("Calling scrape_whatchefswant_south()")
+    options = {}
+
+    if request.method == 'POST':
+        with WhatChefsWantCentralScraper(options) as scraper:
+            print("Calling process_cut_post from scrape_foodpro()")
+            result = process_cut_post(request, scraper)
+            if isinstance(result, str):
+                return render(request, 'scrape_products/scrape_results.html', {'result': result})
+            else:
+                return result
+
+    # GET request - show form
+    scraper = WhatChefsWantCentralScraper()
+    distributor_options = scraper.get_options()
+    categories, total_products = update_cut_categories(request.POST, scraper)
+
+    defaults = set_defaults(distributor_options)
+    defaults.update({'attempts': 40})
+
+    return render(request, 'scrape_products/scrape_cut.html', {
+        'categories': categories,
+        'defaults': defaults,
+        'name': scraper.get_name(),
+        'total_products': total_products
+    })
+
+def scrape_whatchefswant_rockies(request):
+    """View for scraping What Chefs Want - South"""
+    print("Calling scrape_whatchefswant_south()")
+    options = {}
+
+    if request.method == 'POST':
+        with WhatChefsWantRockiesScraper(options) as scraper:
+            print("Calling process_cut_post from scrape_foodpro()")
+            result = process_cut_post(request, scraper)
+            if isinstance(result, str):
+                return render(request, 'scrape_products/scrape_results.html', {'result': result})
+            else:
+                return result
+
+    # GET request - show form
+    scraper = WhatChefsWantRockiesScraper()
+    distributor_options = scraper.get_options()
+    categories, total_products = update_cut_categories(request.POST, scraper)
+
+    defaults = set_defaults(distributor_options)
+    defaults.update({'attempts': 40})
+
+    return render(request, 'scrape_products/scrape_cut.html', {
+        'categories': categories,
+        'defaults': defaults,
+        'name': scraper.get_name(),
+        'total_products': total_products
+    })
+
 def scrape_hearty(request):
     """View for scraping Hearty"""
     print("Calling scrape_hearty()")
@@ -2495,6 +2599,9 @@ def get_scraper_data(scraper_class):
         # Find data and URL files
         data_files = glob.glob(os.path.join(directory, '*_data.csv'))
         url_files = glob.glob(os.path.join(directory, '*_urls.csv'))
+        only_data = getattr(scraper, 'ONLY_DATA', None)
+        if only_data:
+            url_files = data_files
         
         # Count rows in data files
         data_rows = 0
@@ -2518,7 +2625,7 @@ def get_scraper_data(scraper_class):
         percent_complete = 0
         if url_rows > 0:
             percent_complete = min(100, int((data_rows / url_rows) * 100))
-        
+        print(f"Percent complete: {percent_complete}")
         return {
             'name': vendor_name,
             'directory': directory,
@@ -2563,7 +2670,6 @@ def get_scraper_data(scraper_class):
 #     }
 #
 #     return render(request, 'scrape_products/status.html', context)
-
 
 def task_status(request):
     """View to display the status of all background tasks."""
@@ -2800,41 +2906,48 @@ def scrape_unipro(request):
         'title': 'UniPro Foodservice',
         'distributors': [],
         'zip_code': '',
-        'distributor_type': 'Broadline Foodservice',  # Default value
-        'radius': 1000,  # Default value
+        'distributor_type': 'Broadline Foodservice',
+        'radius': 1000,
         'error': None
     }
-    
+
     if request.method == 'POST':
         zip_code = request.POST.get('zip_code', '').strip()
         distributor_type = request.POST.get('distributor_type', 'Broadline Foodservice')
         radius = int(request.POST.get('radius', 1000))
-        
+
         if not zip_code:
             context['error'] = 'Please enter a zip code.'
         else:
             try:
                 scraper = UniProScraper()
                 distributors = scraper.get_distributors(zip_code, radius, distributor_type)
-                
+
+                # Handle CSV export
+                if 'export_csv' in request.POST:
+                    # Create a safe filename with zip code and distributor type
+                    safe_zip = zip_code.replace(' ', '_')
+                    safe_type = distributor_type.lower().replace(' ', '_')
+                    filename = f"unipro_distributors_{safe_zip}_{safe_type}.csv"
+
+                    response = HttpResponse(
+                        content_type='text/csv',
+                        headers={'Content-Disposition': f'attachment; filename="{filename}"'},
+                    )
+                    response.write(export_unipro_csv(distributors))
+                    return response
+
                 context.update({
                     'distributors': distributors,
                     'zip_code': zip_code,
                     'distributor_type': distributor_type,
                     'radius': radius
                 })
-                
+
             except Exception as e:
-                context['error'] = f'Error fetching distributors: {str(e)}'
-    
+                context['error'] = f'Error: {str(e)}'
+
     return render(request, 'scrape_products/unipro.html', context)
-
-
-# In views.py
-from django.http import HttpResponse
-import csv
-from io import StringIO
-
 
 def export_unipro_csv(distributors):
     """Helper function to generate CSV data from distributors list."""
@@ -2883,52 +2996,98 @@ def export_unipro_csv(distributors):
 
     return output.getvalue()
 
-
-def scrape_unipro(request):
-    """View for scraping UniPro Foodservice distributor directory."""
+def json_to_csv(request):
+    print("json_to_csv()")
     context = {
-        'title': 'UniPro Foodservice',
-        'distributors': [],
-        'zip_code': '',
-        'distributor_type': 'Broadline Foodservice',
-        'radius': 1000,
+        'title': 'JSON to CSV Converter',
         'error': None
     }
 
     if request.method == 'POST':
-        zip_code = request.POST.get('zip_code', '').strip()
-        distributor_type = request.POST.get('distributor_type', 'Broadline Foodservice')
-        radius = int(request.POST.get('radius', 1000))
+        try:
+            json_data = ""
 
-        if not zip_code:
-            context['error'] = 'Please enter a zip code.'
-        else:
-            try:
-                scraper = UniProScraper()
-                distributors = scraper.get_distributors(zip_code, radius, distributor_type)
+            # Check if JSON was uploaded as a file
+            if 'json_file' in request.FILES:
+                file = request.FILES['json_file']
+                if file.name.endswith('.json'):
+                    # Read the uploaded file
+                    json_data = file.read().decode('utf-8')
+                else:
+                    raise ValueError('Please upload a valid .json file')
+            else:
+                # Get JSON data from textarea
+                json_data = request.POST.get('json_data', '').strip()
+                if not json_data:
+                    raise ValueError('Please enter some JSON data or upload a JSON file')
 
-                # Handle CSV export
-                if 'export_csv' in request.POST:
-                    # Create a safe filename with zip code and distributor type
-                    safe_zip = zip_code.replace(' ', '_')
-                    safe_type = distributor_type.lower().replace(' ', '_')
-                    filename = f"unipro_distributors_{safe_zip}_{safe_type}.csv"
+            # Parse the JSON
+            data = json.loads(json_data)
 
-                    response = HttpResponse(
-                        content_type='text/csv',
-                        headers={'Content-Disposition': f'attachment; filename="{filename}"'},
-                    )
-                    response.write(export_unipro_csv(distributors))
-                    return response
+            # Check if the data is in the expected format
+            if not isinstance(data, dict) or 'Items' not in data or 'ShortItems' not in data:
+                raise ValueError('Invalid JSON format. Expected format: {"Items": [...], "ShortItems": [...]}')
 
-                context.update({
-                    'distributors': distributors,
-                    'zip_code': zip_code,
-                    'distributor_type': distributor_type,
-                    'radius': radius
-                })
+            items = data['Items']
+            short_items = data['ShortItems']
 
-            except Exception as e:
-                context['error'] = f'Error: {str(e)}'
+            if not items:
+                raise ValueError('No items found in the JSON data')
 
-    return render(request, 'scrape_products/unipro.html', context)
+            # Create a mapping of ItemNo to ShortItem for quick lookup
+            short_items_map = {item['ItemNo']: item for item in short_items}
+
+            # Create a CSV in memory
+            output = StringIO()
+            writer = csv.writer(output)
+
+            # Get all unique field names from both Items and ShortItems
+            fieldnames = set()
+
+            # Add all fields from Items
+            if items:
+                fieldnames.update(items[0].keys())
+
+            # Add all fields from ShortItems
+            if short_items:
+                fieldnames.update(short_items[0].keys())
+
+            # Convert set to list and sort for consistent column order
+            fieldnames = sorted(list(fieldnames))
+
+            # Write header row
+            writer.writerow(fieldnames)
+
+            # Write data rows
+            for item in items:
+                # Create a new row with all fields
+                row = {}
+
+                # Add all fields from the main item
+                row.update(item)
+
+                # Add matching fields from short item if exists
+                short_item = short_items_map.get(item.get('Number'))
+                if short_item:
+                    row.update(short_item)
+
+                # Write the row with all fields in the correct order
+                writer.writerow([row.get(field, '') for field in fieldnames])
+
+            # Create the response with the CSV file
+            response = HttpResponse(
+                content_type='text/csv',
+                headers={'Content-Disposition': 'attachment; filename="converted_data.csv"'},
+            )
+            response.write(output.getvalue())
+            return response
+
+            # Rest of your existing code remains the same...
+            # [Previous code for processing JSON and generating CSV...]
+
+        except json.JSONDecodeError:
+            context['error'] = 'Invalid JSON format. Please check your input.'
+        except Exception as e:
+            context['error'] = f'Error: {str(e)}'
+
+    return render(request, 'scrape_products/json_to_csv.html', context)
