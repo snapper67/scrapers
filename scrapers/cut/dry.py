@@ -51,6 +51,7 @@ class CutScraper(Scraper):
 		'pack_size': '',
 		'category': '',
 		'subcategory': '',
+		'subsubcategory': '',
 	}
 
 	ENCODING = "utf-8"

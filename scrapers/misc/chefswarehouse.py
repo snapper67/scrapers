@@ -57,6 +57,7 @@ class ChefWarehouseScraper(Scraper):
 		'pack_size': '',
 		'category': '',
 		'subcategory': '',
+		'subsubcategory': '',
 		'pricingUnitOfMeasure': '',
 	}
 

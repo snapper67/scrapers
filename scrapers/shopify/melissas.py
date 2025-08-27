@@ -58,6 +58,7 @@ class MelissasScraper(ShopifyScraper):
 		'pack_size': '',
 		'category': '',
 		'subcategory': '',
+		'subsubcategory': '',
 		'shop_id': '',
 		'price': 0,
 	}

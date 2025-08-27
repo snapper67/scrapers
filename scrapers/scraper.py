@@ -540,13 +540,18 @@ class Scraper:
 							})
 							update_progress()
 
+							sub_subcategory = ''
+							if hasattr(row, 'Sub subcategory'):
+								sub_subcategory = row['Sub subcategory']
+
 							# Process the product
 							row_spec.update({
 								'subcategory': row.get('Subcategory', ''),
 								'timestamp': row.get('Timestamp', ''),
 								'content_url': url,
 								'sku': row.get('SKU', ''),
-								'category': row.get('Category', '')
+								'category': row.get('Category', ''),
+								'subsubcategory': sub_subcategory
 							})
 
 							# Call the product processing function

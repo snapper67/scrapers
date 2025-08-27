@@ -57,6 +57,7 @@ class USFoodsScraper(Scraper):
 		'pack_size': '',
 		'category': '',
 		'subcategory': '',
+		'subsubcategory': '',
 		'classCode': '',
 		'classDescription': '',
 		'groupCode': '',

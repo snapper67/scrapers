@@ -50,6 +50,7 @@ class SavoryGourmetScraper(ShopifyScraper):
 		'pack_size': '',
 		'category': '',
 		'subcategory': '',
+		'subsubcategory': '',
 		'shop_id': '',
 		'price': 0,
 	}
@@ -816,4 +817,66 @@ class SavoryGourmetScraper(ShopifyScraper):
 			print(f"⛔️⛔️⛔️Error processing category: {e}")
 
 		return detail_urls, html
+
+	def get_product_details(self, url, row_spec=None):
+		#  Wait for the product name element on the product page detail page
+		if not row_spec: row_spec = self.PRODUCT_DATA_SPEC.copy()
+		print("processing product detail page")
+		print(f"Loading page...{url}")
+
+		data = ''
+		sku = row_spec['sku']
+		request_filter = url
+
+		self.driver.get(url)
+		print(f"Sent Request")
+		try:
+			# Wait for the page to load
+			WebDriverWait(self.driver, 10).until(
+				EC.presence_of_element_located(
+					(By.CSS_SELECTOR, "script[type='application/json'][data-section-type='static-product']"))
+			)
+
+			# Get the page source and parse it with BeautifulSoup
+			soup = BeautifulSoup(self.driver.page_source, 'html.parser')
+
+			# Find the script tag with the product data
+			script_tag = soup.find('script', {
+				'type': 'application/json',
+				'data-section-type': 'static-product'
+			})
+
+			if script_tag and script_tag.string:
+				try:
+					# Parse the JSON data from the script tag
+					product_data = json.loads(script_tag.string)
+
+					# Extract product information
+					product = product_data.get('product', {})
+
+					row_spec = self.get_product_data(product, row_spec)
+
+					# Update row_spec with the extracted data
+					# row_spec['name'] = product.get('title', '')
+					# row_spec['description'] = product.get('description', '')
+					# row_spec['price'] = str(product.get('price', 0) / 100)  # Convert cents to dollars
+					# row_spec['sku'] = product.get('variants', [{}])[0].get('sku', '')
+					# row_spec['upc'] = ''  # Not available in the provided data
+					#
+					# # Handle images if needed
+					# if 'images' in product and product['images']:
+					# 	row_spec['image_url'] = f"https:{product['images'][0]}" if not product['images'][0].startswith(
+					# 		'http') else product['images'][0]
+
+				except json.JSONDecodeError as e:
+					print(f"Error parsing JSON data: {e}")
+			else:
+				print("Could not find the product data script tag")
+
+		except Exception as e:
+			print(f"Error getting product details: {e}")
+		finally:
+			del self.driver.requests
+
+		return row_spec
 

@@ -169,8 +169,9 @@ class ShopifyScraper(Scraper):
 				row_spec["pack_size"] = self.get_pack_size(data, row_spec)
 				row_spec["image"] = self.get_first_image_url(data)
 
-				variants = data.get('variants', [])
-				row_spec["sku"] = variants[0].get("sku", "")
+				# variants = data.get('variants', [])
+				# row_spec["sku"] = variants[0].get("sku", "")
+				row_spec['sku'] = data.get('variants', [{}])[0].get('sku', '')
 
 				row_spec["extra_data_1"] = json.dumps(data)
 

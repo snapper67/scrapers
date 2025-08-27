@@ -58,6 +58,7 @@ class CheneyBrothersScraper(Scraper):
 		'pack_size': '',
 		'category': '',
 		'subcategory': '',
+		'subsubcategory': '',
 		'pricingUnitOfMeasure': '',
 	}
 

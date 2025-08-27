@@ -85,6 +85,7 @@ class SouthernGlazierScraper(Scraper):
 		'pack_size': '',
 		'category': '',
 		'subcategory': '',
+		'subsubcategory': '',
 		'bpc': '',
 		'supplier': '',
 		'producer': '',
