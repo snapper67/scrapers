@@ -1,0 +1,14 @@
+{% extends "./_scrape_base.html" %}
+{% block name %}{{ name }}{% endblock name %}
+
+{% block file_mapping %}
+        const fileMappings = {
+            {% for category in categories %}
+            "{{ category.id }}": {
+                "url_file": "{{ category.id|lower }}_product_urls.csv",
+                "data_file": "{{ category.id|lower }}_product_data.csv"
+            }{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        };
+{% endblock file_mapping %}
+

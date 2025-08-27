@@ -86,6 +86,8 @@ class Scraper:
 	DATA_OUTPUT_FILE = 'product_data.csv'
 	DEDUP_INPUT_FILE = 'dedupe_product_data.csv'
 
+	VENDOR_NAME = ''
+
 	# Import specification
 	IMPORT_SPEC = [
 		'name', 'sku', 'gtin', 'image', 'pack', 'size', 'retail_price', 'ordering_unit',
@@ -170,6 +172,9 @@ class Scraper:
 
 	def get_product_spec(self):
 		return self.PRODUCT_DATA_SPEC.copy()
+
+	def get_name(self):
+		return self.VENDOR_NAME
 
 	def setup_driver(self):
 		"""Initialize the WebDriver"""

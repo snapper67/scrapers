@@ -1,7 +1,6 @@
 import importlib
 import inspect
 import uuid
-import json
 import csv
 from io import StringIO
 from django.http import HttpResponse
@@ -72,6 +71,7 @@ from .cut.whatchefswant_rockies import WhatChefsWantRockiesScraper
 from .cut.whatchefswant_south import WhatChefsWantSouthScraper
 from .cut.woolcofoods import WoolcoFoodsScraper
 from .misc.cheneybrothers import CheneyBrothersScraper
+from scrapers.shopify.melissas import MelissasScraper
 from .scraper import Scraper
 
 from django.http import JsonResponse
@@ -85,6 +85,8 @@ import pandas as pd
 from .cut.acme_steak import AcmeSteakScraper
 from .cut.ab import ABScraper
 from .cut.alpeake import AlpeakeScraper
+from .shopify.bittersbottles import BittersBottlesScraper
+
 # Import other scrapers here...
 
 # List of all scraper classes
@@ -94,6 +96,7 @@ SCRAPER_CLASSES = [
 # Get the directory containing the scrapers
 scrapers_cut_dir = os.path.join(os.path.dirname(__file__), 'cut')
 scrapers_misc_dir = os.path.join(os.path.dirname(__file__), 'misc')
+scrapers_shop_dir = os.path.join(os.path.dirname(__file__), 'shopify')
 
 # Import all Python files in the cut directory
 for filename in os.listdir(scrapers_cut_dir):
@@ -103,7 +106,7 @@ for filename in os.listdir(scrapers_cut_dir):
             module = importlib.import_module(f'scrapers.cut.{module_name}')
             # Get all classes in the module that end with 'Scraper'
             for name, obj in inspect.getmembers(module, inspect.isclass):
-                if name.endswith('Scraper') and hasattr(obj, 'VENDOR_NAME') and hasattr(obj, 'DEFAULT_DIRECTORY') and name != 'CutScraper':
+                if name.endswith('Scraper') and hasattr(obj, 'VENDOR_NAME') and hasattr(obj, 'DEFAULT_DIRECTORY') and name != 'CutScraper' and name != 'Scraper':
                     SCRAPER_CLASSES.append(obj)
         except Exception as e:
             print(f"Error importing {module_name}: {e}")
@@ -114,7 +117,20 @@ for filename in os.listdir(scrapers_misc_dir):
             module = importlib.import_module(f'scrapers.misc.{module_name}')
             # Get all classes in the module that end with 'Scraper'
             for name, obj in inspect.getmembers(module, inspect.isclass):
-                if name.endswith('Scraper') and hasattr(obj, 'VENDOR_NAME') and hasattr(obj, 'DEFAULT_DIRECTORY') and name != 'CutScraper':
+                if name.endswith('Scraper') and hasattr(obj, 'VENDOR_NAME') and hasattr(obj, 'DEFAULT_DIRECTORY') and name != 'CutScraper' and name != 'Scraper':
+                    SCRAPER_CLASSES.append(obj)
+        except Exception as e:
+            print(f"Error importing {module_name}: {e}")
+for filename in os.listdir(scrapers_shop_dir):
+    print(filename)
+    if filename.endswith('.py') and not filename.startswith('_') and filename != 'shopify.py':
+        module_name = filename[:-3]
+        try:
+            module = importlib.import_module(f'scrapers.shopify.{module_name}')
+            # Get all classes in the module that end with 'Scraper'
+            for name, obj in inspect.getmembers(module, inspect.isclass):
+                if name.endswith('Scraper') and hasattr(obj, 'VENDOR_NAME') and hasattr(obj, 'DEFAULT_DIRECTORY') and name != 'ShopifyScraper' and name != 'Scraper':
+                    print(name)
                     SCRAPER_CLASSES.append(obj)
         except Exception as e:
             print(f"Error importing {module_name}: {e}")
@@ -475,6 +491,161 @@ def scrape_usfoods(request):
         'defaults': defaults,
     })
 
+def update_melissas_options(post_data, current_options):
+    """
+    Update usfoods_options based on form POST data.
+
+    Args:
+        post_data: request.POST dictionary
+        current_options: Current usfoods_options to update
+
+    Returns:
+        Updated usfoods_options dictionary
+    """
+    # Update boolean flags
+    scraper = MelissasScraper()
+    category_ids = scraper.get_category_ids()
+    category_names = scraper.get_category_names()
+    print(post_data)
+
+    # Update category and file names if category changes
+    category_id = post_data.get('category_id')
+    if category_id:
+        current_options['chosen_category'] = category_id
+        category_id_lookup = category_ids[category_id]
+        category_name = category_names[category_id_lookup]
+        current_options['category_name'] = category_name
+        current_options['url_output_file'] = str(post_data.get('url_file', ''))
+        current_options['data_output_file'] = str(post_data.get('data_file', ''))
+    print(current_options)
+    return current_options
+
+def scrape_melissas(request):
+    options = {}
+    if request.method == 'POST':
+        with MelissasScraper(options) as scraper:
+            distributor_options = scraper.get_options()
+            # Create a copy of options for this request
+            options = update_melissas_options(request.POST, distributor_options)
+            options = update_common_options(request.POST, options)
+            # Run the scraper
+            task_id = process_common_post(options, request, scraper)
+            if task_id:
+                return JsonResponse({
+                    'task_id': task_id,
+                    'status': 'started',
+                    'message': 'Task started successfully'
+                }, status=200)
+            else:
+                print(f"skipping processing CSV")
+                # Normal synchronous processing
+                result = scraper.run()
+                return render(request, 'scrape_products/scrape_results.html', {'result': result})
+
+    # GET request - show form
+    scraper = MelissasScraper()
+    distributor_options = scraper.get_options()
+    category_ids = scraper.get_category_ids()
+
+    categories = [{'id': k, 'name': v} for k, v in category_ids.items()]
+
+    defaults = set_defaults(distributor_options)
+
+    return render(request, 'scrape_products/scrape_misc.html', {
+        'categories': categories,
+        'name': scraper.get_name(),
+        'defaults': defaults,
+    })
+
+def update_bitters_bottles_options(post_data, current_options):
+    """
+    Update bitters_options based on form POST data.
+
+    Args:
+        post_data: request.POST dictionary
+        current_options: Current bitters_options to update
+
+    Returns:
+        Updated bitters_options dictionary
+    """
+    # Update boolean flags
+    scraper = BittersBottlesScraper()
+    category_ids = scraper.get_category_ids()
+    category_names = scraper.get_category_names()
+    print(post_data)
+
+    # Update category and file names if category changes
+    category_id = post_data.get('category_id')
+    if category_id and int(category_id) != 0:
+        current_options['chosen_category'] = category_id
+        category_name = ''
+        current_options['category_url'] = ''
+        current_options['url_output_file'] = str(post_data.get('url_file', ''))
+        current_options['data_output_file'] = str(post_data.get('data_file', ''))
+    else:
+        category_name = 'All'
+        current_options['chosen_category'] = 0
+        current_options['url_output_file'] = current_options['home_directory']
+        current_options['data_output_file'] = ''
+
+    # Update clean_data option
+    current_options['clean_data'] = post_data.get('clean_data') == 'on'
+    current_options['category_name'] = category_name
+    current_options['direct_category_to_process'] = str(post_data.get('direct_category_to_process', ''))
+    current_options['attempts'] = int(post_data.get('attempts', 40))
+
+    return current_options
+
+def scrape_bitters_bottles(request):
+    options = {}
+    if request.method == 'POST':
+        with BittersBottlesScraper(options) as scraper:
+            distributor_options = scraper.get_options()
+            # Create a copy of options for this request
+            options = update_bitters_bottles_options(request.POST, distributor_options)
+            options = update_common_options(request.POST, options)
+            # Run the scraper
+            task_id = process_common_post(options, request, scraper)
+            if task_id:
+                return JsonResponse({
+                    'task_id': task_id,
+                    'status': 'started',
+                    'message': 'Task started successfully'
+                }, status=200)
+            else:
+                print(f"skipping processing CSV")
+                # Normal synchronous processing
+                result = scraper.run()
+                return render(request, 'scrape_products/scrape_results.html', {'result': result})
+
+    # GET request - show form
+    scraper = BittersBottlesScraper()
+    distributor_options = scraper.get_options()
+    category_ids = scraper.get_category_ids()
+
+    categories_scraped = scraper.get_categories()
+    categories = []
+    categories.append({
+        'id': 0,
+        'name': 'All',
+        'url_file': f"product_urls.csv",
+        'data_file': f"product_data.csv"
+    })
+    for category in categories_scraped:
+        categories.append({
+            'id': category['id'],
+            'name': category['name'],
+            'url_file': f"{scraper.make_filename_safe(category['name']).lower()}_product_urls.csv",
+            'data_file': f"{scraper.make_filename_safe(category['name']).lower()}_product_data.csv"
+        })
+
+    defaults = set_defaults(distributor_options)
+
+    return render(request, 'scrape_products/scrape_misc2.html', {
+        'categories': categories,
+        'name': scraper.get_name(),
+        'defaults': defaults,
+    })
 
 def update_cw_options(post_data, current_options):
     """
@@ -507,7 +678,6 @@ def update_cw_options(post_data, current_options):
 
     print(current_options)
     return current_options
-
 
 def scrape_cw(request):
     options = {}
@@ -543,7 +713,6 @@ def scrape_cw(request):
         'categories': categories,
         'defaults': defaults,
     })
-
 
 def update_breakthru_options(post_data, current_options):
     """
@@ -581,7 +750,6 @@ def update_breakthru_options(post_data, current_options):
 
     print(current_options)
     return current_options
-
 
 def scrape_cheney_brothers(request):
     print("scrape_cheney_brothers()")
@@ -622,7 +790,6 @@ def scrape_cheney_brothers(request):
         'name': 'Cheney Brothers'
     })
 
-
 def update_cheney_brothers(post_data, current_options):
     """
     Update usfoods_options based on form POST data.
@@ -652,7 +819,6 @@ def update_cheney_brothers(post_data, current_options):
 
     print(current_options)
     return current_options
-
 
 def scrape_breakthru(request):
     options = {}
@@ -695,7 +861,6 @@ def scrape_breakthru(request):
         'defaults': defaults,
     })
 
-
 def update_sg_options(post_data, current_options):
     """
     Update usfoods_options based on form POST data.
@@ -726,7 +891,6 @@ def update_sg_options(post_data, current_options):
 
     print(current_options)
     return current_options
-
 
 def scrape_sg(request):
     options = {}

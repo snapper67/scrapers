@@ -14,7 +14,6 @@ from .views import json_to_csv
 
 # app_name = 'machine'
 urlpatterns = [
-    path("cooks_company/", views.scrape_cooks_company, name="cooks_company"),
     # path("sysco_api/", SyscoApiPageView.as_view(), name="sysco_api"),
     path("ab/", views.scrape_ab, name="ab"),
     path("acme_steak/", views.scrape_acme_steak, name="acme_steak"),
@@ -71,6 +70,8 @@ urlpatterns = [
     path("tolteca/", views.scrape_tolteca, name="tolteca"),
     path("totalfoods/", views.scrape_totalfoods, name="totalfoods"),
     path("usfoods/", views.scrape_usfoods, name="usfoods"),
+    path("melissas/", views.scrape_melissas, name="melissas"),
+    path("bitters_bottles/", views.scrape_bitters_bottles, name="bitters_bottles"),
     path("valleygold/", views.scrape_valleygold, name="valleygold"),
     path("vitco_foods/", views.scrape_vitco_foods, name="vitco_foods"),
     path("wagner/", views.scrape_wagner, name="wagner"),
