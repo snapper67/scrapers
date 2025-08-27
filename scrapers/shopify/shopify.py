@@ -230,114 +230,6 @@ class ShopifyScraper(Scraper):
 
 	# ************************************************************************
 
-
-	def process_subcategories(self):
-		"""
-		Processes the subcategories from the API response and stores it into `subcategories`.
-
-		Args:
-			None
-
-		Returns:
-			tuple: A tuple containing the subcategories and category name.
-		"""
-		urls = []
-		subcategories = ''
-		category_name = ''
-
-		sub_categories = self.wait.until(
-			EC.presence_of_all_elements_located((By.CSS_SELECTOR, 'div.card__wrap'))
-		)
-		print(f"Found Category Wrapper: {len(sub_categories)}")
-		category_url_part = str(self.options['category_url_part']) + "?expand"
-		print(f"category_url_part: {category_url_part}")
-		for request in self.driver.requests:
-			#
-			# https://www.chefswarehouse.com/products/meat-and-poultry/?expand=*&currentPageUrl=%252Fproducts%252Fmeat-and-poultry%252F&tz=America%252FNew_York&t=1753496336262
-			if request.response and category_url_part in request.url:  # Filter for API requests
-				print(f"URL: {request.url}")
-				print(f"Status Code: {request.response.status_code}")
-				print(f"Content Type: {request.response.headers.get('Content-Type')}")
-
-				# Decode the response body (it's bytes by default)
-				try:
-					# body = request.response.body.decode(request.response.headers.get('Content-Encoding', 'identity'))
-					body = decode(request.response.body, request.response.headers.get('Content-Encoding', 'identity'))
-
-					# If the body is JSON, parse it
-					if 'application/json' in request.response.headers.get('Content-Type', ''):
-						data = json.loads(body)
-						# {
-						# 	"name": "Foie Gras",
-						# 	"imageUrl": "/siteassets/foie-gras_330.png",
-						# 	"url": "/products/meat-and-poultry/foie-gras/"
-						# },
-						category_name = data.get('name', '')
-						view_model = data.get('viewModel', {})
-						subcategories = view_model.get('subCategories', [])
-						urls = [category['url'] for category in subcategories]
-						print(f"==== sub categories: {subcategories}")
-					else:
-						print(f"Response Body was not JSON:")
-
-				except Exception as e:
-					print(f"⛔️⛔️⛔️Error decoding response body: {e}")
-		print(f"========= Number of sub categories: {len(urls)}")
-
-		del self.driver.requests
-		return subcategories, category_name
-
-	@staticmethod
-	def create_interceptor(max_api_products=MAX_API_PRODUCTS):
-		def interceptor(request):
-			# https://www.chefswarehouse.com/products/dairy-and-eggs/dairy-products//search
-			if request.method == 'POST' and '//search' in request.url:  # Replace 'your_target_url'
-				print(f"👽👽👽Intercepting request: {request.url}")
-				# Get the current POST data
-				current_data = request.body.decode('utf-8')
-				print(f"Original POST data: {current_data}")
-
-				# Modify the POST data
-				# Example: change a value in a JSON payload
-				try:
-					payload = json.loads(current_data)
-					search = payload.get('search', {})
-					search['pageSize'] = max_api_products  # Replace 'key_to_change' and 'new_value'
-					request.body = json.dumps(payload).encode('utf-8')
-					# Update the Content-Length header to reflect the new body size
-					del request.headers['Content-Length']
-					request.headers['Content-Length'] = str(len(request.body))
-					print(f"Modified POST data: {request.body.decode('utf-8')}")
-				except json.JSONDecodeError:
-					# Handle cases where the body is not JSON
-					print("Request body is not JSON. Cannot modify in this example.")
-			if request.method == 'POST' and 'product-domain-api/v1/search' in request.url:  # Replace 'your_target_url'
-				print(f"👽👽👽Intercepting request: {request.url}")
-				# Get the current POST data
-				current_data = request.body.decode('utf-8')
-				print(f"Original POST data: {current_data}")
-
-				# Modify the POST data
-				# Example: change a value in a JSON payload
-				try:
-					payload = json.loads(current_data)
-					payload['recordsPerPage'] = max_api_products  # Replace 'key_to_change' and 'new_value'
-					request.body = json.dumps(payload).encode('utf-8')
-					# Update the Content-Length header to reflect the new body size
-					del request.headers['Content-Length']
-					request.headers['Content-Length'] = str(len(request.body))
-					print(f"Modified POST data: {request.body.decode('utf-8')}")
-				except json.JSONDecodeError:
-					# Handle cases where the body is not JSON
-					print("Request body is not JSON. Cannot modify in this example.")
-			# https://panamax-api.ama.usfoods.com/product-domain-api/v2/products
-			if request.method == 'POST' and 'product-domain-api/v2/products' in request.url:
-				print(f"👽👽👽Intercepting request: {request.url}")
-				current_data = request.body.decode('utf-8')
-				print(f"Original POST data: {current_data}")
-
-		return interceptor
-
 	def grab_products(self):
 
 		products = self.wait.until(
@@ -439,7 +331,7 @@ class ShopifyScraper(Scraper):
 						if link in self.driver.current_url:
 							print("Found products page")
 							time.sleep(2)
-							html_line, detail_urls = self.grab_products(category_name, sub_category_name,  url_output_file)
+							html_line, detail_urls = self.grab_products()
 						products_found_count = len(detail_urls)
 						html += f"<div>Found {products_found_count} products for category {sub_category_name}</div>"
 						print(f"Found {products_found_count} products for category {sub_category_name}")

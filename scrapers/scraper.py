@@ -210,7 +210,7 @@ class Scraper:
 	def get_options(self):
 		return self.options
 
-	def save_urls_to_csv(self ,urls, category_name="", subcategory_name=""):
+	def save_urls_to_csv(self ,urls, category_name="", subcategory_name="", sub_subcategory_name=""):
 		"""
 		Save a list of URLs to a CSV file. If the file exists, it will append to it.
 
@@ -218,6 +218,7 @@ class Scraper:
 			urls (list): List of URLs to save
 			category_name (str): Name of the category
 			subcategory_name (str): Name of the sub category
+			sub_subcategory_name (str): Name of the sub category of the sub category
 		"""
 		import csv
 		import os
@@ -241,14 +242,14 @@ class Scraper:
 
 				# Write header only if file is new
 				if not file_exists:
-					writer.writerow(['SKU', 'URL', 'Timestamp', 'Category', 'Subcategory'])
+					writer.writerow(['SKU', 'URL', 'Timestamp', 'Category', 'Subcategory', "Sub Subcategory"])
 
 				# Write each URL with timestamp
 				for url in urls:
 					clean_url = url.rstrip('/')
 					sku = clean_url.split('/')[-1].split('?')[0]  # Remove any query parameters
 					writer.writerow(
-						[sku, url, datetime.now().strftime('%Y-%m-%d %H:%M:%S'), category_name, subcategory_name])
+						[sku, url, datetime.now().strftime('%Y-%m-%d %H:%M:%S'), category_name, subcategory_name, sub_subcategory_name])
 
 			mode = "Appended to" if file_exists else "Created new"
 			print(f"Successfully {mode} {len(urls)} URLs to {filename}")

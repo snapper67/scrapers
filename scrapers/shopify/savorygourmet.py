@@ -796,7 +796,7 @@ class SavoryGourmetScraper(ShopifyScraper):
 					html += f"<div>Found {products_found_count} products for category {sub_category_name}</div>"
 					print(f"Found {products_found_count} products for category {sub_category_name}")
 					total_products += products_found_count
-					self.save_urls_to_csv(detail_urls, category_name, sub_category_name)
+					self.save_urls_to_csv(detail_urls, category_name, sub_category_name, sub_sub_category_name)
 
 				except Exception as e:
 					print(f"****************** ⛔️⛔️⛔️ Error getting details: {e}")
