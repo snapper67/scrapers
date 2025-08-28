@@ -372,49 +372,6 @@ class ShopifyScraper(Scraper):
 		print(f"Total products found: {len(all_urls)}")
 		return html
 
-	def get_product_details(self, url, row_spec=None):
-		#  Wait for the product name element on the product page detail page
-		if not row_spec: row_spec = self.PRODUCT_DATA_SPEC.copy()
-		print("processing product detail page")
-		print(f"Loading page...{url}")
-
-		data = ''
-		sku = row_spec['sku']
-		request_filter = f"https://www.melissas.com/products/{sku}.js"
-
-		self.driver.get(url)
-		print(f"Sent Request")
-		try:
-			request = self.driver.wait_for_request(request_filter)
-			if request.response and request_filter in request.url:  # Filter for API requests
-				print(f"URL: {request.url}")
-				print(f"Status Code: {request.response.status_code}")
-				print(f"Content Type: {request.response.headers.get('Content-Type')}")
-
-				# Decode the response body (it's bytes by default)
-				try:
-					body = decode(request.response.body, request.response.headers.get('Content-Encoding', 'identity'))
-
-					# If the body is JSON, parse it
-					data = json.loads(body)
-					print(f"Response Body (Text): {data}")
-
-				except Exception as e:
-					print(f"⛔️⛔️⛔️Error decoding detail response body: {e}")
-
-			# These use the data if available, then try to scrape from the page
-			row_spec = self.get_product_data(data, row_spec)
-			# row_spec['content_url'] = url
-
-		except Exception as e:
-			print(f"⛔️⛔️⛔️Error waiting for request: {e}")
-
-			# for request in self.driver.requests:
-			# 	print(request.url)
-
-		del self.driver.requests
-		return row_spec
-
 	def get_navigation_structure(self, url: str, headers: Optional[Dict] = None, pretty: bool = True) -> str:
 		"""
 		Fetches and parses the navigation structure from the Bitters & Bottles website.
