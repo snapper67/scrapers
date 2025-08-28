@@ -18,42 +18,6 @@ from scrapers.shopify.shopify import ShopifyScraper
 from typing import List, Dict, Any, Optional
 
 class SavoryGourmetScraper(ShopifyScraper):
-	PRODUCT_DATA_SPEC = {
-		# Fields from IMPORT_SPEC
-		'name': '',
-		'sku': '',
-		'gtin': '',
-		'image': '',
-		'pack': '',
-		'size': '',
-		'retail_price': '',
-		'ordering_unit': '',
-		'is_catch_weight': '',
-		'is_broken_case': '',
-		'average_case_weight': '',
-		'brand': '',
-		'taxonomy': '',
-		'level_1': '',
-		'level_2': '',
-		'level_3': '',
-		'manufacturer_name': '',
-		'manufacturer_sku': '',
-		'distributor_name': '',
-		'content_url': '',
-		'description': '',
-		'unit_price': '',
-		'extra_data_1': '',
-		'extra_data_2': '',
-
-		# Fields from US_FOODS_SPEC
-		'timestamp': '',
-		'pack_size': '',
-		'category': '',
-		'subcategory': '',
-		'subsubcategory': '',
-		'shop_id': '',
-		'price': 0,
-	}
 
 	TEST_CATEGORIES = 100
 	TEST_PRODUCTS = 20000
@@ -685,6 +649,9 @@ class SavoryGourmetScraper(ShopifyScraper):
 		print(f"Categories: {categories}")
 		return categories
 
+	def get_category_url(self, category):
+		return category['url']
+
 	# ************************************************************************
 
 	# 	Product Scraping Functions
@@ -700,71 +667,6 @@ class SavoryGourmetScraper(ShopifyScraper):
 		return f"<div>{navigation}</div>"
 
 
-
-	def build_products_list(self):
-		"""Scrape products from the website"""
-		html = ""
-		all_urls = []
-		# Use the options with fallback to module-level variables
-		max_products = self.options.get('max_products', self.MAX_API_PRODUCTS)
-		category_to_process = self.options.get('category_to_process', 0)
-		chosen_category = int(self.options.get('chosen_category', 0))
-		test_categories = self.options.get('test_categories', 100)
-		category_count = 0
-		if int(self.options['chosen_category']) == 0:
-			categories = self.get_taxonomy()
-			print(f"All Categories ")
-		else:
-			for category in self.get_taxonomy():
-				print(f"category : {category.get('name', '')}")
-				if int(category.get('id', '')) == chosen_category:
-					categories = [category]  # Only process the chosen category
-					print(f"Category found : {categories}")
-					break
-		url_output_file = self.options.get('url_output_file', '')
-
-		# Wait for the page to be fully loaded
-		print(f"Output File Name: {url_output_file}")
-		total_products = 0
-		loop_counter = 0
-		category_found_count = 1
-
-		if category_to_process > 0:
-			print(f"Category to process: {category_to_process}")
-			loop_counter = category_to_process - 1
-			test_categories = category_to_process
-			category_found_count = category_to_process
-		for category in categories:
-			category_name = category['name']
-			print(f"category: {category_name}")
-			sub_categories = category['subcategories']
-			category_found_count = len(sub_categories)
-			print(f"Found {category_found_count} categories to process...")
-			for sub_category in sub_categories:
-				sub_category_name = sub_category['name']
-				print(f"sub category: {sub_category_name}")
-				if sub_category.get('subcategories', False):
-					for sub_sub_category in sub_category['subcategories']:
-						sub_sub_category_name = sub_sub_category['name']
-						print(f"sub sub category: {sub_sub_category_name}")
-						if loop_counter < category_found_count and loop_counter < test_categories:
-							loop_counter += 1
-							url = sub_sub_category['url']
-							print(f"Url: {url}")
-							detail_urls, html = self.get_category_page(url, category_name, sub_category_name, sub_sub_category_name)
-							all_urls.extend(detail_urls)
-						time.sleep(3)
-				else:
-					url = sub_category['url']
-					print(f"Url: {url}")
-					detail_urls, html = self.get_category_page(url, category_name, sub_category_name, '')
-					all_urls.extend(detail_urls)
-
-		# html_table_to_csv(html_table)
-		html += f"<h2>Total products found: {total_products}</h2>"
-
-		print(f"Total products found: {len(all_urls)}")
-		return html
 
 	def get_category_page(self, url, category_name, sub_category_name, sub_sub_category_name):
 		print("get_category_page()")
@@ -821,64 +723,6 @@ class SavoryGourmetScraper(ShopifyScraper):
 		return detail_urls, html
 
 	def get_product_details(self, url, row_spec=None):
-		#  Wait for the product name element on the product page detail page
-		if not row_spec: row_spec = self.PRODUCT_DATA_SPEC.copy()
-		print("processing product detail page")
-		print(f"Loading page...{url}")
-
-		data = ''
-		sku = row_spec['sku']
-		request_filter = url
-
-		self.driver.get(url)
-		print(f"Sent Request")
-		try:
-			# Wait for the page to load
-			WebDriverWait(self.driver, 10).until(
-				EC.presence_of_element_located(
-					(By.CSS_SELECTOR, "script[type='application/json'][data-section-type='static-product']"))
-			)
-
-			# Get the page source and parse it with BeautifulSoup
-			soup = BeautifulSoup(self.driver.page_source, 'html.parser')
-
-			# Find the script tag with the product data
-			script_tag = soup.find('script', {
-				'type': 'application/json',
-				'data-section-type': 'static-product'
-			})
-
-			if script_tag and script_tag.string:
-				try:
-					# Parse the JSON data from the script tag
-					product_data = json.loads(script_tag.string)
-
-					# Extract product information
-					product = product_data.get('product', {})
-
-					row_spec = self.get_product_data(product, row_spec)
-
-					# Update row_spec with the extracted data
-					# row_spec['name'] = product.get('title', '')
-					# row_spec['description'] = product.get('description', '')
-					# row_spec['price'] = str(product.get('price', 0) / 100)  # Convert cents to dollars
-					# row_spec['sku'] = product.get('variants', [{}])[0].get('sku', '')
-					# row_spec['upc'] = ''  # Not available in the provided data
-					#
-					# # Handle images if needed
-					# if 'images' in product and product['images']:
-					# 	row_spec['image_url'] = f"https:{product['images'][0]}" if not product['images'][0].startswith(
-					# 		'http') else product['images'][0]
-
-				except json.JSONDecodeError as e:
-					print(f"Error parsing JSON data: {e}")
-			else:
-				print("Could not find the product data script tag")
-
-		except Exception as e:
-			print(f"Error getting product details: {e}")
-		finally:
-			del self.driver.requests
-
-		return row_spec
+		"""Get Product Details"""
+		return self.get_product_details_scrape( url, row_spec)
 

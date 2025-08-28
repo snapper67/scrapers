@@ -72,6 +72,7 @@ from .cut.whatchefswant_south import WhatChefsWantSouthScraper
 from .cut.woolcofoods import WoolcoFoodsScraper
 from .misc.cheneybrothers import CheneyBrothersScraper
 from scrapers.shopify.melissas import MelissasScraper
+from .other.application import ApplicationScraper
 from .scraper import Scraper
 
 from django.http import JsonResponse
@@ -86,6 +87,7 @@ from .cut.acme_steak import AcmeSteakScraper
 from .cut.ab import ABScraper
 from .cut.alpeake import AlpeakeScraper
 from .shopify.bittersbottles import BittersBottlesScraper
+from .shopify.pacificgourmet import PacificGourmetScraper
 from .shopify.savorygourmet import SavoryGourmetScraper
 
 # Import other scrapers here...
@@ -712,6 +714,96 @@ def scrape_savory_gourmet(request):
 
     # GET request - show form
     scraper = SavoryGourmetScraper()
+    distributor_options = scraper.get_options()
+    category_ids = scraper.get_category_ids()
+
+    categories_scraped = scraper.get_categories()
+    categories = []
+    categories.append({
+        'id': 0,
+        'name': 'All',
+        'url_file': f"product_urls.csv",
+        'data_file': f"product_data.csv"
+    })
+    for category in categories_scraped:
+        categories.append({
+            'id': category['id'],
+            'name': category['name'],
+            'url_file': f"{scraper.make_filename_safe(category['name']).lower()}_product_urls.csv",
+            'data_file': f"{scraper.make_filename_safe(category['name']).lower()}_product_data.csv"
+        })
+
+    defaults = set_defaults(distributor_options)
+
+    return render(request, 'scrape_products/scrape_misc2.html', {
+        'categories': categories,
+        'name': scraper.get_name(),
+        'defaults': defaults,
+    })
+
+def update_pacific_gourmet_options(post_data, current_options):
+    """
+    Update bitters_options based on form POST data.
+
+    Args:
+        post_data: request.POST dictionary
+        current_options: Current bitters_options to update
+
+    Returns:
+        Updated bitters_options dictionary
+    """
+    # Update boolean flags
+    scraper = PacificGourmetScraper()
+    category_ids = scraper.get_category_ids()
+    category_names = scraper.get_category_names()
+    print(post_data)
+
+    # Update category and file names if category changes
+    category_id = post_data.get('category_id')
+    if category_id and int(category_id) != 0:
+        current_options['chosen_category'] = category_id
+        category_name = ''
+        current_options['category_url'] = ''
+        current_options['url_output_file'] = str(post_data.get('url_file', ''))
+        current_options['data_output_file'] = str(post_data.get('data_file', ''))
+    else:
+        category_name = 'All'
+        current_options['chosen_category'] = 0
+        current_options['url_output_file'] = current_options['home_directory']
+        current_options['data_output_file'] = ''
+
+    # Update clean_data option
+    current_options['clean_data'] = post_data.get('clean_data') == 'on'
+    current_options['category_name'] = category_name
+    current_options['direct_category_to_process'] = str(post_data.get('direct_category_to_process', ''))
+    current_options['attempts'] = int(post_data.get('attempts', 40))
+
+    return current_options
+
+def scrape_pacific_gourmet(request):
+    options = {}
+    if request.method == 'POST':
+        with PacificGourmetScraper(options) as scraper:
+            distributor_options = scraper.get_options()
+            # Create a copy of options for this request
+            options = update_savory_gourmet_options(request.POST, distributor_options)
+            options = update_common_options(request.POST, options)
+            # Run the scraper
+            task_id = process_common_post(options, request, scraper)
+            if task_id:
+                return JsonResponse({
+                    'task_id': task_id,
+                    'status': 'started',
+                    'message': 'Task started successfully'
+                }, status=200)
+            else:
+                print(f"skipping processing CSV")
+                # Normal synchronous processing
+                result = scraper.run()
+                return render(request, 'scrape_products/scrape_results.html', {'result': result})
+
+    # GET request - show form
+    scraper = PacificGourmetScraper()
     distributor_options = scraper.get_options()
     category_ids = scraper.get_category_ids()
 
@@ -3153,6 +3245,31 @@ def get_scraper_class(distributor_name):
             return cls
 
     return None
+
+def application(request):
+    """View for scraping UniPro Foodservice distributor directory."""
+    context = {
+        'title': 'Application Launcher',
+        'distributors': [],
+        'zip_code': '',
+        'distributor_type': 'Broadline Foodservice',
+        'radius': 1000,
+        'error': None
+    }
+
+    if request.method == 'POST':
+        import time
+        scraper = ApplicationScraper()
+        # scraper.setup_driver()
+        scraper.launch()
+
+        print("Done")
+        # with ApplicationScraper() as scraper:
+        #     scraper.launch()
+        #     time.sleep(50000)
+
+
+    return render(request, 'scrape_products/application.html', context)
 
 from scrapers.other.unipro import UniProScraper
 

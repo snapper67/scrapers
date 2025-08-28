@@ -15,6 +15,7 @@ from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.firefox.options import Options as FireFoxOptions
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
@@ -142,6 +143,8 @@ class Scraper:
 		self.chrome_options.add_argument('--headless')
 		self.chrome_options.add_argument('--disable-gpu')
 		self.chrome_options.add_argument('--no-sandbox')
+		self.chrome_options.add_argument('--proxy-bypass-list=<-loopback>')
+		self.chrome_options.add_argument("proxy-bypass-list=<-loopback>")
 		prefs = {"profile.managed_default_content_settings.images": 2}  # 2 blocks images
 		self.chrome_options.add_experimental_option("prefs", prefs)
 
@@ -149,6 +152,14 @@ class Scraper:
 		self.seleniumwire_options = {
 			'disable_encoding': True,
 		}
+
+		self.firefox_options = FireFoxOptions()
+		self.firefox_options.add_argument('--disable-gpu')
+		self.firefox_options.add_argument('--no-sandbox')
+		# Prevent Firefox from bypassing proxy for localhost
+		self.firefox_options.set_preference("network.proxy.allow_hijacking_localhost", True)
+		# self.firefox_options.add_argument("--headless")
+
 		self.current_task_id = None
 		logging.basicConfig(level=logging.ERROR, format='%(asctime)s - %(threadName)s - %(message)s')
 
@@ -194,6 +205,7 @@ class Scraper:
 
 	def cleanup(self):
 		"""Clean up resources"""
+		print("cleanup()")
 		if self.driver:
 			self.driver.quit()
 			self.driver = None
@@ -235,6 +247,8 @@ class Scraper:
 		os.makedirs(os.path.dirname(os.path.abspath(filename)), exist_ok=True)
 
 		file_exists = os.path.isfile(filename)
+
+		print(f"Home Directory: {home_dir}, Filename: {filename}")
 
 		try:
 			with open(filename, 'a', newline='', encoding='utf-8') as csvfile:
