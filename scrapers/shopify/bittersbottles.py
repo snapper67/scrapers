@@ -1031,7 +1031,8 @@ class BittersBottlesScraper(ShopifyScraper):
 
 	def get_product_details(self, url, row_spec=None):
 		"""Get Product Details"""
-		return self.get_product_details_scrape( url, row_spec)
+		print("BittersBottlesScraper.get_product_details()")
+		return self.get_product_details_scrape(url, row_spec, target="script[type='application/json'][data-section-type='static-product']")
 
 	# ************************************************************************
 	def build_categories_list(self):

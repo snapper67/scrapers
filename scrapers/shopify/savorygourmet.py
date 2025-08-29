@@ -666,8 +666,6 @@ class SavoryGourmetScraper(ShopifyScraper):
 		# self.print_navigation_structure(navigation)
 		return f"<div>{navigation}</div>"
 
-
-
 	def get_category_page(self, url, category_name, sub_category_name, sub_sub_category_name):
 		print("get_category_page()")
 		main_window = self.driver.current_window_handle

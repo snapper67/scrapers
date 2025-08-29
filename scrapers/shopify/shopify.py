@@ -368,8 +368,9 @@ class ShopifyScraper(Scraper):
 		del self.driver.requests
 		return data
 
-	def get_product_details_scrape(self, url, row_spec=None):
+	def get_product_details_scrape(self, url, row_spec=None, target="script[type='application/json']"):
 		#  Wait for the product name element on the product page detail page
+		print("Scraper.get_product_details()")
 		if not row_spec: row_spec = self.PRODUCT_DATA_SPEC.copy()
 		print("processing product detail page")
 		print(f"Loading page...{url}")
@@ -385,7 +386,7 @@ class ShopifyScraper(Scraper):
 			# Wait for the page to load
 			WebDriverWait(self.driver, 10).until(
 				EC.presence_of_element_located(
-					(By.CSS_SELECTOR, "script[type='application/json']"))
+				(By.CSS_SELECTOR, target))
 			)
 
 			# Get the page source and parse it with BeautifulSoup

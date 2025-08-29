@@ -433,6 +433,7 @@ class FourStarSeafoodScraper(ShopifyScraper):
 
 	def get_product_details(self, url, row_spec=None):
 		"""Get Product Details"""
+		print("FourStarSeafoodScraper.get_product_details()")
 		data = self.get_product_details_scrape( url, row_spec)
 		print(data)
 		row_spec = self.get_product_data(data.get('product', {}), row_spec)
