@@ -380,11 +380,12 @@ class ShopifyScraper(Scraper):
 
 		self.driver.get(url)
 		print(f"Sent Request")
+		product_data = ''
 		try:
 			# Wait for the page to load
 			WebDriverWait(self.driver, 10).until(
 				EC.presence_of_element_located(
-					(By.CSS_SELECTOR, "script[type='application/json'][data-section-type='static-product']"))
+					(By.CSS_SELECTOR, "script[type='application/json']"))
 			)
 
 			# Get the page source and parse it with BeautifulSoup
@@ -396,27 +397,16 @@ class ShopifyScraper(Scraper):
 				'data-section-type': 'static-product'
 			})
 
+			if not script_tag:
+				script_tag = soup.find('script', {
+					'type': 'application/json',
+					'data-product-json': ''
+				})
+
 			if script_tag and script_tag.string:
 				try:
 					# Parse the JSON data from the script tag
 					product_data = json.loads(script_tag.string)
-
-					# Extract product information
-					product = product_data.get('product', {})
-
-					row_spec = self.get_product_data(product, row_spec)
-
-					# Update row_spec with the extracted data
-					# row_spec['name'] = product.get('title', '')
-					# row_spec['description'] = product.get('description', '')
-					# row_spec['price'] = str(product.get('price', 0) / 100)  # Convert cents to dollars
-					# row_spec['sku'] = product.get('variants', [{}])[0].get('sku', '')
-					# row_spec['upc'] = ''  # Not available in the provided data
-					#
-					# # Handle images if needed
-					# if 'images' in product and product['images']:
-					# 	row_spec['image_url'] = f"https:{product['images'][0]}" if not product['images'][0].startswith(
-					# 		'http') else product['images'][0]
 
 				except json.JSONDecodeError as e:
 					print(f"Error parsing JSON data: {e}")
@@ -428,7 +418,7 @@ class ShopifyScraper(Scraper):
 		finally:
 			del self.driver.requests
 
-		return row_spec
+		return product_data
 
 	def get_navigation_structure(self, url: str, headers: Optional[Dict] = None, pretty: bool = True) -> str:
 		"""

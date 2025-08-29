@@ -74,6 +74,7 @@ urlpatterns = [
     path("bitters_bottles/", views.scrape_bitters_bottles, name="bitters_bottles"),
     path("savory_gourmet/", views.scrape_savory_gourmet, name="savory_gourmet"),
     path("pacific_gourmet/", views.scrape_pacific_gourmet, name="pacific_gourmet"),
+    path("four_star_seafood/", views.scrape_four_star_seafood, name="four_star_seafood"),
     path("valleygold/", views.scrape_valleygold, name="valleygold"),
     path("vitco_foods/", views.scrape_vitco_foods, name="vitco_foods"),
     path("wagner/", views.scrape_wagner, name="wagner"),
