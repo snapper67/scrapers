@@ -72,6 +72,7 @@ from .cut.whatchefswant_south import WhatChefsWantSouthScraper
 from .cut.woolcofoods import WoolcoFoodsScraper
 from .misc.cheneybrothers import CheneyBrothersScraper
 from scrapers.shopify.melissas import MelissasScraper
+from .misc.imperialdade import ImperialDadeScraper
 from .other.application import ApplicationScraper
 from .scraper import Scraper
 
@@ -1206,6 +1207,88 @@ def scrape_sg(request):
     return render(request, 'scrape_products/scrape_sg.html', {
         'categories': categories,
         'defaults': defaults,
+    })
+
+def update_imperial_dade_options(post_data, current_options):
+    """
+    Update usfoods_options based on form POST data.
+
+    Args:
+        post_data: request.POST dictionary
+        current_options: Current usfoods_options to update
+
+    Returns:
+        Updated usfoods_options dictionary
+    """
+    # Update category and file names if category
+    # changes
+    category_id = post_data.get('category_id')
+    if category_id and int(category_id) != 0:
+        current_options['chosen_category'] = category_id
+        category_name = ''
+        current_options['category_url'] = ''
+        current_options['url_output_file'] = str(post_data.get('url_file', ''))
+        current_options['data_output_file'] = str(post_data.get('data_file', ''))
+    else:
+        category_name = 'All'
+        current_options['chosen_category'] = 0
+        current_options['url_output_file'] = current_options['home_directory']
+        current_options['data_output_file'] = ''
+    current_options['category_name'] = category_name
+    current_options['direct_category_to_process'] = str(post_data.get('direct_category_to_process', ''))
+
+    print(current_options)
+    return current_options
+
+def scrape_imperial_dade(request):
+    options = {}
+
+    if request.method == 'POST':
+        with ImperialDadeScraper(options) as scraper:
+            print(request.POST)
+            distributor_options = scraper.get_options()
+
+            options = update_imperial_dade_options(request.POST, distributor_options)
+            options = update_common_options(request.POST, options)
+            # Run the scraper
+            task_id = process_common_post(options, request, scraper)
+            if task_id:
+                return JsonResponse({
+                    'task_id': task_id,
+                    'status': 'started',
+                    'message': 'Task started successfully'
+                }, status=200)
+            else:
+                print(f"skipping processing CSV")
+                # Normal synchronous processing
+                result = scraper.run()
+                return render(request, 'scrape_products/scrape_results.html', {'result': result})
+
+    # GET request - show form
+    scraper = ImperialDadeScraper()
+    distributor_options = scraper.get_options()
+    categories_scraped = scraper.get_categories()
+    categories = []
+    categories.append({
+        'id': 0,
+        'name': 'All',
+        'url_file': f"product_urls.csv",
+        'data_file': f"product_data.csv"
+    })
+    for category in categories_scraped:
+        categories.append({
+            'id': category['id'],
+            'name': category['name'],
+            'url_file': f"{scraper.make_filename_safe(category['name']).lower()}_product_urls.csv",
+            'data_file': f"{scraper.make_filename_safe(category['name']).lower()}_product_data.csv"
+        })
+
+    defaults = set_defaults(distributor_options)
+
+    return render(request, 'scrape_products/scrape_misc2.html', {
+        'categories': categories,
+        'defaults': defaults,
+        'name': 'Imperial Dade'
     })
 
 def process_common_post(options, request, scraper):
@@ -3079,37 +3162,6 @@ def get_scraper_data(scraper_class):
         print(f"Error processing {scraper_class.__name__}: {e}")
         return None
 
-# def scraper_status(request):
-#     """
-#     Display a status page showing summary information for all scrapers.
-#     """
-#     # Get data for all scrapers
-#     scraper_data = []
-#
-#     for scraper_class in SCRAPER_CLASSES:
-#         data = get_scraper_data(scraper_class)
-#         if data:
-#             scraper_data.append(data)
-#
-#     # Sort by status (In Progress first) then by name
-#     scraper_data.sort(key=lambda x: (x['status'] == 'Complete', x['name']))
-#
-#     # Calculate totals
-#     total_data = sum(d['data_rows'] for d in scraper_data)
-#     total_urls = sum(d['url_rows'] for d in scraper_data)
-#     total_percent = min(100, int((total_data / total_urls * 100))) if total_urls > 0 else 0
-#
-#     context = {
-#         'scrapers': scraper_data,
-#         'total_data': total_data,
-#         'total_urls': total_urls,
-#         'total_percent': total_percent,
-#         'formatted_total_data': intcomma(total_data),
-#         'formatted_total_urls': intcomma(total_urls),
-#     }
-#
-#     return render(request, 'scrape_products/status.html', context)
-
 def task_status(request):
     """View to display the status of all background tasks."""
     # Get all active tasks from the thread manager
@@ -3266,59 +3318,6 @@ def stop_task(request, task_id):
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
-# def process_missing_skus_view(request):
-#     """
-#     View to handle the process missing SKUs form submission.
-#     """
-#     print("process_missing_skus_view()")
-#     if request.method == 'POST':
-#         try:
-#             # Generate a unique task ID
-#             task_id = str(uuid.uuid4())
-#
-#             # Get form data
-#             form_data = request.POST.dict()
-#
-#             # Create the scraper instance with options
-#             scraper_class = get_scraper_class(form_data.get('distributor'))
-#             if not scraper_class:
-#                 return JsonResponse({'error': 'Invalid distributor'}, status=400)
-#
-#             # Initialize scraper with options
-#             options = {
-#                 'task_id': task_id,
-#                 'home_directory': form_data.get('home_directory', ''),
-#                 'url_output_file': form_data.get('url_file', ''),
-#                 'data_output_file': form_data.get('data_file', ''),
-#                 'process_missing_skus': True,
-#             }
-#
-#             # Start the task in a background thread
-#             def run_task():
-#                 try:
-#                     with scraper_class(options) as scraper:
-#                         scraper.process_missing_skus()
-#                 except Exception as e:
-#                     progress = cache.get(f'product_processing_progress_{task_id}', {})
-#                     progress.update({
-#                         'status': 'error',
-#                         'message': f'Error in task: {str(e)}',
-#                     })
-#                     cache.set(f'product_processing_progress_{task_id}', progress, timeout=3600)
-#
-#             # Start the task in a background thread
-#             import threading
-#             thread = threading.Thread(target=run_task)
-#             thread.daemon = True
-#             thread.start()
-#
-#             # Return the task ID to the client
-#             return JsonResponse({'task_id': task_id})
-#
-#         except Exception as e:
-#             return JsonResponse({'error': str(e)}, status=500)
-#
-#     return JsonResponse({'error': 'Method not allowed'}, status=405)
 
 def get_scraper_class(distributor_name):
     """

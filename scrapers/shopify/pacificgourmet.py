@@ -630,7 +630,7 @@ class PacificGourmetScraper(ShopifyScraper):
 	def get_product_details(self, url, row_spec=None):
 		"""Get Product Details"""
 		data = self.get_product_details_json( url, row_spec)
-		row_spec = self.get_product_data(data.get('product', {}), row_spec)
+		self.get_product_data(data.get('product', {}), row_spec)
 		return row_spec
 
 	def get_first_image_url(self, response_data):

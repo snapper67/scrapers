@@ -26,6 +26,16 @@ from typing import List, Dict, Any, Optional
 
 from scrapers.scraper import Scraper
 
+"""
+	Breakthru Beverage
+	Type: Standard shop website
+	Method: 
+		Get Categories:
+		Get Product Links: Process API
+		Get Product Details: API
+"""
+
+
 class BreakthruScraper(Scraper):
 	PRODUCT_DATA_SPEC = {
 		# Fields from IMPORT_SPEC
@@ -70,7 +80,7 @@ class BreakthruScraper(Scraper):
 	MAX_API_PRODUCTS = 999  # Maximum number to change the search request page size
 	DEFAULT_DIRECTORY = '/Users/mark/Downloads/scrapers/breakthru'
 
-	BASE_URL = 'https://www.chefswarehouse.com'
+	BASE_URL = 'https://app.salsify.com/catalogs/54a56dcf-aeb2-413d-ace3-c083d314d8ea/products?filter=%3D&page=1'
 	VENDOR_NAME = 'Breakthru Beverage'
 	CATEGORIES = [{'id': 'Beer', 'count': 5626, 'filename': 'Beer', 'number': 1},
 	              {'id': 'Cider/Perry/Mead', 'count': 439, 'filename': 'CiderPerryMead', 'number': 2},
@@ -201,6 +211,8 @@ class BreakthruScraper(Scraper):
 	def __init__(self, options=None):
 		super().__init__(options)
 		self.options = {**self.DEFAULT_OPTIONS, **(options or {})}
+		self.options['home_directory'] = self.DEFAULT_DIRECTORY
+		self.options['base_url'] = self.BASE_URL
 
 	def get_category_ids(self):
 		return self.CATEGORY_IDS
@@ -219,7 +231,6 @@ class BreakthruScraper(Scraper):
 		return
 
 	# ************************************************************************
-
 	# 	Product Scraping Functions
 	# ************************************************************************
 
@@ -320,6 +331,23 @@ class BreakthruScraper(Scraper):
 			print(f"Error extracting categories: {e}")
 			return []
 
+	def get_description(self, data, row_spec):
+		print("processing product overview...")
+		description = ''
+		if data:
+			try:
+				print(f"Getting Summary: ")
+				summary = data.get('summary', {})
+				# print(f"summary: {summary}")
+				description = summary.get('description', {})
+				if description:
+					row_spec["description"] = description.get('values', [])[0].get('name', '')
+			except Exception as e:
+				print(f"⛔️️ Error processing product overview from data: {e}")
+
+		print("processing product overview Complete...")
+		return row_spec
+
 	def get_product_data(self, data, row_spec):
 		print("processing product data from response...")
 		# print(product_data)
@@ -356,30 +384,17 @@ class BreakthruScraper(Scraper):
 		print("processing product data Complete...")
 		return row_spec
 
-	def get_description(self, data, row_spec):
-		print("processing product overview...")
-		description = ''
-		if data:
-			try:
-				print(f"Getting Summary: ")
-				summary = data.get('summary', {})
-				# print(f"summary: {summary}")
-				description = summary.get('description', {})
-				if description:
-					row_spec["description"] = description.get('values', [])[0].get('name', '')
-			except Exception as e:
-				print(f"⛔️️ Error processing product overview from data: {e}")
-
-		print("processing product overview Complete...")
-		return row_spec
-
+	# ************************************************************************
+	# 	Website Specific Functions
 	# ************************************************************************
 
 	def process_product_list_search_api(self, html, category, sub_category=None):
 		# Build a list of product URLs
+		print("process_product_list_search_api()")
 		all_urls = []
 		i = 0
 		still_looking = True
+		category_name = category.get('id', '')
 		# Until we find a page with less than 250 products, keep sending the request and bumping the page size
 		while still_looking and i < self.options['max_products']:
 			i = i + 1
@@ -388,7 +403,7 @@ class BreakthruScraper(Scraper):
 			print(f"category_name : {category}")
 			url = f"https://app.salsify.com/catalogs/a256467d-fc0a-4bce-8971-1d14466fd28f/products?filter=%3D%27Product%20Category={category_name}&page={i}"
 
-			self.driver.request_interceptor = self.create_interceptor(i, category)
+			self.driver.request_interceptor = self.create_interceptor(i, category_name)
 			self.driver.get(url)
 
 			request_filter = 'catalogs/api/catalogs/a256467d-fc0a-4bce-8971-1d14466fd28f/products?'
@@ -432,54 +447,11 @@ class BreakthruScraper(Scraper):
 			del self.driver.requests
 		return html, all_urls
 
-	def process_subcategories(self):
-		# Build a list of product URLs
-		urls = []
-		subcategories = ''
-		category_name = ''
+	# ************************************************************************
+	# 	Core
+	# ************************************************************************
 
-		sub_categories = self.wait.until(
-			EC.presence_of_all_elements_located((By.CSS_SELECTOR, 'div.card__wrap'))
-		)
-		print(f"Found Category Wrapper: {len(sub_categories)}")
-		category_url_part = str(self.options['category_url_part']) + "?expand"
-		print(f"category_url_part: {category_url_part}")
-		for request in self.driver.requests:
-			#
-			# https://www.chefswarehouse.com/products/meat-and-poultry/?expand=*&currentPageUrl=%252Fproducts%252Fmeat-and-poultry%252F&tz=America%252FNew_York&t=1753496336262
-			if request.response and category_url_part in request.url:  # Filter for API requests
-				print(f"URL: {request.url}")
-				print(f"Status Code: {request.response.status_code}")
-				print(f"Content Type: {request.response.headers.get('Content-Type')}")
-
-				# Decode the response body (it's bytes by default)
-				try:
-					# body = request.response.body.decode(request.response.headers.get('Content-Encoding', 'identity'))
-					body = decode(request.response.body, request.response.headers.get('Content-Encoding', 'identity'))
-
-					# If the body is JSON, parse it
-					if 'application/json' in request.response.headers.get('Content-Type', ''):
-						data = json.loads(body)
-						# {
-						# 	"name": "Foie Gras",
-						# 	"imageUrl": "/siteassets/foie-gras_330.png",
-						# 	"url": "/products/meat-and-poultry/foie-gras/"
-						# },
-						category_name = data.get('name', '')
-						view_model = data.get('viewModel', {})
-						subcategories = view_model.get('subCategories', [])
-						urls = [category['url'] for category in subcategories]
-						print(f"==== sub categories: {subcategories}")
-					else:
-						print(f"Response Body was not JSON:")
-
-				except Exception as e:
-					print(f"⛔️⛔️⛔️Error decoding response body: {e}")
-		print(f"========= Number of sub categories: {len(urls)}")
-
-		del self.driver.requests
-		return subcategories, category_name
-
+	# Step One:
 	def build_categories_list(self):
 		# Run on all to get a category list then copy the list to CATEGORIES
 		url = "https://app.salsify.com/catalogs/a256467d-fc0a-4bce-8971-1d14466fd28f/products?filter=%3D&page=1"
@@ -505,38 +477,7 @@ class BreakthruScraper(Scraper):
 
 		return categories
 
-	@staticmethod
-	def create_interceptor(page=0, category_name=''):
-		def interceptor(request):
-			# https://app.salsify.com/catalogs/api/catalogs/a256467d-fc0a-4bce-8971-1d14466fd28f/products?filter=%3D%27Product%20Category%27%3A%27Beer%27&page=1&per_page=36&product_identifier_collection_id=&query=
-			# Intercept and modify GET requests to update per_page parameter
-			request_filter = f"page={page}"
-			if request.method == 'GET' and 'catalogs/api/catalogs/' in request.url and request_filter in request.url:
-				from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
-				print(f"👽👽👽Intercepting request: {request.url} Page: {page}")
-				# Parse the URL
-				parsed_url = urlparse(request.url)
-				query_params = parse_qs(parsed_url.query)
-				
-				# Update per_page parameter
-				query_params['per_page'] = ['250']
-				query_params['page'] = [str(page)]
-				query_params['filter'] = "='Product Category':'" + category_name + "'"
-				print(query_params['filter'])
-				# Rebuild the query string
-				new_query = urlencode(query_params, doseq=True)
-				
-				# Reconstruct the URL with the updated query string
-				new_url = urlunparse(parsed_url._replace(query=new_query))
-				
-				# Update the request URL
-				request.url = new_url
-				print(f"👽👽👽 Updated URL: {request.url}")
-				
-			# Existing POST request handling
-
-		return interceptor
-
+	# Step Two: Get links to products
 	def build_products_list(self):
 		"""Scrape products from the website"""
 		print(f"build_products_list()")
@@ -563,7 +504,7 @@ class BreakthruScraper(Scraper):
 			category_name = category.get('id', '')
 			if category_count > test_categories:
 				break
-			html, detail_urls = self.process_product_list_search_api(html, category_name)
+			html, detail_urls = self.process_product_list_search_api(html, category)
 
 			time.sleep(3)
 
@@ -573,6 +514,42 @@ class BreakthruScraper(Scraper):
 		html += html_table
 		print(f"Total products found: {len(all_urls)}")
 		return html
+
+	@staticmethod
+	def create_interceptor(page=0, category_name=''):
+		def interceptor(request):
+			# https://app.salsify.com/catalogs/api/catalogs/a256467d-fc0a-4bce-8971-1d14466fd28f/products?filter=%3D%27Product%20Category%27%3A%27Beer%27&page=1&per_page=36&product_identifier_collection_id=&query=
+			# Intercept and modify GET requests to update per_page parameter
+			request_filter = f"page={page}"
+			if request.method == 'GET' and 'catalogs/api/catalogs/' in request.url and request_filter in request.url:
+				from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
+				print(f"👽👽👽Intercepting request: {request.url} Page: {page}")
+				# Parse the URL
+				parsed_url = urlparse(request.url)
+				query_params = parse_qs(parsed_url.query)
+
+				# Update per_page parameter
+				query_params['per_page'] = ['250']
+				query_params['page'] = [str(page)]
+				query_params['filter'] = "='Product Category':'" + category_name + "'"
+				print(query_params['filter'])
+				# Rebuild the query string
+				new_query = urlencode(query_params, doseq=True)
+
+				# Reconstruct the URL with the updated query string
+				new_url = urlunparse(parsed_url._replace(query=new_query))
+
+				# Update the request URL
+				request.url = new_url
+				print(f"👽👽👽 Updated URL: {request.url}")
+
+		# Existing POST request handling
+
+		return interceptor
+
+	# ************************************************************************
+	# 	Functions for extracting product data
+	# ************************************************************************
 
 	def get_product_details(self, url, row_spec=None):
 		#  Wait for the product name element on the product page detail page
@@ -612,13 +589,8 @@ class BreakthruScraper(Scraper):
 			# These use the data if available, then try to scrape from the page
 			row_spec = self.get_product_data(data, row_spec)
 
-			# print(row_spec)
-
 		except Exception as e:
 			print(f"⛔️⛔️⛔️Error waiting for request: {e}")
-
-			# for request in self.driver.requests:
-			# 	print(request.url)
 
 		del self.driver.requests
 		return row_spec

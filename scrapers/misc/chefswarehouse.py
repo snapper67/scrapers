@@ -23,6 +23,14 @@ from seleniumwire.utils import decode
 
 from scrapers.scraper import Scraper
 
+"""
+	Chefs' Warehouse
+	Type: Standard shop website
+	Method: 
+		Get Categories:
+		Get Product Links: Process API
+		Get Product Details: API
+"""
 
 class ChefWarehouseScraper(Scraper):
 	PRODUCT_DATA_SPEC = {
@@ -66,7 +74,7 @@ class ChefWarehouseScraper(Scraper):
 	CSV_START_ROW = 0
 	TEST_TABS = 2
 	MAX_API_PRODUCTS = 999  # Maximum number to change the search request page size
-	DEFAULT_DIRECTORY = '/Users/mark/Downloads/scrapers/cw'
+	DEFAULT_DIRECTORY = '/Users/mark/Downloads/scrapers/shefs_warehouse'
 
 	BASE_URL = 'https://www.chefswarehouse.com'
 	VENDOR_NAME = 'Chefs\' Warehouse'
@@ -163,6 +171,8 @@ class ChefWarehouseScraper(Scraper):
 	def __init__(self, options=None):
 		super().__init__(options)
 		self.options = {**self.DEFAULT_OPTIONS, **(options or {})}
+		self.options['home_directory'] = self.DEFAULT_DIRECTORY
+		self.options['base_url'] = self.BASE_URL
 
 	def get_category_ids(self):
 		return self.CATEGORY_IDS
@@ -173,38 +183,11 @@ class ChefWarehouseScraper(Scraper):
 	def get_category_urls(self):
 		return self.CATEGORY_URLS
 
-	def split_code_and_text(self, input_string):
-		"""
-		Splits a string in the format '9999 - text text-text' into code and text.
-
-		Args:
-			input_string (str): The input string to split
-
-		Returns:
-			tuple: (code, text) where code is the numeric part and text is the rest
-		"""
-		# Split on the first occurrence of ' - ' (space-hyphen-space)
-		try:
-			parts = input_string.split(' - ', 1)
-
-			if len(parts) == 2:
-				code = parts[0].strip()
-				text = parts[1].strip()
-			else:
-				# Handle case where the delimiter isn't found
-				code = input_string.strip()
-				text = ''
-
-			return code, text
-		except Exception as e:
-			return '', ''
-
 	def scraping_setup(self):
 		"""Scrape products from the website"""
 		return
 
 	# ************************************************************************
-
 	# 	Product Scraping Functions
 	# ************************************************************************
 
@@ -233,30 +216,6 @@ class ChefWarehouseScraper(Scraper):
 			print(f"Error extracting image from viewModel.assets: {str(e)}")
 
 		return ''
-
-	def get_product_data(self, data, row_spec):
-		print("processing product data from response...")
-		# print(data)
-		if data:
-			try:
-				row_spec["name"] = data.get("name", "")
-				row_spec["brand"] = data.get("displayBrand", "")
-
-				view_model = data.get('viewModel', {})
-				row_spec["pack_size"] = view_model.get('size', {})
-
-				row_spec["image"] = self.get_first_image_url(data)
-				row_spec = self.get_classification(view_model, row_spec)
-				row_spec = self.get_description(view_model, row_spec)
-				row_spec = self.get_manufacturer(data, row_spec)
-				row_spec = self.get_additional_info(data, row_spec)
-				row_spec["extra_data_1"] = json.dumps(data)
-
-			except Exception as e:
-				print(f" ⛔️⛔️⛔️Error processing product data: {e}")
-
-		print("processing get_product_data Complete...")
-		return row_spec
 
 	def get_classification(self, product_data, row_spec):
 		print("processing product classification...")
@@ -311,6 +270,32 @@ class ChefWarehouseScraper(Scraper):
 		print("processing product additional data Complete...")
 		return row_spec
 
+	def get_product_data(self, data, row_spec):
+		print("processing product data from response...")
+		# print(data)
+		if data:
+			try:
+				row_spec["name"] = data.get("name", "")
+				row_spec["brand"] = data.get("displayBrand", "")
+
+				view_model = data.get('viewModel', {})
+				row_spec["pack_size"] = view_model.get('size', {})
+
+				row_spec["image"] = self.get_first_image_url(data)
+				row_spec = self.get_classification(view_model, row_spec)
+				row_spec = self.get_description(view_model, row_spec)
+				row_spec = self.get_manufacturer(data, row_spec)
+				row_spec = self.get_additional_info(data, row_spec)
+				row_spec["extra_data_1"] = json.dumps(data)
+
+			except Exception as e:
+				print(f" ⛔️⛔️⛔️Error processing product data: {e}")
+
+		print("processing get_product_data Complete...")
+		return row_spec
+
+	# ************************************************************************
+	# Website Specific
 	# ************************************************************************
 
 	def process_product_list_search_api(self, category, sub_category, url_output_file):
@@ -408,56 +393,9 @@ class ChefWarehouseScraper(Scraper):
 		del self.driver.requests
 		return subcategories, category_name
 
-	@staticmethod
-	def create_interceptor(max_api_products=MAX_API_PRODUCTS):
-		def interceptor(request):
-			# https://www.chefswarehouse.com/products/dairy-and-eggs/dairy-products//search
-			if request.method == 'POST' and '//search' in request.url:  # Replace 'your_target_url'
-				print(f"👽👽👽Intercepting request: {request.url}")
-				# Get the current POST data
-				current_data = request.body.decode('utf-8')
-				print(f"Original POST data: {current_data}")
-
-				# Modify the POST data
-				# Example: change a value in a JSON payload
-				try:
-					payload = json.loads(current_data)
-					search = payload.get('search', {})
-					search['pageSize'] = max_api_products  # Replace 'key_to_change' and 'new_value'
-					request.body = json.dumps(payload).encode('utf-8')
-					# Update the Content-Length header to reflect the new body size
-					del request.headers['Content-Length']
-					request.headers['Content-Length'] = str(len(request.body))
-					print(f"Modified POST data: {request.body.decode('utf-8')}")
-				except json.JSONDecodeError:
-					# Handle cases where the body is not JSON
-					print("Request body is not JSON. Cannot modify in this example.")
-			if request.method == 'POST' and 'product-domain-api/v1/search' in request.url:  # Replace 'your_target_url'
-				print(f"👽👽👽Intercepting request: {request.url}")
-				# Get the current POST data
-				current_data = request.body.decode('utf-8')
-				print(f"Original POST data: {current_data}")
-
-				# Modify the POST data
-				# Example: change a value in a JSON payload
-				try:
-					payload = json.loads(current_data)
-					payload['recordsPerPage'] = max_api_products  # Replace 'key_to_change' and 'new_value'
-					request.body = json.dumps(payload).encode('utf-8')
-					# Update the Content-Length header to reflect the new body size
-					del request.headers['Content-Length']
-					request.headers['Content-Length'] = str(len(request.body))
-					print(f"Modified POST data: {request.body.decode('utf-8')}")
-				except json.JSONDecodeError:
-					# Handle cases where the body is not JSON
-					print("Request body is not JSON. Cannot modify in this example.")
-			# https://panamax-api.ama.usfoods.com/product-domain-api/v2/products
-			if request.method == 'POST' and 'product-domain-api/v2/products' in request.url:
-				print(f"👽👽👽Intercepting request: {request.url}")
-				current_data = request.body.decode('utf-8')
-				print(f"Original POST data: {current_data}")
-
-		return interceptor
+	# ************************************************************************
+	# 	Core
+	# ************************************************************************
 
 	def build_products_list(self):
 		"""Given a category, get the list of products
@@ -574,3 +512,54 @@ class ChefWarehouseScraper(Scraper):
 
 		del self.driver.requests
 		return row_spec
+
+	@staticmethod
+	def create_interceptor(max_api_products=MAX_API_PRODUCTS):
+		def interceptor(request):
+			# https://www.chefswarehouse.com/products/dairy-and-eggs/dairy-products//search
+			if request.method == 'POST' and '//search' in request.url:  # Replace 'your_target_url'
+				print(f"👽👽👽Intercepting request: {request.url}")
+				# Get the current POST data
+				current_data = request.body.decode('utf-8')
+				print(f"Original POST data: {current_data}")
+
+				# Modify the POST data
+				# Example: change a value in a JSON payload
+				try:
+					payload = json.loads(current_data)
+					search = payload.get('search', {})
+					search['pageSize'] = max_api_products  # Replace 'key_to_change' and 'new_value'
+					request.body = json.dumps(payload).encode('utf-8')
+					# Update the Content-Length header to reflect the new body size
+					del request.headers['Content-Length']
+					request.headers['Content-Length'] = str(len(request.body))
+					print(f"Modified POST data: {request.body.decode('utf-8')}")
+				except json.JSONDecodeError:
+					# Handle cases where the body is not JSON
+					print("Request body is not JSON. Cannot modify in this example.")
+			if request.method == 'POST' and 'product-domain-api/v1/search' in request.url:  # Replace 'your_target_url'
+				print(f"👽👽👽Intercepting request: {request.url}")
+				# Get the current POST data
+				current_data = request.body.decode('utf-8')
+				print(f"Original POST data: {current_data}")
+
+				# Modify the POST data
+				# Example: change a value in a JSON payload
+				try:
+					payload = json.loads(current_data)
+					payload['recordsPerPage'] = max_api_products  # Replace 'key_to_change' and 'new_value'
+					request.body = json.dumps(payload).encode('utf-8')
+					# Update the Content-Length header to reflect the new body size
+					del request.headers['Content-Length']
+					request.headers['Content-Length'] = str(len(request.body))
+					print(f"Modified POST data: {request.body.decode('utf-8')}")
+				except json.JSONDecodeError:
+					# Handle cases where the body is not JSON
+					print("Request body is not JSON. Cannot modify in this example.")
+			# https://panamax-api.ama.usfoods.com/product-domain-api/v2/products
+			if request.method == 'POST' and 'product-domain-api/v2/products' in request.url:
+				print(f"👽👽👽Intercepting request: {request.url}")
+				current_data = request.body.decode('utf-8')
+				print(f"Original POST data: {current_data}")
+
+		return interceptor

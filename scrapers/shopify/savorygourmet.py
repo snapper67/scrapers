@@ -686,6 +686,7 @@ class SavoryGourmetScraper(ShopifyScraper):
 						break
 			page_count = 1
 			next_page = True
+			skip_paging = False
 
 			while next_page:
 				try:
@@ -694,6 +695,30 @@ class SavoryGourmetScraper(ShopifyScraper):
 					if url in self.driver.current_url:
 						print("Found products page")
 						time.sleep(2)
+						try:
+							infinite_scroll = self.wait.until(
+								EC.presence_of_element_located((By.CLASS_NAME, 'infinite-scroll'))
+							)
+							if infinite_scroll:
+								print("Found infinity scroll")
+								skip_paging = True
+								previous_count = 0
+								more_products = True
+								next_page = False
+								while more_products:
+									products = self.wait.until(
+										EC.presence_of_all_elements_located((By.CSS_SELECTOR, '.productitem--image-link'))
+									)
+									product_count = len(products)
+									print(f"product count {product_count} previous count {previous_count}")
+									if product_count == previous_count:
+										more_products = False
+									else:
+										previous_count = len(products)
+									self.driver.execute_script("arguments[0].scrollIntoView();", products[product_count - 1])
+									time.sleep(3)
+						except Exception as e:
+							print("⚠️ Infinite Scroll not found")
 						html_line, detail_urls = self.grab_products()
 					products_found_count = len(detail_urls)
 					html += f"<div>Found {products_found_count} products for category {sub_category_name}</div>"
@@ -704,15 +729,15 @@ class SavoryGourmetScraper(ShopifyScraper):
 				except Exception as e:
 					print(f"****************** ⛔️⛔️⛔️ Error getting details: {e}")
 					html += f"<div>Name: {sub_category_name} (Error getting details)</div>"
-
-				try:
-					paging = self.wait.until(
-						EC.presence_of_element_located((By.CSS_SELECTOR, '.pagination--inner'))
-					)
-					paging.find_element(By.CLASS_NAME, 'pagination--next').click()
-					next_page = True
-				except Exception as e:
-					next_page = False
+				if not skip_paging:
+					try:
+						paging = self.wait.until(
+							EC.presence_of_element_located((By.CSS_SELECTOR, '.pagination--inner'))
+						)
+						paging.find_element(By.CLASS_NAME, 'pagination--next').click()
+						next_page = True
+					except Exception as e:
+						next_page = False
 
 
 		except Exception as e:
@@ -722,5 +747,7 @@ class SavoryGourmetScraper(ShopifyScraper):
 
 	def get_product_details(self, url, row_spec=None):
 		"""Get Product Details"""
-		return self.get_product_details_scrape( url, row_spec)
+		data = self.get_product_details_scrape(url, row_spec, target="script[type='application/json'][data-section-type='static-product']")
+		row_spec = self.get_product_data(data.get('product', {}), row_spec)
+		return row_spec
 

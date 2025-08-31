@@ -200,6 +200,8 @@ class CheneyBrothersScraper(Scraper):
 	def __init__(self, options=None):
 		super().__init__(options)
 		self.options = {**self.DEFAULT_OPTIONS, **(options or {})}
+		self.options['home_directory'] = self.DEFAULT_DIRECTORY
+		self.options['base_url'] = self.BASE_URL
 
 	def get_category_ids(self):
 		return self.CATEGORY_IDS
@@ -212,32 +214,6 @@ class CheneyBrothersScraper(Scraper):
 
 	def get_category_urls(self):
 		return self.CATEGORY_URLS
-
-	def split_code_and_text(self, input_string):
-		"""
-		Splits a string in the format '9999 - text text-text' into code and text.
-
-		Args:
-			input_string (str): The input string to split
-
-		Returns:
-			tuple: (code, text) where code is the numeric part and text is the rest
-		"""
-		# Split on the first occurrence of ' - ' (space-hyphen-space)
-		try:
-			parts = input_string.split(' - ', 1)
-
-			if len(parts) == 2:
-				code = parts[0].strip()
-				text = parts[1].strip()
-			else:
-				# Handle case where the delimiter isn't found
-				code = input_string.strip()
-				text = ''
-
-			return code, text
-		except Exception as e:
-			return '', ''
 
 	def scraping_setup(self):
 		"""Scrape products from the website"""

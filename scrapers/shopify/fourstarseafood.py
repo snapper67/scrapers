@@ -436,7 +436,7 @@ class FourStarSeafoodScraper(ShopifyScraper):
 		print("FourStarSeafoodScraper.get_product_details()")
 		data = self.get_product_details_scrape( url, row_spec)
 		print(data)
-		row_spec = self.get_product_data(data.get('product', {}), row_spec)
+		self.get_product_data(data.get('product', {}), row_spec)
 		return row_spec
 
 	def get_first_image_url(self, response_data):

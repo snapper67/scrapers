@@ -201,6 +201,8 @@ class USFoodsScraper(Scraper):
 	def __init__(self, options=None):
 		super().__init__(options)
 		self.options = {**self.DEFAULT_OPTIONS, **(options or {})}
+		self.options['home_directory'] = self.DEFAULT_DIRECTORY
+		self.options['base_url'] = self.BASE_URL
 
 	def get_category_ids(self):
 		return self.CATEGORY_IDS
@@ -292,19 +294,6 @@ class USFoodsScraper(Scraper):
 				row_spec["image"] = product_image
 				# print(row_spec)
 				row_spec['extra_data_1'] = json.dumps(product_data)
-			except Exception as e:
-				print(f" ⛔️⛔️⛔️Error processing product data: {e}")
-
-		print("processing product additional data Complete...")
-		return row_spec
-
-	def get_product_data(self, data, row_spec):
-		print("processing product data from response...")
-		# print(data)
-		if data:
-			try:
-				# TODO implement
-				print("processing product data from response...")
 			except Exception as e:
 				print(f" ⛔️⛔️⛔️Error processing product data: {e}")
 
@@ -442,6 +431,19 @@ class USFoodsScraper(Scraper):
 				row_spec['extra_data_2'] = json.dumps(data)
 			except Exception as e:
 				print(f"⛔️⛔️⛔️Error processing additional data: {e}")
+
+		print("processing product additional data Complete...")
+		return row_spec
+
+	def get_product_data(self, data, row_spec):
+		print("processing product data from response...")
+		# print(data)
+		if data:
+			try:
+				# TODO implement
+				print("processing product data from response...")
+			except Exception as e:
+				print(f" ⛔️⛔️⛔️Error processing product data: {e}")
 
 		print("processing product additional data Complete...")
 		return row_spec

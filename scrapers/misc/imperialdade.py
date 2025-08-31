@@ -12,53 +12,17 @@ from typing import List, Dict, Any, Optional
 from scrapers.scraper import Scraper, SkuNotFound
 
 """
-	Southern Glazier
+	Imperial Dade
 	Type: Standard shop website
+	Page with sub categories
 	Method: 
-		Get Categories: API
-		Get Product 
-		Get Product Manual Scrape
+		Get Categories: 
+		Get Product:
+		Get Product:
 """
 
 
-def get_category_facets(json_data):
-	"""
-	Extract and return all category facets from the provided JSON data.
-
-	Args:
-		json_data (dict): The parsed JSON data containing product information
-
-	Returns:
-		list: A list of category facet objects, each containing 'value' and 'numberOfResults'
-	"""
-	if not isinstance(json_data, dict) or 'facets' not in json_data:
-		return []
-
-	# Find the category facet
-	category_facets = []
-	for facet in json_data['facets']:
-		if facet.get('facetId') == 'category' and 'values' in facet:
-			category_facets = [
-				{
-					'category': item['value'],
-					'count': item['numberOfResults'],
-					'url': f"https://shop.sgproof.com/search?text=&f-category={item['value']}"
-				}
-				for item in facet['values']
-			]
-			break
-
-	return category_facets
-
-def format_filter(filter):
-	# Replace spaces with '+'
-	modified_string = filter.replace(" ", "+")
-
-	# Replace '&' with '%26' in the already modified string
-	final_string = modified_string.replace("&", "%26")
-	return final_string
-
-class SouthernGlazierScraper(Scraper):
+class ImperialDadeScraper(Scraper):
 	PRODUCT_DATA_SPEC = {
 		# Fields from IMPORT_SPEC
 		'name': '',
@@ -87,28 +51,16 @@ class SouthernGlazierScraper(Scraper):
 		'timestamp': '',
 		# Fields from Southern Glazier
 		'extra_data_2': '',
-		'vintage': '',
-		'varietal': '',
-		'appellation': '',
+		'id': '',
 		'pack_size': '',
 		'category': '',
 		'subcategory': '',
 		'subsubcategory': '',
-		'bpc': '',
-		'supplier': '',
-		'producer': '',
-		'region': '',
-		'country_of_origin': '',
-		'alcohol_proof': '',
-		'alcohol_by_volume': '',
-		'sub-type': '',
-		'producer_description': '',
-		'container_type': '',
-		'closure_type': '',
-		'units_per_case': '',
-		'packs_per_case': '',
-		'units_per_pack': '',
-		'outer_pkg': '',
+		'product type': '',
+		'food product type': '',
+		'product_category': '',
+		'unspsc': '',
+		'upc-12': '',
 	}
 
 	TEST_CATEGORIES = 100
@@ -116,18 +68,89 @@ class SouthernGlazierScraper(Scraper):
 	CSV_START_ROW = 0
 	TEST_TABS = 2
 	MAX_API_PRODUCTS = 999  # Maximum number to change the search request page size
-	DEFAULT_DIRECTORY = '/Users/mark/Downloads/scrapers/southern_glazier/'
+	DEFAULT_DIRECTORY = '/Users/mark/Downloads/scrapers/imperial_dade/'
 	URL_OUTPUT_FILE = 'product_urls.csv'
 	DATA_OUTPUT_FILE = 'product_data.csv'
 
-	BASE_URL = 'https://shop.sgproof.com/'
-	VENDOR_NAME = 'Southern Glazier'
-	CATEGORIES = [{'category': 'Beer', 'count': 1, 'url': 'https://shop.sgproof.com/search?text=&f-category=Beer'},
-	              {'category': 'Miscellaneous', 'count': 150, 'url': 'https://shop.sgproof.com/search?text=&f-category=Miscellaneous'},
-	              {'category': 'Non-Alcoholic Beverages', 'count': 1, 'url': 'https://shop.sgproof.com/search?text=&f-category=Non-Alcoholic Beverages'},
-	              {'category': 'Sake', 'count': 140, 'url': 'https://shop.sgproof.com/search?text=&f-category=Sake'},
-	              {'category': 'Spirits', 'count': 5124, 'url': 'https://shop.sgproof.com/search?text=&f-category=Spirits'},
-	              {'category': 'Wine', 'count': 6129, 'url': 'https://shop.sgproof.com/search?text=&f-category=Wine'}]
+	BASE_URL = 'https://www.imperialdade.com/catalog/foodservice?cid=WCL1001'
+	VENDOR_NAME = 'Imperial Dade'
+	CATEGORIES = json.loads('''{
+  "data": {
+    "categories": [
+      {
+        "name": "Bakery Supplies",
+        "id": 1,
+        "url": "https://www.imperialdade.com/catalog/foodservice/bakery-supplies?cid=WCL2001"
+      },
+      {
+        "name": "Bottles, Jars & Lids",
+        "id": 2,
+        "url": "https://www.imperialdade.com/catalog/foodservice/bottles-jars-lids?cid=WCL2003"
+      },
+      {
+        "name": "Disposable Take-Out Containers & Servingware",
+        "id": 3,
+        "url": "https://www.imperialdade.com/catalog/foodservice/disposable-take-out-containers-servingware?cid=WCL2009"
+      },
+      {
+        "name": "Food",
+        "id": 4,
+        "url": "https://www.imperialdade.com/catalog/foodservice/food?cid=WCL2013"
+      },
+      {
+        "name": "Food Storage & Transport",
+        "id": 5,
+        "url": "https://www.imperialdade.com/catalog/foodservice/food-storage-transport?cid=WCL2017"
+      },
+      {
+        "name": "Foodservice Bags",
+        "id": 6,
+        "url": "https://www.imperialdade.com/catalog/foodservice/foodservice-bags?cid=WCL2014"
+      },
+      {
+        "name": "Foodservice Packaging Supplies",
+        "id": 7,
+        "url": "https://www.imperialdade.com/catalog/foodservice/foodservice-packaging-supplies?cid=WCL2015"
+      },
+      {
+        "name": "Foodservice Safety",
+        "id": 8,
+        "url": "https://www.imperialdade.com/catalog/foodservice/foodservice-safety?cid=WCL2016"
+      },
+      {
+        "name": "Napkins & Napkin Dispensers",
+        "id": 9,
+        "url": "https://www.imperialdade.com/catalog/foodservice/napkins-napkin-dispensers?cid=WCL2024"
+      },
+      {
+        "name": "Restaurant Furniture",
+        "id": 10,
+        "url": "https://www.imperialdade.com/catalog/foodservice/restaurant-furniture?cid=WCL2032"
+      },
+      {
+        "name": "Restaurant Kitchen Equipment",
+        "id": 11,
+        "url": "https://www.imperialdade.com/catalog/foodservice/restaurant-kitchen-equipment?cid=WCL2033"
+      },
+      {
+        "name": "Skewers, Toothpicks & Markers",
+        "id": 12,
+        "url": "https://www.imperialdade.com/catalog/foodservice/skewers-toothpicks-markers?cid=WCL2036"
+      },
+      {
+        "name": "Smallwares",
+        "id": 13,
+        "url": "https://www.imperialdade.com/catalog/foodservice/smallwares?cid=WCL2038"
+      },
+      {
+        "name": "Straws & Drink Stirrers",
+        "id": 14,
+        "url": "https://www.imperialdade.com/catalog/foodservice/straws-drink-stirrers?cid=WCL2039"
+      }
+    ]
+  }
+}
+	''')
 	TAXONOMY = [
 				  {
 				    "name": "Beer",
@@ -817,60 +840,15 @@ class SouthernGlazierScraper(Scraper):
 	def get_category_ids(self):
 		return self.CATEGORY_IDS
 
-	def get_categories(self):
-		return self.TAXONOMY
-
 	def get_category_names(self):
 		return self.CATEGORY_NAMES
 
 	def get_category_urls(self):
 		return self.CATEGORY_URLS
 
-	def bypass_age_gate(self, url):
-		print("bypass_age_gate()")
-		try:
-			self.driver.get(url)
-			# time.sleep(2)
-			modal = self.wait.until(
-				EC.presence_of_element_located((By.CSS_SELECTOR, '.modal-box div.verify-select div.form-select'))
-			)
-			select = self.driver.find_element(By.CSS_SELECTOR, '.modal-box select.verify-select-input')
-
-			select.click()
-			select = Select(select)
-			select.select_by_value("91")
-			self.driver.find_element(By.CSS_SELECTOR, '.modal-box .verify-trigger-yes').click()
-
-			print("Bypassed age gate")
-		except Exception as e:
-			print(f"Error: {e}")
-
-	def bypass_age_gate_home_page(self, url):
-		print("bypass_age_gate_home_page()")
-		try:
-			self.driver.get(url)
-			modal = self.wait.until(
-				EC.visibility_of_element_located((By.CSS_SELECTOR, '#ageGatemodal'))
-			)
-			print(f"select: {modal}")
-			select = modal.find_element(By.CSS_SELECTOR, '#stateSelect')
-			print(f"select: {select}")
-			# select.click()
-			select = Select(select)
-			print(f"select: {select}")
-			select.select_by_value("91")
-			# Yes button should be activated so click it
-			modal.find_element(By.CSS_SELECTOR, '#ageGatemodal .verify-trigger-yes').click()
-
-			print("Bypassed age gate")
-		except Exception as e:
-			print(f"Error: {e}")
-			# time.sleep(200)
-
 	def scraping_setup(self):
 		"""Scrape products from the website"""
 		print("scraping_setup()")
-		self.bypass_age_gate_home_page("https://shop.sgproof.com/")
 		return
 
 	# ************************************************************************
@@ -905,32 +883,6 @@ class SouthernGlazierScraper(Scraper):
 
 	def get_product_data(self, data, row_spec):
 		print("processing product data from response...")
-		return row_spec
-
-	def get_table_section(self, row_spec):
-		# Scrape the section that contains the manufacturer information. It is in an unordered list
-		print("get_table_section()")
-		#product-info-table-container
-		details = self.driver.find_element(By.CSS_SELECTOR, 'div.product-info-table-container')
-		print(details)
-		try:
-			hidden_element = self.driver.find_element(By.CSS_SELECTOR, '.product-info-table-container div.product-info-hide')
-			self.driver.execute_script("arguments[0].style.display = 'block';", hidden_element)
-		except Exception as e:
-			print(f"No hidden element: {type(e)}")
-		try:
-			rows = details.find_elements(By.CSS_SELECTOR, 'div.g-row')
-			print(rows)
-			for row in rows:
-				key = row.find_element(By.CSS_SELECTOR, '.product-info-table-left').text.strip()
-				key = key.lower().replace(' ', '_').replace('_(%)', '')
-				print(key)
-				value = row.find_element(By.CSS_SELECTOR, '.product-info-table-right').text.strip()
-				if key in self.PRODUCT_DATA_SPEC.keys():
-					row_spec[key] = value
-
-		except Exception as e:
-			print(f"⛔️⛔️⛔️Error processing table data: {type(e)}")
 		return row_spec
 
 	def get_variant_section(self, container, row_spec):
@@ -1015,237 +967,139 @@ class SouthernGlazierScraper(Scraper):
 	# Step One:
 	def build_categories_list(self):
 		# Run on all to get a category list then copy the list to CATEGORIES
-		url = "https://shop.sgproof.com/search"
-		categories = []
-		all_categories = []
-		classes = []
-		all_classes = []
-		subclasses = []
-		all_subclasses = []
-		self.bypass_age_gate(url)
-		print(f"Loading page...{url}")
-		del self.driver.requests
+		print(f"{self.__class__}->build_categories_list()")
+		url = "https://www.imperialdade.com/catalog/foodservice?cid=WCL1001"
 		self.driver.get(url)
-		# time.sleep(5)
-		filter_criteria = "southernglazerswinespiritsproduction78xh7hnm.org.coveo.com/rest/search"
-		print(f"Filtering for {filter_criteria}")
-		request = self.driver.wait_for_request(filter_criteria, 40)
-		data = None
-		if request.response and filter_criteria in request.url:  # Filter for API requests
-			print(f"Found response :")
-			try:
-				body = decode(request.response.body, request.response.headers.get('Content-Encoding', 'identity'))
+		category_elements = self.wait.until(
+			EC.presence_of_all_elements_located((By.CSS_SELECTOR, "[data-testid='category-link']"))
+		)
+		print(f"Categories Found: {len(category_elements)}")
+		# Initialize the navigation structure
+		all_categories = {
+			'data': {
+				'categories': []
+			}
+		}
+		i = 0
+		for category in category_elements:
+			i += 1
+			category_name = category.find_element(By.TAG_NAME, 'p').text.strip()
+			all_categories['data']['categories'].append({
+				'name': category_name,
+				'id': i,
+				'url': category.get_attribute("href"),
+			})
 
-				# If the body is JSON, parse it
-				if 'application/json' in request.response.headers.get('Content-Type', ''):
-					data = json.loads(body)
-				else:
-					print(f"Response not JSON :")
-			except Exception as e:
-				print(f"⛔️⛔️⛔️Error decoding search response body: {e}")
-		del self.driver.requests
-		categories = self.get_navigation_categories(data)
-
-		for category in categories:
-			print(f"Starting Category: {category['name']}")
-			category_filter_string = "&" + format_filter(f"f-category={category['name']}")
-			url = f"https://shop.sgproof.com/search?text={category_filter_string}"
-			print(f"Loading page...{url}")
-			del self.driver.requests
-			self.driver.get(url)
-			request = self.driver.wait_for_request(filter_criteria, 40)
-			data = None
-			if request.response and filter_criteria in request.url:  # Filter for API requests
-				print(f"Found response for category:")
-				try:
-					body = decode(request.response.body, request.response.headers.get('Content-Encoding', 'identity'))
-					# If the body is JSON, parse it
-					if 'application/json' in request.response.headers.get('Content-Type', ''):
-						data = json.loads(body)
-						print(f"Got data")
-					else:
-						print(f"Response not JSON :")
-				except Exception as e:
-					print(f"⛔️⛔️⛔️Error decoding search response body: {e}")
-				if data:
-					print(f"Got data grabbing classes")
-					classes = self.get_navigation_classes(data)
-					category['classes'] = classes
-					all_classes.extend(classes)
-					all_categories.append(category)
-					for class_ in classes:
-						print(f"Starting Class: {class_['name']}")
-						class_filter_string = "&" + format_filter(f"f-class={class_['name']}")
-						url = f"https://shop.sgproof.com/search?text={category_filter_string}{class_filter_string}"
-						print(f"Loading class page...{url}")
-						del self.driver.requests
-						self.driver.get(url)
-						request = self.driver.wait_for_request(filter_criteria, 40)
-						data = None
-						if request.response and filter_criteria in request.url:  # Filter for API requests
-							print(f"Found response :")
-							try:
-								# body = request.response.body.decode(request.response.headers.get('Content-Encoding', 'identity'))
-								body = decode(request.response.body,
-								              request.response.headers.get('Content-Encoding', 'identity'))
-
-								# If the body is JSON, parse it
-								if 'application/json' in request.response.headers.get('Content-Type', ''):
-									data = json.loads(body)
-								else:
-									print(f"Response not JSON :")
-							except Exception as e:
-								print(f"⛔️⛔️⛔️Error decoding search response body: {e}")
-							subclasses = self.get_navigation_subclasses(data)
-							class_['subclasses'] = subclasses
-							print(f"Got subclasses")
-							print(subclasses)
-							all_subclasses.extend(subclasses)
-			print(f"finished category : {category['name']}")
-			print(category)
-		# subclasses = self.get_product_subclasses(data)
-		print(f"")
-		print(f"categories : {json.dumps(categories)}")
-		del self.driver.requests
-
-		return f"<div>{json.dumps(categories)}</div>"
+		return f"<div>{json.dumps(all_categories)}</div>"
 
 	# Step Two: Get links to products
-	def build_products_list(self):
-		"""Scrape products from the website"""
-		print(f"build_products_list()")
-		self.bypass_age_gate(self.options['url'])
-		self.driver.request_interceptor = self.create_interceptor()
+	def get_category_page(self, url, category_name, sub_category_name, sub_sub_category_name):
+		print("get_category_page()")
+		main_window = self.driver.current_window_handle
 		html = ''
-		html_table = ''
+		total_products = 0
+		detail_urls = []
+		page_count = 0
+
+		self.driver.get(url)
+		try:
+			# Update URL from the redirect
+			url = self.driver.current_url
+			print(f"Current URl: {self.driver.current_url}")
+
+			# Find all window handles and switch to the new window if it opens in a new tab
+			if len(self.driver.window_handles) > self.TEST_TABS:
+				print("must be a tab...")
+				for handle in self.driver.window_handles:
+					if handle != main_window:
+						self.driver.switch_to.window(handle)
+						break
+			next_page = True
+
+			while next_page:
+				page_count += 1
+				try:
+					# Wait for page to load
+					detail_urls = []
+					if url in self.driver.current_url:
+						print("Found products page")
+						time.sleep(2)
+						html_line, detail_urls = self.grab_products()
+					products_found_count = len(detail_urls)
+					html += f"<div>Found {products_found_count} products for category {category_name} page {page_count}</div>"
+					print(f"Found {products_found_count} products for category {category_name} page {page_count}")
+					total_products += products_found_count
+					self.save_urls_to_csv(detail_urls, category_name, sub_category_name, sub_sub_category_name)
+
+				except Exception as e:
+					print(f"****************** ⛔️⛔️⛔️ Error getting details: {e}")
+					html += f"<div>Name: {sub_category_name} (Error getting details)</div>"
+
+				try:
+					paging = self.wait.until(
+						EC.presence_of_element_located((By.CSS_SELECTOR, "[data-testid='pagination']"))
+					)
+					print("found paging area")
+					button = paging.find_element(By.CSS_SELECTOR, "[aria-label='Next page']")
+					self.driver.execute_script("arguments[0].scrollIntoView();", button)
+					button.click()
+					next_page = True
+					print("go to next page")
+				except Exception as e:
+					next_page = False
+					print(f"no next page  {e}")
+
+		except Exception as e:
+			print(f"⛔️⛔️⛔️Error processing category: {e}")
+
+		html += f"<h2>Total products found: {total_products}</h2>"
+		print(f"Total Products {total_products}")
+		return detail_urls, html
+
+	def grab_products(self):
+		print("grab_products")
+		products = self.wait.until(
+			EC.presence_of_all_elements_located((By.CSS_SELECTOR, "[data-testid='plp-card'"))
+		)
+
+		print(f"products found: {len(products)}")
+		detail_urls = [product.find_element(By.CSS_SELECTOR,'a').get_attribute("href") for product in products]
+		return '', detail_urls
+
+	def build_products_list(self):
+		"""Scrape products from the website - currently only a single category"""
+		print("build_products_list()")
+		html = ""
 		all_urls = []
-		categories = []
+		categories = self.get_categories()
+		# Use the options with fallback to module-level variables
 		chosen_category = int(self.options.get('chosen_category', 0))
-		test_categories = self.options.get('test_categories', 100)
-		test_products = self.options.get('test_products', 0)
-		category_count = 0
+
 		if int(self.options['chosen_category']) == 0:
-			categories = self.TAXONOMY
+			categories = self.get_categories()
 			print(f"All Categories ")
 		else:
-			for category in self.TAXONOMY:
-				if int(category.get('number', '')) == chosen_category:
+			for category in categories:
+				print(f"category : {category.get('name', '')}")
+				if int(category.get('id', '')) == chosen_category:
 					categories = [category]  # Only process the chosen category
 					print(f"Category found : {categories}")
 					break
-		del self.driver.requests
+		url_output_file = self.options.get('url_output_file', '')
+
+		# Wait for the page to be fully loaded
+		print(f"Output File Name: {url_output_file}")
 		for category in categories:
-			category_count = category_count + 1
-			category_filter_string = "&" + format_filter(f"f-category={category['name']}")
-			if category_count > test_categories:
-				break
-			i = 0
-			for class_ in category.get('classes', []):
-				class_filter_string = "&" + format_filter(f"f-class={class_['name']}")
+			category_name = category['name']
+			print(f"category: {category_name}")
+			url = category.get('url', '')
+			print(f"Url: {url}")
+			detail_urls, html = self.get_category_page(url, category_name, '', '')
+			all_urls.extend(detail_urls)
 
-				for subclass in class_.get('subclasses', []):
-					subclass_filter_string = "&" + format_filter(f"f-subclass={subclass['category']}")
-
-					if i > test_products:
-						break
-					url = f"https://shop.sgproof.com/search?text={category_filter_string}{class_filter_string}{subclass_filter_string}"
-					if len(self.options['direct_category_to_process']) > 0 and self.options[
-						'direct_category_to_process'] != url:
-						print(f"Skipping category {category['name']} as it is not the direct category to process")
-						continue
-					still_looking = True
-					while still_looking and i < self.options['max_products']:
-						i = i + 1
-						category_name = category.get('name', '')
-						class_name = class_.get('name', '')
-						subclass_name = subclass.get('category', '')
-						self.options['url_output_file'] = category_name + "_product_urls.csv"
-						print(f"category_name : {category_name}")
-						print(f"class_name : {class_name}")
-						print(f"subclass_name : {subclass_name}")
-						print(f"Loading page...{url}")
-
-						del self.driver.requests
-						self.driver.get(url)
-						print(f"URL Loaded")
-						print(f"Page : {i}")
-						continue_on = True
-						filter_criteria = "southernglazerswinespiritsproduction78xh7hnm.org.coveo.com/rest/search"
-						# request_filter2 = f"page={i}"
-						# https://app.salsify.com/catalogs/api/catalogs/a256467d-fc0a-4bce-8971-1d14466fd28f/products?filter=%3D%27Product%20Category%27%3A%27Beer%27&page=1&per_page=36&product_identifier_collection_id=&query=
-						try:
-							request = self.driver.wait_for_request(filter_criteria, 50)
-						except Exception as e:
-							print(f"⛔️⛔️⛔️Request failed: {e}")
-							html += f"<h2>{category_name} -> {class_['name']} -> {subclass['category']}</h2>"
-							html += "<div>TIme Out </div>"
-							break
-						if request.response and filter_criteria in request.url:  # Filter for API requests
-							print(f"URL: {request.url}")
-							print(f"Status Code: {request.response.status_code}")
-							print(f"Content Type: {request.response.headers.get('Content-Type')}")
-							current_data = request.body.decode('utf-8')
-							# print(f"current_data: {current_data}")
-							payload = json.loads(current_data)
-							if 'facets' in payload and payload['facets']:
-								for facet in payload['facets']:
-									if facet.get('field') == 'ec_prd_category':
-										print(facet)
-										print(f"Number of results: {payload['numberOfResults']}")
-									if facet.get('field') == 'ec_prd_category' and (
-											not facet.get('currentValues') or len(
-										facet.get('currentValues', [])) == 0):
-										print("This is not the request you are looking for")
-										continue_on = False
-
-							if continue_on:
-								try:
-									body = decode(request.response.body,
-									              request.response.headers.get('Content-Encoding', 'identity'))
-
-									# If the body is JSON, parse it
-									if 'application/json' in request.response.headers.get('Content-Type', ''):
-										data = json.loads(body)
-										# https://app.salsify.com/catalogs/a256467d-fc0a-4bce-8971-1d14466fd28f/products/9258080
-										if 'results' in data:
-											detail_urls = [
-												product['clickUri']
-												for product in data['results']]
-											print(f"== Number of products: {len(detail_urls)}")
-											all_urls.extend(detail_urls)
-											html += f"<h2>{category_name} -> {class_['name']} -> {subclass['category']}</h2>"
-											html += "<div>Products found: " + str(len(detail_urls)) + "</div>"
-											self.save_urls_to_csv(detail_urls, category_name, class_['name'],
-											                      subclass['category'])
-											print(f"=== Number of products: {len(detail_urls)}")
-											# for url in detail_urls:
-											# 	self.process_product(url, {})
-											# 	time.sleep(1)
-											if len(detail_urls) < self.MAX_API_PRODUCTS:
-												still_looking = False
-										# still_looking = False
-										else:
-											print(f"Response products missing: {'products' in data} ")
-											print(f"data: {data} ")
-
-									else:
-										print(f"Response Body (Text): ")
-										print(f"Response not JSON  ")
-
-								except Exception as e:
-									print(f"⛔️⛔️⛔️Error decoding detail response body: {e}")
-
-						# del self.driver.request_interceptor
-						del self.driver.requests
-
-					# html, detail_urls = self.process_product_list_search_api(html, category_name)
-
-					time.sleep(3)
-
-		html_table += "</tbody></table>"
 		# html_table_to_csv(html_table)
-		html += f"<h2>Total products found: {len(all_urls)}</h2>"
-		html += html_table
+
+
 		print(f"Total products found: {len(all_urls)}")
 		return html
 
@@ -1294,13 +1148,13 @@ class SouthernGlazierScraper(Scraper):
 		initial_row_spec = row_spec
 		#  Wait for the product name element on the product page detail page
 		if not row_spec: row_spec = self.PRODUCT_DATA_SPEC.copy()
-		print("processing product detail page")
+		print("Imperial Dade processing product detail page")
 
 		data = ''
 		sku = row_spec['sku']
-		url = f"https://shop.sgproof.com/sgws/en/usd/p/{sku}"
+		row_spec['sku'] = ''
+		row_spec['id'] = sku
 		row_spec['content_url'] = url
-		# https://shop.sgproof.com/sgws/en/usd/p/{sku}
 		print(f"Loading page...{url}")
 		try:
 			row_spec, additional_packages = self.process_details_from_html(url, row_spec=row_spec, follow_anchors=False)
@@ -1311,6 +1165,33 @@ class SouthernGlazierScraper(Scraper):
 
 		return row_spec
 
+	def get_table_section(self, row_spec):
+		# Scrape the section that contains the manufacturer information. It is in an unordered list
+		print("get_table_section()")
+		#product-info-table-container
+		details = self.driver.find_element(By.CSS_SELECTOR, "[data-testid='specifications-list']")
+		print(details)
+		# try:
+		# 	hidden_element = self.driver.find_element(By.CSS_SELECTOR, '.product-info-table-container div.product-info-hide')
+		# 	self.driver.execute_script("arguments[0].style.display = 'block';", hidden_element)
+		# except Exception as e:
+		# 	print(f"No hidden element: {type(e)}")
+		try:
+			rows = details.find_elements(By.CSS_SELECTOR, 'li')
+			print(rows)
+			for row in rows:
+				key = row.find_element(By.CSS_SELECTOR, 'p.font-bold').text.strip()
+				key = key.lower().replace(' ', '_').replace(':', '').replace('upc-14_(gtin)', 'gtin')
+				print(key)
+				value = row.find_element(By.CSS_SELECTOR, 'p.capitalize').text.strip()
+				if key in self.PRODUCT_DATA_SPEC.keys():
+					print(value)
+					row_spec[key] = value
+
+		except Exception as e:
+			print(f"⛔️⛔️⛔️Error processing table data: {type(e)}")
+		return row_spec
+
 	def process_details_from_html(self, url, follow_anchors=False, row_spec=None):
 		print(f"process_details_from_html()")
 		additional_packages = []
@@ -1318,42 +1199,29 @@ class SouthernGlazierScraper(Scraper):
 		self.driver.get(url)
 		# product-viewer-box
 		try:
-			print("here")
 			container = self.wait.until(
-				EC.presence_of_element_located((By.CSS_SELECTOR, '.marketplace-product-card'))
+				EC.presence_of_element_located((By.CSS_SELECTOR, "[data-testid='product-detail-card']"))
 			)
 		except Exception as e:
 			print(f"⛔️⛔️⛔️Error processing process_details_from_html: {type(e)}")
 			raise
 		try:
 			row_spec['content_url'] = self.driver.current_url
-			print("here2")
-			name = container.find_element(By.CSS_SELECTOR, 'div.product-card-title h3').text.strip()
+			name = container.find_element(By.CSS_SELECTOR, 'article h1').text.strip()
 			print(f"name: {name}")
 			row_spec['name'] = name
-
-			row_spec = self.get_description(row_spec)
+			sku_elements = container.find_elements(By.CSS_SELECTOR, '[data-testid]')
+			for element in sku_elements:
+				content = element.text.strip()
+				if 'SKU' in content:
+					row_spec['sku'] = content.replace('SKU# ', '')
+				if 'Mfr' in content:
+					row_spec['manufacturer_sku'] = content.replace('Mfr# ', '')
+			# row_spec = self.get_description(row_spec)
 			row_spec = self.get_table_section(row_spec)
-			row_spec = self.get_first_image_url(row_spec)
+			# row_spec = self.get_first_image_url(row_spec)
 			# page has a dropdown to select additional packages
-			if follow_anchors:
-				additional_packages = self.get_additional_packages()
-			else:
-				try:
-					hidden_element = self.driver.find_element(By.CSS_SELECTOR, 'div.item-variant-menu')
-					self.driver.execute_script("arguments[0].style.display = 'block';", hidden_element)
 
-					variant_info = container.find_element(By.CSS_SELECTOR, '.item-variant-select-text')
-				except Exception as e:
-					print(f"⛔️Error finding variant info element: {type(e)}")
-					raise SkuNotFound
-				try:
-					sku = variant_info.find_element(By.CSS_SELECTOR, '[data-at-product-id]').text.strip()
-					row_spec['sku'] = sku
-					row_spec = self.get_variant_section(container, row_spec)
-				except Exception as e:
-					print(f"⛔️Error finding variant info sku: {type(e)}")
-					raise SkuNotFound
 		except Exception as e:
 			print(f"⛔️⛔️⛔️Error processing process_details_from_html: {type(e)}")
 		return row_spec, additional_packages

@@ -123,31 +123,9 @@ class ShopifyScraper(Scraper):
 	def get_category_urls(self):
 		return self.CATEGORY_URLS
 
-	def split_code_and_text(self, input_string):
-		"""
-		Splits a string in the format '9999 - text text-text' into code and text.
-
-		Args:
-			input_string (str): The input string to split
-
-		Returns:
-			tuple: (code, text) where code is the numeric part and text is the rest
-		"""
-		# Split on the first occurrence of ' - ' (space-hyphen-space)
-		try:
-			parts = input_string.split(' - ', 1)
-
-			if len(parts) == 2:
-				code = parts[0].strip()
-				text = parts[1].strip()
-			else:
-				# Handle case where the delimiter isn't found
-				code = input_string.strip()
-				text = ''
-
-			return code, text
-		except Exception as e:
-			return '', ''
+	def get_taxonomy(self):
+		"""Load a category page"""
+		raise NotImplementedError("get_taxonomy method not implemented")
 
 	def scraping_setup(self):
 		"""Scrape products from the website"""
@@ -180,7 +158,7 @@ class ShopifyScraper(Scraper):
 				row_spec["description"] = data.get("description", "")
 				row_spec["price"] = data.get("price", "")
 				row_spec["shop_id"] = data.get("id", "")
-				row_spec["pack_size"] = self.get_pack_size(data, row_spec)
+				self.get_pack_size(data, row_spec)
 				row_spec["image"] = self.get_first_image_url(data)
 
 				# move sku - which was just a unique identifier to id
@@ -220,7 +198,7 @@ class ShopifyScraper(Scraper):
 		return ''
 
 	def get_pack_size(self, data, row_spec):
-		print("get_manufacturer()")
+		print("get_pack_size()")
 		try:
 			options = data.get('options', None)
 			# Find the specification with displayName "Manufacturer Name"
@@ -235,12 +213,13 @@ class ShopifyScraper(Scraper):
 					row_spec['pack_size'] = pack_size['values'][0]
 					print(f"Found pack size: {pack_size['values'][0]}")
 				else:
+					row_spec['pack_size'] = ''
 					print("⚠️ pack size name not found in specifications")
 
 		except Exception as e:
-			print(f"⛔️ Error processing manufacturer information: {type(e).__name__} - {str(e)}")
+			print(f"⛔️ Error processing pack size information: {type(e).__name__} - {str(e)}")
 
-		print("Processing manufacturer information complete...")
+		print("Processing pack size information complete...")
 		return row_spec
 
 	# ************************************************************************
@@ -420,6 +399,81 @@ class ShopifyScraper(Scraper):
 			del self.driver.requests
 
 		return product_data
+
+	def process_extra_data_from_csv(self):
+		"""
+		Process extra data from a CSV file by reading the extra_data column and passing it to get_product_data.
+
+		The CSV file should have at least these columns: 'sku' and 'extra_data_1'.
+		The method will update the product data using the extra data.
+		"""
+		try:
+			# Get file paths from options with fallbacks
+			input_file = self.options.get('data_output_file', self.DATA_OUTPUT_FILE)
+			output_file = f"processed_{input_file}"
+			home_dir = self.options.get('home_directory', self.DEFAULT_DIRECTORY)
+
+			input_path = self.get_file_path(input_file, home_dir)
+			output_path = self.get_file_path(output_file, home_dir)
+
+			if not os.path.exists(input_path):
+				return f"Error: Input file not found: {input_path}"
+
+			# Open input and output files
+			with open(input_path, 'r', newline='', encoding='utf-8') as infile, \
+					open(output_path, 'w', newline='', encoding='utf-8') as outfile:
+
+				reader = csv.DictReader(infile)
+				fieldnames = reader.fieldnames
+
+				# Ensure required fields exist
+				if 'extra_data_1' not in fieldnames or 'sku' not in fieldnames:
+					return "Error: Input CSV must contain 'sku' and 'extra_data_1' columns"
+
+				writer = csv.DictWriter(outfile, fieldnames=fieldnames)
+				writer.writeheader()
+
+				processed_count = 0
+
+				for row in reader:
+					if not row.get('extra_data_1'):
+						# Skip rows without extra data
+						writer.writerow(row)
+						continue
+
+					try:
+						# Create a copy of the row to avoid modifying the original
+						row_spec = row.copy()
+
+						# Parse the extra data (assuming it's a JSON string)
+						# First check if it's already a dict (from previous processing)
+						extra_data = row['extra_data_1']
+						if isinstance(extra_data, str):
+							try:
+								extra_data = json.loads(extra_data)
+							except json.JSONDecodeError:
+								# If it's not valid JSON, keep it as is
+								pass
+
+						# Process the product with extra data
+						row_spec = self.get_product_data(extra_data, row_spec)
+
+						# Write the updated row to the output file
+						writer.writerow(row_spec)
+						processed_count += 1
+
+					except json.JSONDecodeError as e:
+						print(f"Error parsing JSON in extra_data_1 for SKU {row.get('sku', 'unknown')}: {e}")
+						# Write the original row if there's an error
+						writer.writerow(row)
+					except Exception as e:
+						print(f"Error processing row with SKU {row.get('sku', 'unknown')}: {e}")
+						writer.writerow(row)
+
+			return f"Successfully processed {processed_count} products. Results saved to {output_path}"
+
+		except Exception as e:
+			return f"Error in process_extra_data_from_csv: {str(e)}"
 
 	def get_navigation_structure(self, url: str, headers: Optional[Dict] = None, pretty: bool = True) -> str:
 		"""

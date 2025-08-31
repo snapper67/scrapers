@@ -101,5 +101,6 @@ urlpatterns = [
 
     path('all-urls/', list_all_urls, name='all_urls'),
     path('application/', views.application, name='application'),
+    path('imperial_dade/', views.scrape_imperial_dade, name='imperial_dade'),
 
 ]

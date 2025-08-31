@@ -68,7 +68,6 @@ class ProductNotFound(Exception):
 			return f"{self.message}: {self.product_identifier}"
 		return self.message
 
-
 class Scraper:
 	# Class variables for default values
 	PRODUCT_DATA_SPEC = {}
@@ -89,13 +88,35 @@ class Scraper:
 
 	VENDOR_NAME = ''
 
+	CATEGORIES = json.loads('''
+	    {
+	      "data": {
+	        "catalogCategoryOptions": [
+	          {
+	            "category": {
+	              "id": "1",
+	              "baseName": "all-items",
+	              "name": "All Items",
+	              "visibleOnHeader": true,
+	              "visibleOnSidebar": true,
+	              "__typename": "ProductCategory"
+	            },
+	            "productCount": 0,
+	            "subcategories": [],
+	            "__typename": "categoryOption"
+	          }
+	        ]
+	      }
+	    }
+	    ''')
+
 	# Import specification
-	IMPORT_SPEC = [
-		'name', 'sku', 'gtin', 'image', 'pack', 'size', 'retail_price', 'ordering_unit',
-		'is_catch_weight', 'is_broken_case', 'average_case_weight', 'brand', 'taxonomy',
-		'level_1', 'level_2', 'level_3', 'manufacturer_name', 'manufacturer_sku',
-		'distributor_name', 'content_url', 'description', 'unit_price', 'extra_data_1', 'extra_data_2'
-	]
+	# IMPORT_SPEC = [
+	# 	'name', 'sku', 'gtin', 'image', 'pack', 'size', 'retail_price', 'ordering_unit',
+	# 	'is_catch_weight', 'is_broken_case', 'average_case_weight', 'brand', 'taxonomy',
+	# 	'level_1', 'level_2', 'level_3', 'manufacturer_name', 'manufacturer_sku',
+	# 	'distributor_name', 'content_url', 'description', 'unit_price', 'extra_data_1', 'extra_data_2'
+	# ]
 
 	# Default options
 	DEFAULT_OPTIONS = {
@@ -181,12 +202,6 @@ class Scraper:
 		"""Context manager exit - ensure driver is closed"""
 		self.cleanup()
 
-	def get_product_spec(self):
-		return self.PRODUCT_DATA_SPEC.copy()
-
-	def get_name(self):
-		return self.VENDOR_NAME
-
 	def setup_driver(self):
 		"""Initialize the WebDriver"""
 		if not self.driver:
@@ -210,6 +225,24 @@ class Scraper:
 			self.driver.quit()
 			self.driver = None
 
+	# ************************************************************************
+	# 	Getters and Setters
+	# ************************************************************************
+
+	def get_categories(self):
+		"""
+		Returns a list of category dictionaries from the CATEGORIES data. This is the preferred way to store the categories
+
+		Returns:
+			list: A list of dictionaries, each containing 'id' and 'name' of a category
+		"""
+		category_options = self.CATEGORIES.get('data', {}).get('categories', {})
+		return [
+			{'id': option['id'], 'name': option['name'], 'url': option['url']}
+			for option in category_options
+			if option.get('id') and option.get('name')
+		]
+
 	def set_options(self, options):
 		"""
 		Set options for the scraper
@@ -222,67 +255,14 @@ class Scraper:
 	def get_options(self):
 		return self.options
 
-	def save_urls_to_csv(self ,urls, category_name="", subcategory_name="", sub_subcategory_name=""):
-		"""
-		Save a list of URLs to a CSV file. If the file exists, it will append to it.
+	def get_product_spec(self):
+		return self.PRODUCT_DATA_SPEC.copy()
 
-		Args:
-			urls (list): List of URLs to save
-			category_name (str): Name of the category
-			subcategory_name (str): Name of the sub category
-			sub_subcategory_name (str): Name of the sub category of the sub category
-		"""
-		import csv
-		import os
-		from datetime import datetime
-
-		print(f"save_urls_to_csv()")
-		# print(f"save_urls_to_csv(){urls}")
-
-		# Resolve the file path
-		home_dir = self.options.get('home_directory')
-		filename = self.get_url_file_path(home_dir)
-
-		# Ensure the directory exists
-		os.makedirs(os.path.dirname(os.path.abspath(filename)), exist_ok=True)
-
-		file_exists = os.path.isfile(filename)
-
-		print(f"Home Directory: {home_dir}, Filename: {filename}")
-
-		try:
-			with open(filename, 'a', newline='', encoding='utf-8') as csvfile:
-				writer = csv.writer(csvfile)
-
-				# Write header only if file is new
-				if not file_exists:
-					writer.writerow(['SKU', 'URL', 'Timestamp', 'Category', 'Subcategory', "Sub Subcategory"])
-
-				# Write each URL with timestamp
-				for url in urls:
-					clean_url = url.rstrip('/')
-					sku = clean_url.split('/')[-1].split('?')[0]  # Remove any query parameters
-					writer.writerow(
-						[sku, url, datetime.now().strftime('%Y-%m-%d %H:%M:%S'), category_name, subcategory_name, sub_subcategory_name])
-
-			mode = "Appended to" if file_exists else "Created new"
-			print(f"Successfully {mode} {len(urls)} URLs to {filename}")
-
-		except Exception as e:
-			print(f"⛔️⛔️⛔️Error saving URLs to CSV: {e}")
-
-	def print_element(self, element):
-		print(f"Text: {element.text}")
-		print(f"Tag Name: {element.tag_name}")
-		print(f"Class Attribute: {element.get_attribute('class')}")
-		print(f"Outer HTML: {element.get_attribute('outerHTML')}")
-		print(f"Location: {element.location}")
-		print(f"Size: {element.size}")
-		print(f"Is Displayed: {element.is_displayed()}")
+	def get_name(self):
+		return self.VENDOR_NAME
 
 	# ************************************************************************
-
-	# 	Product Scraping Functions
+	# 	Class Functions
 	# ************************************************************************
 
 	def get_file_path(self, filename, home_dir=None):
@@ -424,6 +404,14 @@ class Scraper:
 			print(f"home_dir: {home_dir}")
 			return False
 
+	# ************************************************************************
+	# 	Core
+	# ************************************************************************
+
+	def scraping_setup(self):
+		"""Scrape products from the website"""
+		raise NotImplementedError("scraping_setup method not implemented")
+
 	def run(self):
 		"""
 		Main entry point that determines which action to take based on the options
@@ -450,18 +438,17 @@ class Scraper:
 		else:
 			return "No action specified. Please select an option."
 
-	def build_products_list(self):
-		"""Scrape products from the website"""
-		raise NotImplementedError("scrape_products method not implemented")
-
+	# Step One: Get the categories. These will be used to get the products
 	def build_categories_list(self):
 		"""Scrape products from the website"""
 		raise NotImplementedError("build_categories_list method not implemented")
 
-	def scraping_setup(self):
+	# Step Two: Get links to products
+	def build_products_list(self):
 		"""Scrape products from the website"""
-		raise NotImplementedError("scraping_setup method not implemented")
+		raise NotImplementedError("scrape_products method not implemented")
 
+	# Step Three: Process the product links
 	def process_products_from_csv(self):
 		"""
 		Read product URLs from a CSV file, process each product, and save results to a CSV file.
@@ -616,91 +603,7 @@ class Scraper:
 			update_progress()
 			return f"<p class='error'>{error_msg}</p>"
 
-	def process_extra_data_from_csv(self):
-		"""
-		Process extra data from a CSV file by reading the extra_data column and passing it to get_product_data.
-
-		The CSV file should have at least these columns: 'sku' and 'extra_data_1'.
-		The method will update the product data using the extra data.
-		"""
-		try:
-			# Get file paths from options with fallbacks
-			input_file = self.options.get('data_output_file', self.DATA_OUTPUT_FILE)
-			output_file = f"processed_{input_file}"
-			home_dir = self.options.get('home_directory', self.DEFAULT_DIRECTORY)
-
-			input_path = self.get_file_path(input_file, home_dir)
-			output_path = self.get_file_path(output_file, home_dir)
-
-			if not os.path.exists(input_path):
-				return f"Error: Input file not found: {input_path}"
-
-			# Open input and output files
-			with open(input_path, 'r', newline='', encoding='utf-8') as infile, \
-					open(output_path, 'w', newline='', encoding='utf-8') as outfile:
-
-				reader = csv.DictReader(infile)
-				fieldnames = reader.fieldnames
-
-				# Ensure required fields exist
-				if 'extra_data_1' not in fieldnames or 'sku' not in fieldnames:
-					return "Error: Input CSV must contain 'sku' and 'extra_data_1' columns"
-
-				writer = csv.DictWriter(outfile, fieldnames=fieldnames)
-				writer.writeheader()
-
-				processed_count = 0
-
-				for row in reader:
-					if not row.get('extra_data_1'):
-						# Skip rows without extra data
-						writer.writerow(row)
-						continue
-
-					try:
-						# Create a copy of the row to avoid modifying the original
-						row_spec = row.copy()
-
-						# Parse the extra data (assuming it's a JSON string)
-						# First check if it's already a dict (from previous processing)
-						extra_data = row['extra_data_1']
-						if isinstance(extra_data, str):
-							try:
-								extra_data = json.loads(extra_data)
-							except json.JSONDecodeError:
-								# If it's not valid JSON, keep it as is
-								pass
-
-						# Process the product with extra data
-						row_spec = self.get_product_data(extra_data, row_spec)
-
-						# Write the updated row to the output file
-						writer.writerow(row_spec)
-						processed_count += 1
-
-					except json.JSONDecodeError as e:
-						print(f"Error parsing JSON in extra_data_1 for SKU {row.get('sku', 'unknown')}: {e}")
-						# Write the original row if there's an error
-						writer.writerow(row)
-					except Exception as e:
-						print(f"Error processing row with SKU {row.get('sku', 'unknown')}: {e}")
-						writer.writerow(row)
-
-			return f"Successfully processed {processed_count} products. Results saved to {output_path}"
-
-		except Exception as e:
-			return f"Error in process_extra_data_from_csv: {str(e)}"
-		
-	def get_unique_keys(self, data_file):
-		keys = set()
-		if os.path.exists(data_file):
-			with open(data_file, 'r', newline='', encoding='utf-8') as f:
-				reader = csv.DictReader(f)
-				csv.field_size_limit(sys.maxsize)
-				if 'sku' in reader.fieldnames:
-					keys = {row['sku'] for row in reader}
-		return keys
-
+	# Step Four: Process any missing rows due to products failed to load or step 3 eneded early
 	def process_missing_skus(self, url_file=URL_OUTPUT_FILE, data_file=DATA_OUTPUT_FILE,
 		                         home_dir=DEFAULT_DIRECTORY):
 		"""
@@ -816,6 +719,92 @@ class Scraper:
 			progress['message'] = error_msg
 			cache.set(f'product_processing_progress_{task_id}', progress, timeout=3600)
 			return error_msg
+	# Not yet implemented. This will use the data stored in extra data to reprocess a file withouth having to visit the page again
+	def process_extra_data_from_csv(self):
+		"""
+		Process extra data from a CSV file by reading the extra_data column and passing it to get_product_data.
+
+		The CSV file should have at least these columns: 'sku' and 'extra_data_1'.
+		The method will update the product data using the extra data.
+		"""
+		try:
+			# Get file paths from options with fallbacks
+			input_file = self.options.get('data_output_file', self.DATA_OUTPUT_FILE)
+			output_file = f"processed_{input_file}"
+			home_dir = self.options.get('home_directory', self.DEFAULT_DIRECTORY)
+
+			input_path = self.get_file_path(input_file, home_dir)
+			output_path = self.get_file_path(output_file, home_dir)
+
+			if not os.path.exists(input_path):
+				return f"Error: Input file not found: {input_path}"
+
+			# Open input and output files
+			with open(input_path, 'r', newline='', encoding='utf-8') as infile, \
+					open(output_path, 'w', newline='', encoding='utf-8') as outfile:
+
+				reader = csv.DictReader(infile)
+				fieldnames = reader.fieldnames
+
+				# Ensure required fields exist
+				if 'extra_data_1' not in fieldnames or 'sku' not in fieldnames:
+					return "Error: Input CSV must contain 'sku' and 'extra_data_1' columns"
+
+				writer = csv.DictWriter(outfile, fieldnames=fieldnames)
+				writer.writeheader()
+
+				processed_count = 0
+
+				for row in reader:
+					if not row.get('extra_data_1'):
+						# Skip rows without extra data
+						writer.writerow(row)
+						continue
+
+					try:
+						# Create a copy of the row to avoid modifying the original
+						row_spec = row.copy()
+
+						# Parse the extra data (assuming it's a JSON string)
+						# First check if it's already a dict (from previous processing)
+						extra_data = row['extra_data_1']
+						if isinstance(extra_data, str):
+							try:
+								extra_data = json.loads(extra_data)
+							except json.JSONDecodeError:
+								# If it's not valid JSON, keep it as is
+								pass
+
+						# Process the product with extra data
+						row_spec = self.get_product_data(extra_data, row_spec)
+
+						# Write the updated row to the output file
+						writer.writerow(row_spec)
+						processed_count += 1
+
+					except json.JSONDecodeError as e:
+						print(f"Error parsing JSON in extra_data_1 for SKU {row.get('sku', 'unknown')}: {e}")
+						# Write the original row if there's an error
+						writer.writerow(row)
+					except Exception as e:
+						print(f"Error processing row with SKU {row.get('sku', 'unknown')}: {e}")
+						writer.writerow(row)
+
+			return f"Successfully processed {processed_count} products. Results saved to {output_path}"
+
+		except Exception as e:
+			return f"Error in process_extra_data_from_csv: {str(e)}"
+
+	def get_unique_keys(self, data_file):
+		""" Some websites do not use SKU as the unique identifier"""
+		keys = set()
+		if os.path.exists(data_file):
+			with open(data_file, 'r', newline='', encoding='utf-8') as f:
+				reader = csv.DictReader(f)
+				csv.field_size_limit(sys.maxsize)
+				if 'sku' in reader.fieldnames:
+					keys = {row['sku'] for row in reader}
+		return keys
 
 	def remove_duplicate_skus(self, input_file=None, output_file=None, home_dir=DEFAULT_DIRECTORY):
 		"""
@@ -959,6 +948,8 @@ class Scraper:
 		return html
 
 	# ************************************************************************
+	# Functions for extracting product data
+	# ************************************************************************
 
 	def get_product_data(self, data, row_spec):
 		"""Process products from a CSV file"""
@@ -976,6 +967,59 @@ class Scraper:
 		"""
 		raise NotImplementedError("process_product method not implemented")
 
+	# ************************************************************************
+	# Utility Functions
+	# ************************************************************************
+
+	def save_urls_to_csv(self ,urls, category_name="", subcategory_name="", sub_subcategory_name=""):
+		"""
+		Save a list of URLs to a CSV file. If the file exists, it will append to it.
+
+		Args:
+			urls (list): List of URLs to save
+			category_name (str): Name of the category
+			subcategory_name (str): Name of the sub category
+			sub_subcategory_name (str): Name of the sub category of the sub category
+		"""
+		import csv
+		import os
+		from datetime import datetime
+
+		print(f"save_urls_to_csv()")
+		# print(f"save_urls_to_csv(){urls}")
+
+		# Resolve the file path
+		home_dir = self.options.get('home_directory')
+		filename = self.get_url_file_path(home_dir)
+
+		# Ensure the directory exists
+		os.makedirs(os.path.dirname(os.path.abspath(filename)), exist_ok=True)
+
+		file_exists = os.path.isfile(filename)
+
+		print(f"Home Directory: {home_dir}, Filename: {filename}")
+
+		try:
+			with open(filename, 'a', newline='', encoding='utf-8') as csvfile:
+				writer = csv.writer(csvfile)
+
+				# Write header only if file is new
+				if not file_exists:
+					writer.writerow(['SKU', 'URL', 'Timestamp', 'Category', 'Subcategory', "Sub Subcategory"])
+
+				# Write each URL with timestamp
+				for url in urls:
+					clean_url = url.rstrip('/')
+					sku = clean_url.split('/')[-1].split('?')[0]  # Remove any query parameters
+					writer.writerow(
+						[sku, url, datetime.now().strftime('%Y-%m-%d %H:%M:%S'), category_name, subcategory_name, sub_subcategory_name])
+
+			mode = "Appended to" if file_exists else "Created new"
+			print(f"Successfully {mode} {len(urls)} URLs to {filename}")
+
+		except Exception as e:
+			print(f"⛔️⛔️⛔️Error saving URLs to CSV: {e}")
+
 	def search_requests(self):
 		"""
 		Load a URL and search the traffic for a search term
@@ -985,29 +1029,34 @@ class Scraper:
 		search_term = self.options.get('search_term', '')
 		self.driver.get(url)
 		time.sleep(10)
-		self.driver.get(url)
-		time.sleep(10)
 		html = "<ul>"
 		found = False
 		for request in self.driver.requests: # Filter for API requests
-			# print(f"URL: {request.url}")
-			# print(f"Status Code: {request.response.status_code}")
-			# print(f"Content Type: {request.response.headers.get('Content-Type')}")
-
-			# Decode the response body (it's bytes by default)
 			try:
-				# body = request.response.body.decode(request.response.headers.get('Content-Encoding', 'identity'))
-				# body = decode(request.response.body, request.response.headers.get('Content-Encoding', 'identity'))
+				# If the body is JSON, parse it
+				if 'application/json' in request.response.headers.get('Content-Type', ''):
+					data = json.loads(request.response.body)
+				else:
+					data = str(request.response.body)
 
-				if search_term in str(request.response.body):
+				if search_term in data:
 					print(f"Request URL: {request.url}")
-					# print(f"Response Body (Text): {request.response.body}")
 					found = True
 					html = html + "<li>" + request.url + "</li>"
 
 			except Exception as e:
-				print(f"⛔️Error decoding detail response body: {e}")
+				print(f"⛔️Error decoding detail response body of {request.url}: {e}")
 
 		del self.driver.requests
 		html = html + "</ul>"
 		return html, found
+
+	@staticmethod
+	def print_element(self, element):
+		print(f"Text: {element.text}")
+		print(f"Tag Name: {element.tag_name}")
+		print(f"Class Attribute: {element.get_attribute('class')}")
+		print(f"Outer HTML: {element.get_attribute('outerHTML')}")
+		print(f"Location: {element.location}")
+		print(f"Size: {element.size}")
+		print(f"Is Displayed: {element.is_displayed()}")

@@ -1029,10 +1029,37 @@ class BittersBottlesScraper(ShopifyScraper):
 	# 	Product Scraping Functions
 	# ************************************************************************
 
+	def get_pack_size(self, data, row_spec):
+		print("get_pack_size()")
+		data = data.get('variants', None)
+		if data:
+			data = data[0]
+			try:
+				options = data.get('options', None)
+				# Find the specification with displayName "Manufacturer Name"
+				print(options)
+				if options:
+
+					if len(options) == 1:
+						row_spec['pack_size'] = options[0].replace('Default Title','')
+						print(f"Found pack size: {options[0]}")
+					else:
+						row_spec['pack_size'] = options[0].replace('Default Title','')
+						print(f"Found pack size: {options[0]}")
+						print("⚠️ need to handle multiple pack sizes")
+
+			except Exception as e:
+				print(f"⛔️ Error processing pack size information: {type(e).__name__} - {str(e)}")
+
+			print("Processing pack size information complete...")
+		return row_spec
+
 	def get_product_details(self, url, row_spec=None):
 		"""Get Product Details"""
 		print("BittersBottlesScraper.get_product_details()")
-		return self.get_product_details_scrape(url, row_spec, target="script[type='application/json'][data-section-type='static-product']")
+		data = self.get_product_details_scrape(url, row_spec, target="script[type='application/json'][data-section-type='static-product']")
+		row_spec = self.get_product_data(data.get('product', {}), row_spec)
+		return row_spec
 
 	# ************************************************************************
 	def build_categories_list(self):
@@ -1040,90 +1067,6 @@ class BittersBottlesScraper(ShopifyScraper):
 		navigation = self.get_navigation_structure(url)
 		# self.print_navigation_structure(navigation)
 		return f"<div>{navigation}</div>"
-
-	def build_categories_list2(self):
-		# Run on all to get a category list then copy the list to CATEGORIES
-		url = "https://www.bittersandbottles.com/"
-		categories = []
-		all_categories = []
-		classes = []
-		all_classes = []
-		subclasses = []
-		all_subclasses = []
-		# self.bypass_age_gate(url)
-		print(f"Loading page...{url}")
-		del self.driver.requests
-		self.driver.get(url)
-		# time.sleep(5)
-		# filter_criteria = "southernglazerswinespiritsproduction78xh7hnm.org.coveo.com/rest/search"
-		# print(f"Filtering for {filter_criteria}")
-		data = None
-
-		categories = self.get_navigation_categories()
-
-		# for category in categories:
-		# 	print(f"Starting Category: {category['name']}")
-		# 	category_filter_string = "&" + format_filter(f"f-category={category['name']}")
-		# 	url = f"https://shop.sgproof.com/search?text={category_filter_string}"
-		# 	print(f"Loading page...{url}")
-		# 	del self.driver.requests
-		# 	self.driver.get(url)
-		# 	request = self.driver.wait_for_request(filter_criteria, 40)
-		# 	data = None
-		# 	if request.response and filter_criteria in request.url:  # Filter for API requests
-		# 		print(f"Found response for category:")
-		# 		try:
-		# 			body = decode(request.response.body, request.response.headers.get('Content-Encoding', 'identity'))
-		# 			# If the body is JSON, parse it
-		# 			if 'application/json' in request.response.headers.get('Content-Type', ''):
-		# 				data = json.loads(body)
-		# 				print(f"Got data")
-		# 			else:
-		# 				print(f"Response not JSON :")
-		# 		except Exception as e:
-		# 			print(f"⛔️⛔️⛔️Error decoding search response body: {e}")
-		# 		if data:
-		# 			print(f"Got data grabbing classes")
-		# 			classes = self.get_navigation_classes(data)
-		# 			category['classes'] = classes
-		# 			all_classes.extend(classes)
-		# 			all_categories.append(category)
-		# 			for class_ in classes:
-		# 				print(f"Starting Class: {class_['name']}")
-		# 				class_filter_string = "&" + format_filter(f"f-class={class_['name']}")
-		# 				url = f"https://shop.sgproof.com/search?text={category_filter_string}{class_filter_string}"
-		# 				print(f"Loading class page...{url}")
-		# 				del self.driver.requests
-		# 				self.driver.get(url)
-		# 				request = self.driver.wait_for_request(filter_criteria, 40)
-		# 				data = None
-		# 				if request.response and filter_criteria in request.url:  # Filter for API requests
-		# 					print(f"Found response :")
-		# 					try:
-		# 						# body = request.response.body.decode(request.response.headers.get('Content-Encoding', 'identity'))
-		# 						body = decode(request.response.body,
-		# 						              request.response.headers.get('Content-Encoding', 'identity'))
-		#
-		# 						# If the body is JSON, parse it
-		# 						if 'application/json' in request.response.headers.get('Content-Type', ''):
-		# 							data = json.loads(body)
-		# 						else:
-		# 							print(f"Response not JSON :")
-		# 					except Exception as e:
-		# 						print(f"⛔️⛔️⛔️Error decoding search response body: {e}")
-		# 					subclasses = self.get_navigation_subclasses(data)
-		# 					class_['subclasses'] = subclasses
-		# 					print(f"Got subclasses")
-		# 					print(subclasses)
-		# 					all_subclasses.extend(subclasses)
-		# 	print(f"finished category : {category['name']}")
-		# 	print(category)
-		# subclasses = self.get_product_subclasses(data)
-		print(f"")
-		print(f"categories : {json.dumps(categories)}")
-		del self.driver.requests
-
-		return f"<div>{json.dumps(categories)}</div>"
 
 	# def build_products_list(self):
 	# 	"""Scrape products from the website"""
