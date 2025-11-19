@@ -23,41 +23,16 @@ from scrapers.scraper import Scraper, SkuNotFound
 
 
 class ImperialDadeScraper(Scraper):
-	PRODUCT_DATA_SPEC = {
-		# Fields from IMPORT_SPEC
-		'name': '',
-		'sku': '',
-		'gtin': '',
-		'image': '',
-		'pack': '',
-		'size': '',
-		'retail_price': '',
-		'ordering_unit': '',
-		'is_catch_weight': '',
-		'is_broken_case': '',
-		'average_case_weight': '',
-		'brand': '',
-		'taxonomy': '',
-		'level_1': '',
-		'level_2': '',
-		'level_3': '',
-		'manufacturer_name': '',
-		'manufacturer_sku': '',
-		'distributor_name': '',
-		'content_url': '',
-		'description': '',
-		'unit_price': '',
-		'extra_data_1': '',
-		'timestamp': '',
-		# Fields from Southern Glazier
-		'extra_data_2': '',
-		'id': '',
-		'pack_size': '',
-		'category': '',
-		'subcategory': '',
-		'subsubcategory': '',
-		'product type': '',
-		'food product type': '',
+	# /3269/edit_note/1630/
+	CRM_ID = 3269
+	CRM_NOTE_ID = 1630
+	CRM_PRICE_TYPE = ''
+	CRM_STATUS_OVERRIDE = 'Ready'
+
+	DISTRIBUTOR_PRODUCT_DATA_SPEC = {
+		'recommendations': '',
+		'product_type': '',
+		'food_product_type': '',
 		'product_category': '',
 		'unspsc': '',
 		'upc-12': '',
@@ -815,6 +790,8 @@ class ImperialDadeScraper(Scraper):
 		'process_csv': False,
 		'reprocess_csv': False,
 		'dedupe_csv': False,
+		'format_csv': False,
+		'scan_csv': False,
 		'count_csv': False,
 		'process_extra': False,
 		'search_requests': False,
@@ -833,9 +810,88 @@ class ImperialDadeScraper(Scraper):
 
 	def __init__(self, options=None):
 		super().__init__(options)
-		self.options = {**self.DEFAULT_OPTIONS, **(options or {})}
-		self.options['home_directory'] = self.DEFAULT_DIRECTORY
-		self.options['base_url'] = self.BASE_URL
+		self.PRODUCT_DATA_SPEC = self.BASE_PRODUCT_DATA_SPEC.copy()
+		for spec in self.DISTRIBUTOR_PRODUCT_DATA_SPEC:
+			self.PRODUCT_DATA_SPEC[spec] = ''
+		print(self.PRODUCT_DATA_SPEC)
+
+	def get_categories_from_site(self):
+		"""
+		Returns a list of category dictionaries with their details.
+
+		Returns:
+			list: A list of dictionaries, each containing 'id', 'name', 'url', and 'subcategories' of a category
+		"""
+		categories = []
+		try:
+			# Navigate to the main page if not already there
+			if 'shop.imperialdade.com' not in self.driver.current_url:
+				self.driver.get(self.BASE_URL)
+				self.wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, 'nav[data-testid="category-nav"]')))
+
+			# Find all top-level category elements
+			category_elements = self.driver.find_elements(By.CSS_SELECTOR, 'nav[data-testid="category-nav"] > ul > li')
+
+			for cat_element in category_elements:
+				try:
+					# Get category name and URL
+					link = cat_element.find_element(By.TAG_NAME, 'a')
+					category_name = link.text.strip()
+					category_url = link.get_attribute('href')
+
+					# Get category ID from URL or generate one
+					category_id = category_url.split('/')[-1] if category_url else str(len(categories) + 1)
+
+					# Store in class dictionaries
+					self.CATEGORY_IDS[category_id] = category_name
+					self.CATEGORY_NAMES[category_name] = category_id
+					self.CATEGORY_URLS[category_id] = category_url
+
+					# Get subcategories if they exist
+					subcategories = []
+					try:
+						sub_elements = cat_element.find_elements(By.CSS_SELECTOR, 'ul > li > a')
+						subcategories = [
+							{
+								'id': f"{category_id}_{i + 1}",
+								'name': sub.text.strip(),
+								'url': sub.get_attribute('href'),
+								'subcategories': []
+							}
+							for i, sub in enumerate(sub_elements)
+						]
+					except Exception as e:
+						print(f"Error getting subcategories for {category_name}: {e}")
+
+					categories.append({
+						'id': category_id,
+						'name': category_name,
+						'url': category_url,
+						'subcategories': subcategories
+					})
+
+				except Exception as e:
+					print(f"Error processing category element: {e}")
+					continue
+
+		except Exception as e:
+			print(f"Error in get_categories: {e}")
+
+		return categories
+
+	def get_categories(self):
+		"""
+		Returns a list of category dictionaries from the CATEGORIES data.
+
+		Returns:
+			list: A list of dictionaries, each containing 'id' and 'name' of a category
+		"""
+		category_options = self.CATEGORIES.get('data', {}).get('categories', {})
+		return [
+			{'id': option['id'], 'name': option['name']}
+			for option in category_options
+			if option.get('id') and option.get('name')
+		]
 
 	def get_category_ids(self):
 		return self.CATEGORY_IDS
@@ -868,7 +924,7 @@ class ImperialDadeScraper(Scraper):
 		print("get_first_image_url()")
 		try:
 			# product-viewer-image
-			image_url = self.driver.find_element(By.CSS_SELECTOR, 'img.product-viewer-image').get_attribute("src")
+			image_url = self.driver.find_element(By.CSS_SELECTOR, '[data-testid="pdp-main-image-container-1"] img').get_attribute("src")
 			if image_url:
 				try:
 					row_spec["image"] = image_url
@@ -885,80 +941,19 @@ class ImperialDadeScraper(Scraper):
 		print("processing product data from response...")
 		return row_spec
 
-	def get_variant_section(self, container, row_spec):
-		# Scrape the section that contains the manufacturer information. It is in an unordered list
-		print("get_variant_section()")
-		# hidden_element = self.driver.find_element(By.CSS_SELECTOR, 'div.item-variant-menu')
-		# self.driver.execute_script("arguments[0].style.display = 'block';", hidden_element)
-		variant_info = container.find_element(By.CSS_SELECTOR, 'div.item-variant-menu-list')
-		try:
-			rows = variant_info.find_elements(By.CSS_SELECTOR, 'a.item-variant-list-menu-item')
-			print(rows)
-			for row in rows:
-				row_dict = {}
-				columns = row.find_elements(By.CSS_SELECTOR, 'div.item-variant')
-				print(columns)
-				for column in columns:
-					key = column.find_element(By.CSS_SELECTOR, 'span.item-variant-list-mobile-header').text.strip()
-					key = key.lower().replace(' ', '_').replace(':', '')
-					print(f"key: {key}")
-					value = column.find_element(By.CSS_SELECTOR, 'span.item-variant-list').text.strip()
-					value = '' if value == '—' else value
-					print(f"value: {value}")
-					if key in self.PRODUCT_DATA_SPEC.keys() or key == 'item_id':
-						row_dict.update({key: value})
-				if row_dict['item_id'] == row_spec['sku']:
-					for key, value in row_dict.items():
-						if key in self.PRODUCT_DATA_SPEC.keys():
-							row_spec[key] = value
-		except Exception as e:
-			print(f"⛔️⛔️⛔️Error processing variant data: {type(e)}")
-		return row_spec
-
 	def get_description(self, row_spec):
 		print("get_description()")
-		description = ''
-		# product-info-about-container
 		self.driver.execute_script("document.body.style.zoom = '20%'")
 		try:
-			producer_description = self.driver.find_element(By.CSS_SELECTOR, 'div.product-info-full').text.strip()
-			if producer_description:
-				row_spec["producer_description"]  = producer_description
-		except NoSuchElementException as e:
-			print(f"No ProducerDescription found")
-		except Exception as e:
-			print(f"⛔️️ Error processing product producer description: {type(e)}")
-
-		try:
-			description = self.driver.find_element(By.CSS_SELECTOR, 'div.product-card-pdp-desc').text.strip()
+			description = self.driver.find_element(By.CSS_SELECTOR, '[data-testid="romance-copy"]').text.strip()
 			if description:
 				row_spec["description"]  = description
 		except NoSuchElementException as e:
 			print(f"No Description found")
 		except Exception as e:
 			print(f"⛔️️ Error processing product description: {type(e)}")
-		print("processing product overview Complete...")
+
 		return row_spec
-
-	def get_additional_packages(self):
-		"""
-		Product have a dropsown selector for chosing different versions
-		"""
-		print("get_additional_packages()")
-		package_list = []
-		# Get item list from item-variant-menu-list
-		variation_list = self.wait.until(
-			EC.presence_of_element_located((By.CSS_SELECTOR, '.item-variant-menu-list'))
-		)
-		anchor_list = variation_list.find_elements(By.TAG_NAME, 'a')
-		print(f"anchor_list: {anchor_list}")
-		for anchor in anchor_list:
-			href_value = anchor.get_attribute("href")
-			print(f"href_value: {href_value}")
-			package_list.append(href_value)
-
-		print(f"anchor_list: {package_list}")
-		return package_list
 
 	# ************************************************************************
 	# 	Core
@@ -1024,12 +1019,12 @@ class ImperialDadeScraper(Scraper):
 					if url in self.driver.current_url:
 						print("Found products page")
 						time.sleep(2)
-						html_line, detail_urls = self.grab_products()
+						html_line, detail_urls = self.get_products_from_html()
 					products_found_count = len(detail_urls)
 					html += f"<div>Found {products_found_count} products for category {category_name} page {page_count}</div>"
 					print(f"Found {products_found_count} products for category {category_name} page {page_count}")
 					total_products += products_found_count
-					self.save_urls_to_csv(detail_urls, category_name, sub_category_name, sub_sub_category_name)
+					# self.save_urls_to_csv(detail_urls, category_name, sub_category_name, sub_sub_category_name)
 
 				except Exception as e:
 					print(f"****************** ⛔️⛔️⛔️ Error getting details: {e}")
@@ -1056,8 +1051,8 @@ class ImperialDadeScraper(Scraper):
 		print(f"Total Products {total_products}")
 		return detail_urls, html
 
-	def grab_products(self):
-		print("grab_products")
+	def get_products_from_html(self):
+		print("get_products_from_html")
 		products = self.wait.until(
 			EC.presence_of_all_elements_located((By.CSS_SELECTOR, "[data-testid='plp-card'"))
 		)
@@ -1071,12 +1066,12 @@ class ImperialDadeScraper(Scraper):
 		print("build_products_list()")
 		html = ""
 		all_urls = []
-		categories = self.get_categories()
+		categories = self.get_categories_from_site()
 		# Use the options with fallback to module-level variables
 		chosen_category = int(self.options.get('chosen_category', 0))
 
 		if int(self.options['chosen_category']) == 0:
-			categories = self.get_categories()
+			categories = self.get_categories_from_site()
 			print(f"All Categories ")
 		else:
 			for category in categories:
@@ -1096,9 +1091,6 @@ class ImperialDadeScraper(Scraper):
 			print(f"Url: {url}")
 			detail_urls, html = self.get_category_page(url, category_name, '', '')
 			all_urls.extend(detail_urls)
-
-		# html_table_to_csv(html_table)
-
 
 		print(f"Total products found: {len(all_urls)}")
 		return html
@@ -1157,8 +1149,14 @@ class ImperialDadeScraper(Scraper):
 		row_spec['content_url'] = url
 		print(f"Loading page...{url}")
 		try:
-			row_spec, additional_packages = self.process_details_from_html(url, row_spec=row_spec, follow_anchors=False)
+			row_spec = self.process_details_from_html(url, row_spec=row_spec, follow_anchors=False)
 			# self.write_product_to_csv(row_spec)
+		except Exception as e:
+			print(f"⛔️⛔️⛔️Error processing get_product_details: {type(e)}")
+			raise
+		# There is an api that returns json for related products
+		try:
+			row_spec = self.get_related_products(row_spec=row_spec)
 		except Exception as e:
 			print(f"⛔️⛔️⛔️Error processing get_product_details: {type(e)}")
 			raise
@@ -1192,12 +1190,24 @@ class ImperialDadeScraper(Scraper):
 			print(f"⛔️⛔️⛔️Error processing table data: {type(e)}")
 		return row_spec
 
+	def get_related_products(self, row_spec):
+		print("get_related_products()")
+		for request in self.driver.requests:
+			if request.response and "recommendations/api/v1/products" in request.url and 'similar' in request.url:
+				print(f"url: {request.url}")
+				if 'application/json' in request.response.headers.get('Content-Type', ''):
+					body = decode(request.response.body, request.response.headers.get('Content-Encoding', 'identity'))
+					data = json.loads(body)
+					row_spec['recommendations'] = json.dumps(data)
+				else:
+					print(f"Response Body (Text): {request.body}")
+
+		return row_spec
+
 	def process_details_from_html(self, url, follow_anchors=False, row_spec=None):
 		print(f"process_details_from_html()")
-		additional_packages = []
 		del self.driver.requests
 		self.driver.get(url)
-		# product-viewer-box
 		try:
 			container = self.wait.until(
 				EC.presence_of_element_located((By.CSS_SELECTOR, "[data-testid='product-detail-card']"))
@@ -1217,102 +1227,14 @@ class ImperialDadeScraper(Scraper):
 					row_spec['sku'] = content.replace('SKU# ', '')
 				if 'Mfr' in content:
 					row_spec['manufacturer_sku'] = content.replace('Mfr# ', '')
-			# row_spec = self.get_description(row_spec)
+			row_spec = self.get_description(row_spec)
 			row_spec = self.get_table_section(row_spec)
-			# row_spec = self.get_first_image_url(row_spec)
-			# page has a dropdown to select additional packages
+			row_spec = self.get_first_image_url(row_spec)
 
 		except Exception as e:
 			print(f"⛔️⛔️⛔️Error processing process_details_from_html: {type(e)}")
-		return row_spec, additional_packages
+		return row_spec
 
 	# ************************************************************************
 	# Category Extraction Functions
 	# ************************************************************************
-
-	def get_navigation_categories(self, data: Dict[str, Any]) -> List[Dict[str, Any]]:
-		"""
-		Extract product categories from search response data.
-
-		Args:
-			data: Dictionary containing the search response data (already parsed JSON)
-
-		Returns:
-			List of dictionaries containing category information with 'id' and 'name' keys
-		"""
-		if not isinstance(data, dict) or 'facets' not in data:
-			return []
-
-		# Find the category facet
-		category_facets = []
-		for facet in data['facets']:
-			if facet.get('facetId') == 'category' and 'values' in facet:
-				category_facets = [
-					{
-						'name': item['value'],
-						'count': str(item['numberOfResults']),
-						"number": str(index + 1),
-					}
-					for index, item in facet['values']
-				]
-				break
-		print(f"category_facets : {category_facets}")
-		return category_facets
-
-	def get_navigation_classes(self, data: Dict[str, Any]) -> List[Dict[str, Any]]:
-		"""
-		Extract product categories from search response data.
-
-		Args:
-			data: Dictionary containing the search response data (already parsed JSON)
-
-		Returns:
-			List of dictionaries containing category information with 'id' and 'name' keys
-		"""
-		if not isinstance(data, dict) or 'facets' not in data:
-			print(f"facets not in data")
-			print(data)
-			return []
-
-		# Find the category facet
-		class_facets = []
-		for facet in data['facets']:
-			if facet.get('facetId') == 'class' and 'values' in facet:
-				class_facets = [
-					{
-						'name': item['value'],
-						'count': str(item['numberOfResults']),
-					}
-					for item in facet['values']
-				]
-				break
-		print(f"class facets : {class_facets}")
-		return class_facets
-
-	def get_navigation_subclasses(self, data: Dict[str, Any]) -> List[Dict[str, Any]]:
-		"""
-		Extract product categories from search response data.
-
-		Args:
-			data: Dictionary containing the search response data (already parsed JSON)
-
-		Returns:
-			List of dictionaries containing category information with 'id' and 'name' keys
-		"""
-		if not isinstance(data, dict) or 'facets' not in data:
-			return []
-
-		# Find the category facet
-		subclass_facets = []
-		for facet in data['facets']:
-			if facet.get('facetId') == 'subclass' and 'values' in facet:
-				subclass_facets = [
-					{
-						'name': item['value'],
-						'count': str(item['numberOfResults']),
-					}
-					for item in facet['values']
-				]
-				break
-		print(f"subclass_facets : {subclass_facets}")
-		return subclass_facets

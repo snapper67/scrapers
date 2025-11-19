@@ -1,8 +1,12 @@
 import json
 from .dry import CutScraper
 
-
 class HeartyScraper(CutScraper):
+    # 1331/edit_note/1465/
+    CRM_ID = 1331
+    CRM_NOTE_ID = 1465
+    CRM_PRICE_TYPE = ''
+    CRM_STATUS_OVERRIDE = ''
     """Scraper for Hearty on the Cut & Dry platform"""
 
     DEFAULT_DIRECTORY = '/Users/mark/Downloads/scrapers/hearty/'
@@ -527,6 +531,3 @@ class HeartyScraper(CutScraper):
 
     def __init__(self, options=None):
         super().__init__(options)
-        self.options = {**self.DEFAULT_OPTIONS, **(options or {})}
-        self.options['home_directory'] = self.DEFAULT_DIRECTORY
-        self.options['base_url'] = self.BASE_URL

@@ -2,8 +2,12 @@
 import json
 from scrapers.cut.dry import CutScraper
 
-
 class DriscollScraper(CutScraper):
+	# /1199/edit_note/1358/
+	CRM_ID = 1199
+	CRM_NOTE_ID = 1358
+	CRM_PRICE_TYPE = ''
+	CRM_STATUS_OVERRIDE = ''
 
 	DEFAULT_DIRECTORY = '/Users/mark/Downloads/scrapers/driscoll/'
 
@@ -245,6 +249,4 @@ class DriscollScraper(CutScraper):
 
 	def __init__(self, options=None):
 		super().__init__(options)
-		self.options = {**self.DEFAULT_OPTIONS, **(options or {})}
-		self.options['home_directory'] = self.DEFAULT_DIRECTORY
-		self.options['base_url'] = self.BASE_URL
+

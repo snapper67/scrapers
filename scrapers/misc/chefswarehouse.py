@@ -33,40 +33,14 @@ from scrapers.scraper import Scraper
 """
 
 class ChefWarehouseScraper(Scraper):
-	PRODUCT_DATA_SPEC = {
-		# Fields from IMPORT_SPEC
-		'name': '',
-		'sku': '',
-		'gtin': '',
-		'image': '',
-		'pack': '',
-		'size': '',
-		'retail_price': '',
-		'ordering_unit': '',
-		'is_catch_weight': '',
-		'is_broken_case': '',
-		'average_case_weight': '',
-		'brand': '',
-		'taxonomy': '',
-		'level_1': '',
-		'level_2': '',
-		'level_3': '',
-		'manufacturer_name': '',
-		'manufacturer_sku': '',
-		'distributor_name': '',
-		'content_url': '',
-		'description': '',
-		'unit_price': '',
-		'extra_data_1': '',
-		'extra_data_2': '',
+	# /1603/edit_note/1696/
+	CRM_ID = 1603
+	CRM_NOTE_ID = 1696
+	CRM_PRICE_TYPE = ''
+	CRM_STATUS_OVERRIDE = 'Ready'
 
-		# Fields from US_FOODS_SPEC
-		'timestamp': '',
-		'pack_size': '',
-		'category': '',
-		'subcategory': '',
-		'subsubcategory': '',
-		'pricingUnitOfMeasure': '',
+	DISTRIBUTOR_PRODUCT_DATA_SPEC = {
+		'pricingUnitOfMeasure': ''
 	}
 
 	TEST_CATEGORIES = 100
@@ -74,7 +48,7 @@ class ChefWarehouseScraper(Scraper):
 	CSV_START_ROW = 0
 	TEST_TABS = 2
 	MAX_API_PRODUCTS = 999  # Maximum number to change the search request page size
-	DEFAULT_DIRECTORY = '/Users/mark/Downloads/scrapers/shefs_warehouse'
+	DEFAULT_DIRECTORY = '/Users/mark/Downloads/scrapers/chefs_warehouse'
 
 	BASE_URL = 'https://www.chefswarehouse.com'
 	VENDOR_NAME = 'Chefs\' Warehouse'
@@ -156,6 +130,8 @@ class ChefWarehouseScraper(Scraper):
 		'process_csv': False,
 		'reprocess_csv': False,
 		'dedupe_csv': False,
+		'format_csv': False,
+		'scan_csv': False,
 		'count_csv': False,
 		'test_products': TEST_PRODUCTS,
 		'max_products': 999,
@@ -170,9 +146,10 @@ class ChefWarehouseScraper(Scraper):
 
 	def __init__(self, options=None):
 		super().__init__(options)
-		self.options = {**self.DEFAULT_OPTIONS, **(options or {})}
-		self.options['home_directory'] = self.DEFAULT_DIRECTORY
-		self.options['base_url'] = self.BASE_URL
+		self.PRODUCT_DATA_SPEC = self.BASE_PRODUCT_DATA_SPEC.copy()
+		for spec in self.DISTRIBUTOR_PRODUCT_DATA_SPEC:
+			self.PRODUCT_DATA_SPEC[spec] = ''
+		print(self.PRODUCT_DATA_SPEC)
 
 	def get_category_ids(self):
 		return self.CATEGORY_IDS

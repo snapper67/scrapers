@@ -18,6 +18,11 @@ from scrapers.shopify.shopify import ShopifyScraper
 from typing import List, Dict, Any, Optional
 
 class SavoryGourmetScraper(ShopifyScraper):
+	# 278/edit_note/1649/
+	CRM_ID = 278
+	CRM_NOTE_ID = 1649
+	CRM_PRICE_TYPE = ''
+	CRM_STATUS_OVERRIDE = ''
 
 	TEST_CATEGORIES = 100
 	TEST_PRODUCTS = 20000
@@ -606,29 +611,8 @@ class SavoryGourmetScraper(ShopifyScraper):
 
 ''')
 
-	DEFAULT_OPTIONS = {
-		'scrape_products': False,
-		'process_csv': False,
-		'reprocess_csv': False,
-		'dedupe_csv': False,
-		'count_csv': False,
-		'test_products': TEST_PRODUCTS,
-		'max_products': 999,
-		'csv_start_row': CSV_START_ROW,
-		'category_to_process': 0,
-		'test_categories': 100,
-		'chosen_category': '10001',
-		'url_output_file': '',
-		'data_output_file': '',
-		'home_directory': DEFAULT_DIRECTORY
-	}
-
-
 	def __init__(self, options=None):
 		super().__init__(options)
-		self.options = {**self.DEFAULT_OPTIONS, **(options or {})}
-		self.options['home_directory'] = self.DEFAULT_DIRECTORY
-		self.options['base_url'] = self.BASE_URL
 
 	def get_categories(self):
 		"""
@@ -719,7 +703,7 @@ class SavoryGourmetScraper(ShopifyScraper):
 									time.sleep(3)
 						except Exception as e:
 							print("⚠️ Infinite Scroll not found")
-						html_line, detail_urls = self.grab_products()
+						html_line, detail_urls = self.get_products_from_html()
 					products_found_count = len(detail_urls)
 					html += f"<div>Found {products_found_count} products for category {sub_category_name}</div>"
 					print(f"Found {products_found_count} products for category {sub_category_name}")

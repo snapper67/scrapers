@@ -18,43 +18,11 @@ from scrapers.scraper import Scraper, ProductNotFound
 
 
 class CutScraper(Scraper):
-	PRODUCT_DATA_SPEC = {
-		# Fields from IMPORT_SPEC
-		'name': '',
-		'sku': '',
-		'gtin': '',
-		'image': '',
-		'pack': '',
-		'size': '',
-		'retail_price': '',
-		'ordering_unit': '',
-		'is_catch_weight': '',
-		'is_broken_case': '',
-		'average_case_weight': '',
-		'brand': '',
-		'taxonomy': '',
-		'level_1': '',
-		'level_2': '',
-		'level_3': '',
-		'manufacturer_name': '',
-		'manufacturer_sku': '',
-		'distributor_name': '',
-		'content_url': '',
-		'description': '',
-		'unit_price': '',
-		'extra_data_1': '',
-		'timestamp': '',
-		# Fields from Southern Glazier
-		'extra_data_2': '',
-		'id': '',
-		'features': '',
-		'pack_size': '',
-		'category': '',
-		'subcategory': '',
-		'subsubcategory': '',
+	SCRAPER_TYPE = 'Cut+Dry'
+	CUT_PRODUCT_DATA_SPEC = {
+		'features': ''
 	}
 
-	ENCODING = "utf-8"
 	API_VERSION = "62aa9c6b39498222ac7c5d6e649ae3f9ab4465af"
 
 	BASE_URL = 'https://app.cutanddry.com'
@@ -85,6 +53,8 @@ class CutScraper(Scraper):
 		'process_csv': False,
 		'reprocess_csv': False,
 		'dedupe_csv': False,
+		'format_csv': False,
+		'scan_csv': False,
 		'count_csv': False,
 		'process_extra': False,
 		'search_requests': False,
@@ -108,8 +78,10 @@ class CutScraper(Scraper):
 
 	def __init__(self, options=None):
 		super().__init__(options)
-		self.options = {**self.DEFAULT_OPTIONS, **(options or {})}
-
+		self.PRODUCT_DATA_SPEC = self.BASE_PRODUCT_DATA_SPEC.copy()
+		for spec in self.CUT_PRODUCT_DATA_SPEC:
+			self.PRODUCT_DATA_SPEC[spec] = ''
+		print(self.PRODUCT_DATA_SPEC)
 	def get_category_ids(self):
 		return self.CATEGORY_IDS
 
@@ -136,6 +108,7 @@ class CutScraper(Scraper):
 		from urllib.parse import quote_plus
 
 		print(f"Category Name : {category_name}")
+		print(f"Category Name : {category_name.replace('/', '%2F').replace(' ', '+')}")
 		print(f"Sub Category Name : {subcategory_name}")
 
 		# URL encode the vendor name and other string parameters
@@ -150,12 +123,11 @@ class CutScraper(Scraper):
 		if category_id:
 			params['categoryId'] = str(category_id)
 		if category_name:
-			params['categoryName'] = str(category_name)
+			params['categoryName'] = str(category_name).replace('/', '%2F').replace(' ', '+')
 		if subcategory_id:
 			params['subcategoryId'] = str(subcategory_id)
 		if subcategory_name:
-			# Replace spaces with + as shown in the example URL
-			params['subcategoryName'] = str(subcategory_name).replace(' ', '+')
+			params['subcategoryName'] = str(subcategory_name).replace('/', '%2F').replace(' ', '+')
 		if page > 1:
 			params['page'] = str(page)
 
@@ -219,57 +191,6 @@ class CutScraper(Scraper):
 
 	def get_name(self):
 		return self.VENDOR_NAME
-
-	def clean_data_file(self, input_file=None, output_file=None, field='name'):
-		"""
-		Clean the URL file by removing rows that don't have a value in the 'name' column.
-
-		Args:
-			input_file (str, optional): Path to the input CSV file. If None, uses the URL output file from options.
-			output_file (str, optional): Path to save the cleaned CSV. If None, overwrites the input file.
-
-		Returns:
-			tuple: (success: bool, message: str) indicating the result of the operation
-		"""
-		print(f"Cleaning data file: {input_file}")
-		try:
-			# Get input file path
-			if input_file is None:
-				input_file = self.get_data_file_path(self.options.get('home_directory', self.DEFAULT_DIRECTORY))
-
-			# Set default output file to input file if not specified
-			if output_file is None:
-				output_file = input_file
-
-			# Read the CSV file
-			# df = pd.read_csv(csv_file, encoding=ENCODING)
-			df = pd.read_csv(input_file, dtype=str, keep_default_na=False, encoding=self.ENCODING, on_bad_lines='skip')
-
-			# Check if field column exists
-			if field not in df.columns:
-				return False, f"Error: {field} column not found in {input_file}"
-
-			# Count rows before cleaning
-			initial_count = len(df)
-
-			# Remove rows where name is empty or whitespace
-			clean_df = df[df[field].str.strip().astype(bool)]
-
-			# Count rows after cleaning
-			final_count = len(clean_df)
-			removed_count = initial_count - final_count
-
-			# Save the cleaned data
-			clean_df.to_csv(output_file, index=False)
-
-			# If we removed any rows, return success with count
-			if removed_count > 0:
-				return True, f"Removed {removed_count} rows without {field}s. {final_count} rows remaining in {output_file}"
-			else:
-				return True, f"No rows without {field}s found. File was not modified."
-
-		except Exception as e:
-			return False, f"Error cleaning URL file: {str(e)}"
 
 	def process_subcategories(self):
 		# Build a list of product URLs
@@ -406,7 +327,7 @@ class CutScraper(Scraper):
 				# row_spec = self.get_classification(data, row_spec)
 				row_spec = self.get_description(data, row_spec)
 				row_spec = self.get_manufacturer(data, row_spec)
-				# row_spec = self.get_additional_info(data, row_spec)
+				# row_spec = self.get_price(data, row_spec)
 				# row_spec["extra_data_1"] = json.dumps(data)
 
 			except Exception as e:
@@ -417,7 +338,17 @@ class CutScraper(Scraper):
 
 	def get_product_data_2(self, row_spec):
 		print("processing product data 2 from response...")
-		data = json.loads(row_spec.get('extra_data_2', {}))
+		data = {}
+		try:
+			extra_data_2 = row_spec.get('extra_data_2', {})
+			if extra_data_2:
+				data = json.loads(extra_data_2)
+		except json.JSONDecodeError as e:
+			print(f"Error parsing JSON in extra_data_2 for SKU: {e}")
+			print(extra_data_2)
+			# Write the original row if there's an error
+		except Exception as e:
+			print(f"Error processing row with SKU : {e}")
 		# print(data)
 		if data:
 			try:
@@ -522,24 +453,6 @@ class CutScraper(Scraper):
 			print(f"⛔️ Error processing manufacturer information: {type(e).__name__} - {str(e)}")
 			
 		print("Processing manufacturer information complete...")
-		return row_spec
-
-	def get_price(self, data, row_spec):
-		print("get_price()")
-		try:
-			productShopDataForStore = data.get('productShopDataForStore', None)
-			# Find the specification with displayName "Manufacturer Name"
-			if productShopDataForStore:
-				consumerPrice = productShopDataForStore.get('consumerPrice', None)
-				if consumerPrice:
-					row_spec['retail_price'] = consumerPrice['float']
-			else:
-				print("⚠️ Price not found in specifications")
-
-		except Exception as e:
-			print(f"⛔️ Error processing price information: {type(e).__name__} - {str(e)}")
-
-		print("Processing price information complete...")
 		return row_spec
 
 	def create_interceptor(self, max_api_products=200, page=1):

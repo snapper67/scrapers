@@ -26,65 +26,28 @@ from scrapers.shopify.shopify import ShopifyScraper
 
 
 class MelissasScraper(ShopifyScraper):
+	# 203/edit_note/1499/
+	CRM_ID = 203
+	CRM_NOTE_ID = 1499
+	CRM_PRICE_TYPE = ''
+	CRM_STATUS_OVERRIDE = ''
 
 	TEST_CATEGORIES = 100
 	TEST_PRODUCTS = 20000
 	CSV_START_ROW = 0
 	TEST_TABS = 2
 	MAX_API_PRODUCTS = 999  # Maximum number to change the search request page size
+	# DEFAULT_DIRECTORY = '/Users/mark/Downloads/scrapers/odd_produce'
 	DEFAULT_DIRECTORY = '/Users/mark/Downloads/scrapers/melissas_produce'
 
 	BASE_URL = 'https://www.melissas.com/pages/asian'
 	BASE_PRODUCT_URL = 'https://www.melissas.com/products/'
 	VENDOR_NAME = 'Melissa\'s Produce'
 
-	CATEGORY_IDS = {
-		"FRUIT": 1,
-		"VEGETABLES": 2,
-		"CONVENIENCE": 3,
-		"ASIAN": 4,
-		"LATIN": 5,
-	}
-	# Category Names (can use category ID as key)
-	CATEGORY_NAMES = {
-		1: "fruits",
-		2: "vegetables",
-		3: "convenience",
-		4: "asian",
-		5: "latin",
-	}
-	CATEGORY_URLS = {
-		1: "fruits",
-		2: "vegetables",
-		3: "convenience",
-		4: "asian",
-		5: "latin",
-	}
-
 	DEDUP_INPUT_FILE = 'dedupe_product_data.csv'
-
-	DEFAULT_OPTIONS = {
-		'scrape_products': False,
-		'process_csv': False,
-		'reprocess_csv': False,
-		'dedupe_csv': False,
-		'count_csv': False,
-		'test_products': TEST_PRODUCTS,
-		'max_products': 999,
-		'csv_start_row': CSV_START_ROW,
-		'category_to_process': 0,
-		'test_categories': 100,
-		'chosen_category': '10001',
-		'url_output_file': '',
-		'data_output_file': '',
-		'home_directory': DEFAULT_DIRECTORY
-	}
 
 	def __init__(self, options=None):
 		super().__init__(options)
-		self.options = {**self.DEFAULT_OPTIONS, **(options or {})}
-		self.options['home_directory'] = self.DEFAULT_DIRECTORY
-		self.options['base_url'] = self.BASE_URL
 
 
 	# ************************************************************************
@@ -193,7 +156,7 @@ class MelissasScraper(ShopifyScraper):
 						if link in self.driver.current_url:
 							print("Found products page")
 							time.sleep(2)
-							html_line, detail_urls = self.grab_products()
+							html_line, detail_urls = self.get_products_from_html()
 						products_found_count = len(detail_urls)
 						html += f"<div>Found {products_found_count} products for category {sub_category_name}</div>"
 						print(f"Found {products_found_count} products for category {sub_category_name}")

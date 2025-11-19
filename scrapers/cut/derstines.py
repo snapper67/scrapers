@@ -2,8 +2,12 @@
 import json
 from scrapers.cut.dry import CutScraper
 
-
 class DerstinesScraper(CutScraper):
+	# 1276/edit_note/1394/
+	CRM_ID = 1276
+	CRM_NOTE_ID = 1394
+	CRM_PRICE_TYPE = ''
+	CRM_STATUS_OVERRIDE = ''
 
 	DEFAULT_DIRECTORY = '/Users/mark/Downloads/scrapers/derstines/'
 
@@ -19,6 +23,4 @@ class DerstinesScraper(CutScraper):
 
 	def __init__(self, options=None):
 		super().__init__(options)
-		self.options = {**self.DEFAULT_OPTIONS, **(options or {})}
-		self.options['home_directory'] = self.DEFAULT_DIRECTORY
-		self.options['base_url'] = self.BASE_URL
+

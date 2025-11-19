@@ -1,0 +1,544 @@
+import csv
+import json
+import re
+import requests
+import time
+import os
+from collections import OrderedDict
+import sys
+import glob
+import pandas as pd
+
+from bs4 import BeautifulSoup
+from pathlib import Path
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+
+from seleniumwire import webdriver as seleniumwire_webdriver
+from seleniumwire.utils import decode
+
+from scrapers.scraper import Scraper
+from scrapers.shopify.shopify import ShopifyScraper
+from typing import List, Dict, Any, Optional
+"""
+	Fultion Fish 
+	Type: Standard shop website
+	Method: 
+		Get Categories: Scape Navigation
+		Get Products: Scape Product List
+		Get Product Manual Scrape and json data from html
+	Issues:
+		Manually adding urls to categories and manually added html to get categories
+"""
+# Only grabbed the first menu item = "Shop All"
+
+class FultonFishScraper(ShopifyScraper):
+	CRM_ID = 114
+	CRM_NOTE_ID = 1698
+	CRM_PRICE_TYPE = 'Retail'
+	CRM_STATUS_OVERRIDE = ''
+
+	TEST_CATEGORIES = 100
+	TEST_PRODUCTS = 20000
+	CSV_START_ROW = 0
+	TEST_TABS = 2
+	MAX_API_PRODUCTS = 999  # Maximum number to change the search request page size
+	DEFAULT_DIRECTORY = '/Users/mark/Downloads/scrapers/fulton_fish'
+
+	BASE_URL = 'https://fultonfishmarket.com/'
+	BASE_PRODUCT_URL = 'https://fultonfishmarket.com/products'
+	VENDOR_NAME = 'Fulton Fish'
+
+	DEDUP_INPUT_FILE = 'dedupe_product_data.csv'
+
+	CATEGORIES = json.loads('''{
+  "data": {
+    "categories": [
+      {
+        "id": 1,
+        "name": "\u2014",
+        "subcategories": [],
+        "url": "javascript:;"
+      },
+      {
+        "id": 2,
+        "name": "Shop All",
+        "subcategories": [],
+        "url": "javascript:;"
+      },
+      {
+        "id": 3,
+        "name": "Shop By Cuts and More",
+        "subcategories": [],
+        "url": ""
+      },
+      {
+        "id": 4,
+        "name": "Fish",
+        "subcategories": [],
+        "url": "/collections/fish"
+      },
+      {
+        "id": 5,
+        "name": "Clams / Oysters",
+        "subcategories": [],
+        "url": "/collections/clams-oysters"
+      },
+      {
+        "id": 6,
+        "name": "Mussels / Scallops",
+        "subcategories": [],
+        "url": "/collections/mussels-scallops"
+      },
+      {
+        "id": 7,
+        "name": "Crab / Lobster / Shrimp",
+        "subcategories": [],
+        "url": "/collections/crab-lobster-shrimp"
+      },
+      {
+        "id": 8,
+        "name": "Octopus",
+        "subcategories": [],
+        "url": "/collections/octopus"
+      },
+      {
+        "id": 9,
+        "name": "Caviar / Roe",
+        "subcategories": [],
+        "url": "/collections/caviar-roe"
+      },
+      {
+        "id": 10,
+        "name": "Pantry / Merchandise",
+        "subcategories": [],
+        "url": "/collections/pantry-merchandise"
+      },
+      {
+        "id": 11,
+        "name": "Prepared / Ready to Eat",
+        "subcategories": [],
+        "url": "/collections/prepared-ready-to-eat"
+      },
+      {
+        "id": 12,
+        "name": "Beef",
+        "subcategories": [],
+        "url": "/pages/lafrieda"
+      },
+      {
+        "id": 13,
+        "name": "Curated by Fulton",
+        "subcategories": [],
+        "url": "/collections/curated-by-fulton"
+      }
+    ]
+  }
+}
+
+                    
+	''')
+
+	def __init__(self, options=None):
+		super().__init__(options)
+
+	def get_categories(self):
+		"""
+		Returns a list of category dictionaries from the CATEGORIES data.
+
+		Returns:
+			list: A list of dictionaries, each containing 'id' and 'name' of a category
+		"""
+		category_options = self.CATEGORIES.get('data', {}).get('categories', {})
+		return [
+			{'id': option['id'], 'name': option['name']}
+			for option in category_options
+			if option.get('id') and option.get('name')
+		]
+
+	def get_taxonomy(self):
+		categories = self.CATEGORIES.get('data', {}).get('categories', [])
+		print(f"Categories: {categories}")
+		return categories
+
+	def get_category_url(self, category):
+		print(f"get_category_url: {category}")
+		if ("http" in category['url']):
+			return category['url']
+		else:
+			return f"https://fultonfishmarket.com{category['url']}"
+
+	# ************************************************************************
+
+	# 	Product Scraping Functions
+	# ************************************************************************
+	def get_first_image_url(self, response_data):
+		"""
+		Extract the first available image URL from the product API response.
+
+		Args:
+			response_data (dict): The parsed JSON response from the API
+
+		Returns:
+			str: URL of the first available image, or None if no image found
+		"""
+		try:
+			image = response_data.get('image', {})
+
+			# If there are assets, get the first one's URL
+			if image:
+				# Get the first asset and extract the URL
+				return image.get('url', '')
+
+		except Exception as e:
+			print(f"Error extracting image from viewModel.assets: {str(e)}")
+
+		return ''
+
+	def get_product_data(self, data, row_spec):
+		print("processing product data from response...")
+		print(data)
+		if data:
+			try:
+				row_spec["name"] = data.get("displayName", "")
+				print(f"name: {row_spec['name']}")
+				row_spec["description"] = data.get("description", "")
+				row_spec["productId"] = data.get("productId", "")
+
+				sku_details = data.get('skuDetails', {})
+				row_spec["retail_price"] = sku_details.get("price", {}).get("ListPrice", {}).get("price", "").replace('.','')
+				row_spec["pack_size"] = sku_details.get("skuOptions", [])[0].get("optionValue", "")
+				print(f"pack_size: {row_spec['pack_size']}")
+				# self.get_pack_size(data, row_spec)
+				# row_spec["image"] = self.get_first_image_url(data)
+
+				# move sku - which was just a unique identifier to id
+				row_spec['id'] = row_spec['sku']
+				row_spec['sku'] = data.get('skuId', '')
+
+				row_spec["extra_data_1"] = json.dumps(data)
+
+			except Exception as e:
+				print(f" ⛔️⛔️⛔️Error processing product data: {e}")
+
+		print("processing get_product_data Complete...")
+		# row_spec = self.get_product_data_additional(data, row_spec)
+		return row_spec
+
+	def get_product_details_scrape(self, url, row_spec=None, target="script[type='application/json']"):
+		#  Wait for the product name element on the product page detail page
+		print("AlmaScraper.get_product_details_scrape()")
+		if not row_spec: row_spec = self.PRODUCT_DATA_SPEC.copy()
+		print(f"processing product detail page for target {target}")
+		print(f"Loading page...{url}")
+
+		data = ''
+		sku = row_spec['sku']
+		request_filter = url
+
+		self.driver.get(url)
+		print(f"Sent Request")
+		product_data = ''
+		try:
+			# Wait for the page to load
+			WebDriverWait(self.driver, 10).until(
+				EC.presence_of_element_located(
+				(By.CSS_SELECTOR, target))
+			)
+			print(f"Script Loaded")
+			# Get the page source and parse it with BeautifulSoup
+			soup = BeautifulSoup(self.driver.page_source, 'html.parser')
+
+			scripts = soup.find_all('script', {'id': '__NEXT_DATA__'})
+			for script in scripts:
+				# print(script.string)
+				if script and script.string:
+					print("Loading product data")
+					try:
+						# Parse the JSON data from the script tag
+						product_data = json.loads(script.string)
+						try:
+							if product_data.get('@type') == "Product":
+								del self.driver.requests
+								return product_data
+						except Exception as e:
+							print(f"Error getting product data: {type(e)}")
+					except json.JSONDecodeError as e:
+						print(f"Error parsing JSON data: {e}")
+				else:
+					print("Could not find the product data script tag")
+
+		except Exception as e:
+			print(f"Error getting product details: {e}")
+		finally:
+			del self.driver.requests
+
+		return product_data
+
+	def get_product_details(self, url, row_spec=None):
+		"""Get Product Details"""
+		print("AlmaScraper.get_product_details()")
+		data = self.get_product_details_scrape(url, row_spec,
+		                                       target="script[type='application/json']")
+		print("getting data")
+		if not data or 'props' not in data:
+			print("❌ No product data found")
+			return row_spec or {}
+
+		# Extract product data from the nested structure
+		product_data = data.get('props', {}).get('pageProps', {}).get('data', {}).get('payLoad', {})
+		products = product_data.get('products', [])
+
+		if not products:
+			print("❌ No products found in the response")
+			return row_spec or {}
+
+		# Get the first product (should only be one)
+		product = products[0]
+		# data = data.get('props', {}).get('pageProps', {}).get('data', {}).get('payLoad', {}).get('products', [])[0]
+		print(data)
+		skus = product.get('skus', {})
+		specs = []
+		row_spec_base = row_spec
+		for sku_id, sku_data in skus.items():
+			# sku_data = json.loads(sku_data)
+			row_spec = self.get_product_data(sku_data, row_spec_base)
+			specs.append(row_spec)
+		return specs
+
+	def get_product_data_additional(self, data, row_spec):
+		row_spec["name"] = data.get("name", "")
+		row_spec['sku'] = data.get('sku', '')
+		price = round(data.get("offers", [])[0].get("price", 0) * 100)
+		row_spec["retail_price"] = "" if price == 0 else price
+		return row_spec
+
+	def build_categories_list(self):
+		url = self.BASE_URL
+		navigation = self.get_navigation_structure(url)
+		# self.print_navigation_structure(navigation)
+		return f"<div>{navigation}</div>"
+
+	def get_navigation_dict(self, url: str, headers: Optional[Dict] = None) -> Dict:
+		"""
+		Parse the navigation menu from the provided HTML and return a structured dictionary.
+
+		Args:
+			url: The URL of the page (unused in this implementation)
+			headers: Optional request headers (unused in this implementation)
+
+		Returns:
+			Dict containing the navigation structure
+		"""
+		print("FultonFish->get_navigation_dict()")
+
+		# This is the HTML structure we'll be parsing
+		html = """
+	    <nav class="tmenu_navbar tmenu_app tmenu_initialized tmenu_transition_fade tmenu_alignment_start tmenu_skin_undefined tmenu_app--horizontal"><ul class="tmenu_nav"><li class="tmenu_item tmenu_item--root tmenu_item_level_0 tmenu_item_submenu_type_tab tmenu_item_submenu_mega_position_fullwidth tmenu_item_has_child tmenu_item_active bold-item"><a class="tmenu_item_link" role="button" href="javascript:;" target="_self" title="Shop All Seafood" aria-expanded="true"><!----><!----><span class="tmenu_item_text">Shop All Seafood</span><span class="tmenu_indicator"><span class="tmenu_indicator_icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path fill="currentColor" d="M256 294.1L383 167c9.4-9.4 24.6-9.4 33.9 0s9.3 24.6 0 34L273 345c-9.1 9.1-23.7 9.3-33.1.7L95 201.1c-4.7-4.7-7-10.9-7-17s2.3-12.3 7-17c9.4-9.4 24.6-9.4 33.9 0l127.1 127z"></path></svg></span></span><!----></a><div class="tmenu_submenu_type_tab tmenu_submenu--desktop tmenu_submenu_mega_position_fullwidth tmenu_submenu_tab_position_left tmenu_submenu" type="tab" resize="false" lazyload="true" masonry="false" style="min-height: 450px;"><ul class="tmenu_col tmenu_submenu_tab_control tmenu_col-3"><li class="tmenu_item_display_header"><a class="tmenu_item_link" role="button" href="javascript:;" target="_self" title="—" data-tab-id="tmenu-menu-194157"><!----><span class="tmenu_item_text">—</span><!----><!----></a></li><li class=""><a class="tmenu_item_link" role="button" href="javascript:;" target="_self" title="Shop All" data-tab-id="tmenu-menu-633714"><!----><span class="tmenu_item_text">Shop All</span><span class="tmenu_indicator"><span class="tmenu_indicator_icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path fill="currentColor" d="M256 294.1L383 167c9.4-9.4 24.6-9.4 33.9 0s9.3 24.6 0 34L273 345c-9.1 9.1-23.7 9.3-33.1.7L95 201.1c-4.7-4.7-7-10.9-7-17s2.3-12.3 7-17c9.4-9.4 24.6-9.4 33.9 0l127.1 127z"></path></svg></span></span><!----></a></li><li class=""><a class="tmenu_item_link" role="button" href="javascript:;" target="_self" title="Shop By Cuts and More" data-tab-id="tmenu-menu-289207"><!----><span class="tmenu_item_text">Shop By Cuts and More</span><span class="tmenu_indicator"><span class="tmenu_indicator_icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path fill="currentColor" d="M256 294.1L383 167c9.4-9.4 24.6-9.4 33.9 0s9.3 24.6 0 34L273 345c-9.1 9.1-23.7 9.3-33.1.7L95 201.1c-4.7-4.7-7-10.9-7-17s2.3-12.3 7-17c9.4-9.4 24.6-9.4 33.9 0l127.1 127z"></path></svg></span></span><!----></a></li><li class=""><a class="tmenu_item_link" role="button" href="javascript:;" target="_self" title="Fish" data-tab-id="tmenu-menu-228143"><!----><span class="tmenu_item_text">Fish</span><span class="tmenu_indicator"><span class="tmenu_indicator_icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path fill="currentColor" d="M256 294.1L383 167c9.4-9.4 24.6-9.4 33.9 0s9.3 24.6 0 34L273 345c-9.1 9.1-23.7 9.3-33.1.7L95 201.1c-4.7-4.7-7-10.9-7-17s2.3-12.3 7-17c9.4-9.4 24.6-9.4 33.9 0l127.1 127z"></path></svg></span></span><!----></a></li><li class="tmenu_submenu_tab_active"><a class="tmenu_item_link" role="button" href="javascript:;" target="_self" title="Clams / Oysters" data-tab-id="tmenu-menu-103591"><!----><span class="tmenu_item_text">Clams / Oysters</span><span class="tmenu_indicator"><span class="tmenu_indicator_icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path fill="currentColor" d="M256 294.1L383 167c9.4-9.4 24.6-9.4 33.9 0s9.3 24.6 0 34L273 345c-9.1 9.1-23.7 9.3-33.1.7L95 201.1c-4.7-4.7-7-10.9-7-17s2.3-12.3 7-17c9.4-9.4 24.6-9.4 33.9 0l127.1 127z"></path></svg></span></span><!----></a></li><li class=""><a class="tmenu_item_link" role="button" href="javascript:;" target="_self" title="Mussels / Scallops" data-tab-id="tmenu-menu-105778"><!----><span class="tmenu_item_text">Mussels / Scallops</span><span class="tmenu_indicator"><span class="tmenu_indicator_icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path fill="currentColor" d="M256 294.1L383 167c9.4-9.4 24.6-9.4 33.9 0s9.3 24.6 0 34L273 345c-9.1 9.1-23.7 9.3-33.1.7L95 201.1c-4.7-4.7-7-10.9-7-17s2.3-12.3 7-17c9.4-9.4 24.6-9.4 33.9 0l127.1 127z"></path></svg></span></span><!----></a></li><li class=""><a class="tmenu_item_link" role="button" href="javascript:;" target="_self" title="Crab / Lobster / Shrimp" data-tab-id="tmenu-menu-244587"><!----><span class="tmenu_item_text">Crab / Lobster / Shrimp</span><span class="tmenu_indicator"><span class="tmenu_indicator_icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path fill="currentColor" d="M256 294.1L383 167c9.4-9.4 24.6-9.4 33.9 0s9.3 24.6 0 34L273 345c-9.1 9.1-23.7 9.3-33.1.7L95 201.1c-4.7-4.7-7-10.9-7-17s2.3-12.3 7-17c9.4-9.4 24.6-9.4 33.9 0l127.1 127z"></path></svg></span></span><!----></a></li><li class=""><a class="tmenu_item_link" role="button" href="javascript:;" target="_self" title="Octopus" data-tab-id="tmenu-menu-263103"><!----><span class="tmenu_item_text">Octopus</span><span class="tmenu_indicator"><span class="tmenu_indicator_icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path fill="currentColor" d="M256 294.1L383 167c9.4-9.4 24.6-9.4 33.9 0s9.3 24.6 0 34L273 345c-9.1 9.1-23.7 9.3-33.1.7L95 201.1c-4.7-4.7-7-10.9-7-17s2.3-12.3 7-17c9.4-9.4 24.6-9.4 33.9 0l127.1 127z"></path></svg></span></span><!----></a></li><li class=""><a class="tmenu_item_link" role="button" href="javascript:;" target="_self" title="Caviar / Roe" data-tab-id="tmenu-menu-307583"><!----><span class="tmenu_item_text">Caviar / Roe</span><span class="tmenu_indicator"><span class="tmenu_indicator_icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path fill="currentColor" d="M256 294.1L383 167c9.4-9.4 24.6-9.4 33.9 0s9.3 24.6 0 34L273 345c-9.1 9.1-23.7 9.3-33.1.7L95 201.1c-4.7-4.7-7-10.9-7-17s2.3-12.3 7-17c9.4-9.4 24.6-9.4 33.9 0l127.1 127z"></path></svg></span></span><!----></a></li><li class=""><a class="tmenu_item_link" role="button" href="javascript:;" target="_self" title="Pantry / Merchandise" data-tab-id="tmenu-menu-264432"><!----><span class="tmenu_item_text">Pantry / Merchandise</span><span class="tmenu_indicator"><span class="tmenu_indicator_icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path fill="currentColor" d="M256 294.1L383 167c9.4-9.4 24.6-9.4 33.9 0s9.3 24.6 0 34L273 345c-9.1 9.1-23.7 9.3-33.1.7L95 201.1c-4.7-4.7-7-10.9-7-17s2.3-12.3 7-17c9.4-9.4 24.6-9.4 33.9 0l127.1 127z"></path></svg></span></span><!----></a></li><li class=""><a class="tmenu_item_link" role="button" href="javascript:;" target="_self" title="Prepared / Ready to Eat" data-tab-id="tmenu-menu-926879"><!----><span class="tmenu_item_text">Prepared / Ready to Eat</span><span class="tmenu_indicator"><span class="tmenu_indicator_icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path fill="currentColor" d="M256 294.1L383 167c9.4-9.4 24.6-9.4 33.9 0s9.3 24.6 0 34L273 345c-9.1 9.1-23.7 9.3-33.1.7L95 201.1c-4.7-4.7-7-10.9-7-17s2.3-12.3 7-17c9.4-9.4 24.6-9.4 33.9 0l127.1 127z"></path></svg></span></span><!----></a></li><li class=""><a class="tmenu_item_link" role="button" href="javascript:;" target="_self" title="Beef" data-tab-id="tmenu-menu-947075"><!----><span class="tmenu_item_text">Beef</span><span class="tmenu_indicator"><span class="tmenu_indicator_icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path fill="currentColor" d="M256 294.1L383 167c9.4-9.4 24.6-9.4 33.9 0s9.3 24.6 0 34L273 345c-9.1 9.1-23.7 9.3-33.1.7L95 201.1c-4.7-4.7-7-10.9-7-17s2.3-12.3 7-17c9.4-9.4 24.6-9.4 33.9 0l127.1 127z"></path></svg></span></span><!----></a></li><li class=""><a class="tmenu_item_link" role="button" href="javascript:;" target="_self" title="Curated by Fulton" data-tab-id="tmenu-menu-541936"><!----><span class="tmenu_item_text">Curated by Fulton</span><span class="tmenu_indicator"><span class="tmenu_indicator_icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path fill="currentColor" d="M256 294.1L383 167c9.4-9.4 24.6-9.4 33.9 0s9.3 24.6 0 34L273 345c-9.1 9.1-23.7 9.3-33.1.7L95 201.1c-4.7-4.7-7-10.9-7-17s2.3-12.3 7-17c9.4-9.4 24.6-9.4 33.9 0l127.1 127z"></path></svg></span></span><!----></a></li></ul><div class="tmenu_col tmenu_submenu_tab_content"><div class="tmenu_submenu_tab_item"><!----></div><div class="tmenu_submenu_tab_item"><div class="tmenu_masonry tmenu_submenu_type_mega tmenu_submenu--desktop tmenu_submenu_mega_position_fullwidth tmenu_submenu" columnnumber="4" type="mega" lazyload="true" masonry="true" data-id="tmenu-menu-633714"><ul class="tmenu_masonry_placeholder tmenu_masonry_col-4"><li class="tmenu_item tmenu_item_level_1 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_has_child tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="javascript:;" target="_self" title="All Seafood"><span class="tmenu_item_text">All Seafood</span><!----><!----></a><!----><ul class="tmenu_submenu_type_automatic tmenu_submenu--desktop tmenu_submenu" type="automatic" masonry="false" masonrycolumn="3"><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/all" target="_self" title="View All Seafood"><span class="tmenu_item_text">View All Seafood</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/eligible-for-free-shipping-seafood" target="_self" title="View All Free Shipping Eligible Products (Get Free Shipping on Eligible Orders)"><span class="tmenu_item_text">View All Free Shipping Eligible Products (Get Free Shipping on Eligible Orders)</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="https://fultonfishmarket.com/pages/lafrieda" target="_self" title="Beef"><span class="tmenu_item_text">Beef</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/gift-cards" target="_self" title="Gift Cards"><span class="tmenu_item_text">Gift Cards</span><!----><!----></a><!----></li></ul></li><li class="tmenu_item tmenu_item_level_1 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_has_child tmenu_item_layout tmenu_item_layout_text tmenu_item_display_header"><a class="tmenu_item_link" role="button" href="/pages/featured-seafood" target="_self" title="Featured Seafood"><span class="tmenu_item_text">Featured Seafood</span><!----><!----></a><!----><ul class="tmenu_submenu_type_automatic tmenu_submenu--desktop tmenu_submenu" type="automatic" masonry="false" masonrycolumn="3"><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_image"><a class="tmenu_item_link tmenu_item_content_alignment_left" role="button" href="/pages/featured-seafood" target="_self" title="Dover Sole"><div class="tmenu_image tmenu_image--above"><img data-srcset="https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_180x.jpg?v=1759946703 180w, https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_360x.jpg?v=1759946703 360w, https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_540x.jpg?v=1759946703 540w, https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_720x.jpg?v=1759946703 720w, https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_900x.jpg?v=1759946703 900w, https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_1080x.jpg?v=1759946703 1080w, https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_1296x.jpg?v=1759946703 1296w, https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_1512x.jpg?v=1759946703 1512w, https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_1728x.jpg?v=1759946703 1728w, https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_2048x.jpg?v=1759946703 2048w" alt="Dover Sole" title="Dover Sole" style="width: 250px;" data-src="https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_360x.jpg?v=1759946703" src="https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_360x.jpg?v=1759946703" lazy="loaded"><span class="tmenu_item_text">Dover Sole</span></div><!----></a><!----></li></ul></li></ul><div class="tmenu_masonry_row"><ul class="tmenu_masonry_col tmenu_masonry_col-4"><li class="tmenu_item tmenu_item_level_1 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_has_child tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="javascript:;" target="_self" title="All Seafood"><span class="tmenu_item_text">All Seafood</span><!----><!----></a><!----><ul class="tmenu_submenu_type_automatic tmenu_submenu--desktop tmenu_submenu" type="automatic" masonry="false" masonrycolumn="3"><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/all" target="_self" title="View All Seafood"><span class="tmenu_item_text">View All Seafood</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/eligible-for-free-shipping-seafood" target="_self" title="View All Free Shipping Eligible Products (Get Free Shipping on Eligible Orders)"><span class="tmenu_item_text">View All Free Shipping Eligible Products (Get Free Shipping on Eligible Orders)</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="https://fultonfishmarket.com/pages/lafrieda" target="_self" title="Beef"><span class="tmenu_item_text">Beef</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/gift-cards" target="_self" title="Gift Cards"><span class="tmenu_item_text">Gift Cards</span><!----><!----></a><!----></li></ul></li></ul><ul class="tmenu_masonry_col tmenu_masonry_col-4"><li class="tmenu_item tmenu_item_level_1 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_has_child tmenu_item_layout tmenu_item_layout_text tmenu_item_display_header"><a class="tmenu_item_link" role="button" href="/pages/featured-seafood" target="_self" title="Featured Seafood"><span class="tmenu_item_text">Featured Seafood</span><!----><!----></a><!----><ul class="tmenu_submenu_type_automatic tmenu_submenu--desktop tmenu_submenu" type="automatic" masonry="false" masonrycolumn="3"><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_image"><a class="tmenu_item_link tmenu_item_content_alignment_left" role="button" href="/pages/featured-seafood" target="_self" title="Dover Sole"><div class="tmenu_image tmenu_image--above"><img data-srcset="https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_180x.jpg?v=1759946703 180w, https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_360x.jpg?v=1759946703 360w, https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_540x.jpg?v=1759946703 540w, https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_720x.jpg?v=1759946703 720w, https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_900x.jpg?v=1759946703 900w, https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_1080x.jpg?v=1759946703 1080w, https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_1296x.jpg?v=1759946703 1296w, https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_1512x.jpg?v=1759946703 1512w, https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_1728x.jpg?v=1759946703 1728w, https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_2048x.jpg?v=1759946703 2048w" alt="Dover Sole" title="Dover Sole" style="width: 250px;" data-src="https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_720x.jpg?v=1759946703" src="https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_720x.jpg?v=1759946703" lazy="loaded"><span class="tmenu_item_text">Dover Sole</span></div><!----></a><!----></li></ul></li></ul><ul class="tmenu_masonry_col tmenu_masonry_col-4"></ul><ul class="tmenu_masonry_col tmenu_masonry_col-4"></ul></div><!----></div></div><div class="tmenu_submenu_tab_item"><div class="tmenu_masonry tmenu_submenu_type_mega tmenu_submenu--desktop tmenu_submenu_mega_position_fullwidth tmenu_submenu" columnnumber="4" type="mega" lazyload="true" masonry="true" data-id="tmenu-menu-289207"><ul class="tmenu_masonry_placeholder tmenu_masonry_col-4"><li class="tmenu_item tmenu_item_level_1 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_has_child tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" tmenu-disabled-link="" href="javascript:;" target="_self" title="Cuts"><span class="tmenu_item_text">Cuts</span><!----><!----></a><!----><ul class="tmenu_submenu_type_automatic tmenu_submenu--desktop tmenu_submenu" type="automatic" masonry="false" masonrycolumn="3"><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/whole-fish" target="_self" title="Whole &amp; Butterflied"><span class="tmenu_item_text">Whole &amp; Butterflied</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/fillets" target="_self" title="Fillets"><span class="tmenu_item_text">Fillets</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/seafood-portions-steaks" target="_self" title="Portions &amp; Steaks"><span class="tmenu_item_text">Portions &amp; Steaks</span><!----><!----></a><!----></li></ul></li><li class="tmenu_item tmenu_item_level_1 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_has_child tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link tmenu_item_content_alignment_left" role="button" tmenu-disabled-link="" href="javascript:;" target="_self" title=" Frozen / Live / Smoked"><span class="tmenu_item_text"> Frozen / Live / Smoked</span><!----><!----></a><!----><ul class="tmenu_submenu_type_automatic tmenu_submenu--desktop tmenu_submenu" type="automatic" masonry="false" masonrycolumn="3"><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/canned-seafood" target="_self" title="Canned"><span class="tmenu_item_text">Canned</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/frozen-seafood" target="_self" title="Freshly Frozen"><span class="tmenu_item_text">Freshly Frozen</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/live-seafood" target="_self" title="Live/Fresh Shellfish"><span class="tmenu_item_text">Live/Fresh Shellfish</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/smoked-seafood" target="_self" title="Smoked"><span class="tmenu_item_text">Smoked</span><!----><!----></a><!----></li></ul></li><li class="tmenu_item tmenu_item_level_1 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_has_child tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link tmenu_item_content_alignment_left" role="button" tmenu-disabled-link="" href="javascript:;" target="_self" title="Wild"><span class="tmenu_item_text">Wild</span><!----><!----></a><!----><ul class="tmenu_submenu_type_automatic tmenu_submenu--desktop tmenu_submenu" type="automatic" masonry="false" masonrycolumn="3"><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/farmed-seafood" target="_self" title="Farmed"><span class="tmenu_item_text">Farmed</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/wild-seafood" target="_self" title="Wild"><span class="tmenu_item_text">Wild</span><!----><!----></a><!----></li></ul></li></ul><div class="tmenu_masonry_row"><ul class="tmenu_masonry_col tmenu_masonry_col-4"><li class="tmenu_item tmenu_item_level_1 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_has_child tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" tmenu-disabled-link="" href="javascript:;" target="_self" title="Cuts"><span class="tmenu_item_text">Cuts</span><!----><!----></a><!----><ul class="tmenu_submenu_type_automatic tmenu_submenu--desktop tmenu_submenu" type="automatic" masonry="false" masonrycolumn="3"><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/whole-fish" target="_self" title="Whole &amp; Butterflied"><span class="tmenu_item_text">Whole &amp; Butterflied</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/fillets" target="_self" title="Fillets"><span class="tmenu_item_text">Fillets</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/seafood-portions-steaks" target="_self" title="Portions &amp; Steaks"><span class="tmenu_item_text">Portions &amp; Steaks</span><!----><!----></a><!----></li></ul></li></ul><ul class="tmenu_masonry_col tmenu_masonry_col-4"><li class="tmenu_item tmenu_item_level_1 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_has_child tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link tmenu_item_content_alignment_left" role="button" tmenu-disabled-link="" href="javascript:;" target="_self" title=" Frozen / Live / Smoked"><span class="tmenu_item_text"> Frozen / Live / Smoked</span><!----><!----></a><!----><ul class="tmenu_submenu_type_automatic tmenu_submenu--desktop tmenu_submenu" type="automatic" masonry="false" masonrycolumn="3"><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/canned-seafood" target="_self" title="Canned"><span class="tmenu_item_text">Canned</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/frozen-seafood" target="_self" title="Freshly Frozen"><span class="tmenu_item_text">Freshly Frozen</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/live-seafood" target="_self" title="Live/Fresh Shellfish"><span class="tmenu_item_text">Live/Fresh Shellfish</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/smoked-seafood" target="_self" title="Smoked"><span class="tmenu_item_text">Smoked</span><!----><!----></a><!----></li></ul></li></ul><ul class="tmenu_masonry_col tmenu_masonry_col-4"><li class="tmenu_item tmenu_item_level_1 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_has_child tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link tmenu_item_content_alignment_left" role="button" tmenu-disabled-link="" href="javascript:;" target="_self" title="Wild"><span class="tmenu_item_text">Wild</span><!----><!----></a><!----><ul class="tmenu_submenu_type_automatic tmenu_submenu--desktop tmenu_submenu" type="automatic" masonry="false" masonrycolumn="3"><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/farmed-seafood" target="_self" title="Farmed"><span class="tmenu_item_text">Farmed</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/wild-seafood" target="_self" title="Wild"><span class="tmenu_item_text">Wild</span><!----><!----></a><!----></li></ul></li></ul><ul class="tmenu_masonry_col tmenu_masonry_col-4"></ul></div><!----></div></div><div class="tmenu_submenu_tab_item"><div class="tmenu_masonry tmenu_submenu_type_mega tmenu_submenu--desktop tmenu_submenu_mega_position_fullwidth tmenu_submenu" columnnumber="4" type="mega" lazyload="true" masonry="true" data-id="tmenu-menu-228143"><ul class="tmenu_masonry_placeholder tmenu_masonry_col-4"><li class="tmenu_item tmenu_item_level_1 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_has_child tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" tmenu-disabled-link="" href="javascript:;" target="_self" title=" "><span class="tmenu_item_text"> </span><!----><!----></a><!----><ul class="tmenu_submenu_type_automatic tmenu_submenu--desktop tmenu_submenu" type="automatic" masonry="false" masonrycolumn="3"><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/fish" target="_self" title="View All Fish"><span class="tmenu_item_text">View All Fish</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/anchovies" target="_self" title="Anchovies"><span class="tmenu_item_text">Anchovies</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/arctic-char" target="_self" title="Arctic Char"><span class="tmenu_item_text">Arctic Char</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/bass-branzino" target="_self" title="Bass / Branzino"><span class="tmenu_item_text">Bass / Branzino</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/cod" target="_self" title="Cod"><span class="tmenu_item_text">Cod</span><!----><!----></a><!----></li></ul></li><li class="tmenu_item tmenu_item_level_1 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_has_child tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link tmenu_item_content_alignment_left" role="button" tmenu-disabled-link="" href="javascript:;" target="_self" title="  "><span class="tmenu_item_text">  </span><!----><!----></a><!----><ul class="tmenu_submenu_type_automatic tmenu_submenu--desktop tmenu_submenu" type="automatic" masonry="false" masonrycolumn="3"><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/halibut" target="_self" title="Halibut"><span class="tmenu_item_text">Halibut</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/porgy" target="_self" title="Porgy"><span class="tmenu_item_text">Porgy</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/salmon" target="_self" title="Salmon"><span class="tmenu_item_text">Salmon</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/snapper" target="_self" title="Snapper"><span class="tmenu_item_text">Snapper</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/swordfish" target="_self" title="Swordfish"><span class="tmenu_item_text">Swordfish</span><!----><!----></a><!----></li></ul></li><li class="tmenu_item tmenu_item_level_1 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_has_child tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link tmenu_item_content_alignment_left" role="button" tmenu-disabled-link="" href="javascript:;" target="_self" title="  "><span class="tmenu_item_text">  </span><!----><!----></a><!----><ul class="tmenu_submenu_type_automatic tmenu_submenu--desktop tmenu_submenu" type="automatic" masonry="false" masonrycolumn="3"><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/trout" target="_self" title="Trout"><span class="tmenu_item_text">Trout</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/tuna" target="_self" title="Tuna"><span class="tmenu_item_text">Tuna</span><!----><!----></a><!----></li></ul></li><li class="tmenu_item tmenu_item_level_1 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_has_child tmenu_item_layout tmenu_item_layout_text tmenu_item_display_header"><a class="tmenu_item_link tmenu_item_content_alignment_left" role="button" href="/pages/featured-seafood" target="_self" title="Featured Seafood"><span class="tmenu_item_text">Featured Seafood</span><!----><!----></a><!----><ul class="tmenu_submenu_type_automatic tmenu_submenu--desktop tmenu_submenu" type="automatic" masonry="false" masonrycolumn="3"><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_image"><a class="tmenu_item_link tmenu_item_content_alignment_left" role="button" href="/pages/featured-seafood" target="_self" title="Dover Sole"><div class="tmenu_image tmenu_image--above"><img data-srcset="https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_9926f742-ec81-44fd-99cb-58fe983854a0_180x.jpg?v=1759946745 180w, https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_9926f742-ec81-44fd-99cb-58fe983854a0_360x.jpg?v=1759946745 360w, https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_9926f742-ec81-44fd-99cb-58fe983854a0_540x.jpg?v=1759946745 540w, https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_9926f742-ec81-44fd-99cb-58fe983854a0_720x.jpg?v=1759946745 720w, https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_9926f742-ec81-44fd-99cb-58fe983854a0_900x.jpg?v=1759946745 900w, https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_9926f742-ec81-44fd-99cb-58fe983854a0_1080x.jpg?v=1759946745 1080w, https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_9926f742-ec81-44fd-99cb-58fe983854a0_1296x.jpg?v=1759946745 1296w, https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_9926f742-ec81-44fd-99cb-58fe983854a0_1512x.jpg?v=1759946745 1512w, https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_9926f742-ec81-44fd-99cb-58fe983854a0_1728x.jpg?v=1759946745 1728w, https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_9926f742-ec81-44fd-99cb-58fe983854a0_2048x.jpg?v=1759946745 2048w" alt="Dover Sole" title="Dover Sole" style="width: 250px;" data-src="https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_9926f742-ec81-44fd-99cb-58fe983854a0_360x.jpg?v=1759946745" src="https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_9926f742-ec81-44fd-99cb-58fe983854a0_360x.jpg?v=1759946745" lazy="loaded"><span class="tmenu_item_text">Dover Sole</span></div><!----></a><!----></li></ul></li></ul><div class="tmenu_masonry_row"><ul class="tmenu_masonry_col tmenu_masonry_col-4"><li class="tmenu_item tmenu_item_level_1 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_has_child tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" tmenu-disabled-link="" href="javascript:;" target="_self" title=" "><span class="tmenu_item_text"> </span><!----><!----></a><!----><ul class="tmenu_submenu_type_automatic tmenu_submenu--desktop tmenu_submenu" type="automatic" masonry="false" masonrycolumn="3"><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/fish" target="_self" title="View All Fish"><span class="tmenu_item_text">View All Fish</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/anchovies" target="_self" title="Anchovies"><span class="tmenu_item_text">Anchovies</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/arctic-char" target="_self" title="Arctic Char"><span class="tmenu_item_text">Arctic Char</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/bass-branzino" target="_self" title="Bass / Branzino"><span class="tmenu_item_text">Bass / Branzino</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/cod" target="_self" title="Cod"><span class="tmenu_item_text">Cod</span><!----><!----></a><!----></li></ul></li></ul><ul class="tmenu_masonry_col tmenu_masonry_col-4"><li class="tmenu_item tmenu_item_level_1 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_has_child tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link tmenu_item_content_alignment_left" role="button" tmenu-disabled-link="" href="javascript:;" target="_self" title="  "><span class="tmenu_item_text">  </span><!----><!----></a><!----><ul class="tmenu_submenu_type_automatic tmenu_submenu--desktop tmenu_submenu" type="automatic" masonry="false" masonrycolumn="3"><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/halibut" target="_self" title="Halibut"><span class="tmenu_item_text">Halibut</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/porgy" target="_self" title="Porgy"><span class="tmenu_item_text">Porgy</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/salmon" target="_self" title="Salmon"><span class="tmenu_item_text">Salmon</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/snapper" target="_self" title="Snapper"><span class="tmenu_item_text">Snapper</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/swordfish" target="_self" title="Swordfish"><span class="tmenu_item_text">Swordfish</span><!----><!----></a><!----></li></ul></li></ul><ul class="tmenu_masonry_col tmenu_masonry_col-4"><li class="tmenu_item tmenu_item_level_1 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_has_child tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link tmenu_item_content_alignment_left" role="button" tmenu-disabled-link="" href="javascript:;" target="_self" title="  "><span class="tmenu_item_text">  </span><!----><!----></a><!----><ul class="tmenu_submenu_type_automatic tmenu_submenu--desktop tmenu_submenu" type="automatic" masonry="false" masonrycolumn="3"><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/trout" target="_self" title="Trout"><span class="tmenu_item_text">Trout</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/tuna" target="_self" title="Tuna"><span class="tmenu_item_text">Tuna</span><!----><!----></a><!----></li></ul></li></ul><ul class="tmenu_masonry_col tmenu_masonry_col-4"><li class="tmenu_item tmenu_item_level_1 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_has_child tmenu_item_layout tmenu_item_layout_text tmenu_item_display_header"><a class="tmenu_item_link tmenu_item_content_alignment_left" role="button" href="/pages/featured-seafood" target="_self" title="Featured Seafood"><span class="tmenu_item_text">Featured Seafood</span><!----><!----></a><!----><ul class="tmenu_submenu_type_automatic tmenu_submenu--desktop tmenu_submenu" type="automatic" masonry="false" masonrycolumn="3"><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_image"><a class="tmenu_item_link tmenu_item_content_alignment_left" role="button" href="/pages/featured-seafood" target="_self" title="Dover Sole"><div class="tmenu_image tmenu_image--above"><img data-srcset="https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_9926f742-ec81-44fd-99cb-58fe983854a0_180x.jpg?v=1759946745 180w, https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_9926f742-ec81-44fd-99cb-58fe983854a0_360x.jpg?v=1759946745 360w, https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_9926f742-ec81-44fd-99cb-58fe983854a0_540x.jpg?v=1759946745 540w, https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_9926f742-ec81-44fd-99cb-58fe983854a0_720x.jpg?v=1759946745 720w, https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_9926f742-ec81-44fd-99cb-58fe983854a0_900x.jpg?v=1759946745 900w, https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_9926f742-ec81-44fd-99cb-58fe983854a0_1080x.jpg?v=1759946745 1080w, https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_9926f742-ec81-44fd-99cb-58fe983854a0_1296x.jpg?v=1759946745 1296w, https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_9926f742-ec81-44fd-99cb-58fe983854a0_1512x.jpg?v=1759946745 1512w, https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_9926f742-ec81-44fd-99cb-58fe983854a0_1728x.jpg?v=1759946745 1728w, https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_9926f742-ec81-44fd-99cb-58fe983854a0_2048x.jpg?v=1759946745 2048w" alt="Dover Sole" title="Dover Sole" style="width: 250px;" data-src="https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_9926f742-ec81-44fd-99cb-58fe983854a0_360x.jpg?v=1759946745" src="https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_9926f742-ec81-44fd-99cb-58fe983854a0_360x.jpg?v=1759946745" lazy="loaded"><span class="tmenu_item_text">Dover Sole</span></div><!----></a><!----></li></ul></li></ul></div><!----></div></div><div class="tmenu_submenu_tab_item tmenu_submenu_tab_active"><div class="tmenu_masonry tmenu_submenu_type_mega tmenu_submenu--desktop tmenu_submenu_mega_position_fullwidth tmenu_submenu" columnnumber="4" type="mega" lazyload="true" masonry="true" data-id="tmenu-menu-103591"><ul class="tmenu_masonry_placeholder tmenu_masonry_col-4"><li class="tmenu_item tmenu_item_level_1 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_has_child tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/hard-shell-clams" target="_self" title="Clams &amp; Oysters"><span class="tmenu_item_text">Clams &amp; Oysters</span><!----><!----></a><!----><ul class="tmenu_submenu_type_automatic tmenu_submenu--desktop tmenu_submenu" type="automatic" masonry="false" masonrycolumn="3"><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/clams-oysters" target="_self" title="View All Clams &amp; Oysters"><span class="tmenu_item_text">View All Clams &amp; Oysters</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/clams" target="_self" title="Clams"><span class="tmenu_item_text">Clams</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/oysters" target="_self" title="Oysters"><span class="tmenu_item_text">Oysters</span><!----><!----></a><!----></li></ul></li></ul><div class="tmenu_masonry_row"><ul class="tmenu_masonry_col tmenu_masonry_col-4"><li class="tmenu_item tmenu_item_level_1 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_has_child tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/hard-shell-clams" target="_self" title="Clams &amp; Oysters"><span class="tmenu_item_text">Clams &amp; Oysters</span><!----><!----></a><!----><ul class="tmenu_submenu_type_automatic tmenu_submenu--desktop tmenu_submenu" type="automatic" masonry="false" masonrycolumn="3"><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/clams-oysters" target="_self" title="View All Clams &amp; Oysters"><span class="tmenu_item_text">View All Clams &amp; Oysters</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/clams" target="_self" title="Clams"><span class="tmenu_item_text">Clams</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/oysters" target="_self" title="Oysters"><span class="tmenu_item_text">Oysters</span><!----><!----></a><!----></li></ul></li></ul><ul class="tmenu_masonry_col tmenu_masonry_col-4"></ul><ul class="tmenu_masonry_col tmenu_masonry_col-4"></ul><ul class="tmenu_masonry_col tmenu_masonry_col-4"></ul></div><!----></div></div><div class="tmenu_submenu_tab_item"><div class="tmenu_masonry tmenu_submenu_type_mega tmenu_submenu--desktop tmenu_submenu_mega_position_fullwidth tmenu_submenu" columnnumber="4" type="mega" lazyload="true" masonry="true" data-id="tmenu-menu-105778"><ul class="tmenu_masonry_placeholder tmenu_masonry_col-4"><li class="tmenu_item tmenu_item_level_1 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_has_child tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" tmenu-disabled-link="" href="javascript:;" target="_self" title="Mussels &amp; Scallops"><span class="tmenu_item_text">Mussels &amp; Scallops</span><!----><!----></a><!----><ul class="tmenu_submenu_type_automatic tmenu_submenu--desktop tmenu_submenu" type="automatic" masonry="false" masonrycolumn="3"><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/mussels-scallops" target="_self" title="View All Mussels &amp; Scallops"><span class="tmenu_item_text">View All Mussels &amp; Scallops</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/mussels" target="_self" title="Mussels"><span class="tmenu_item_text">Mussels</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/scallops" target="_self" title="Scallops"><span class="tmenu_item_text">Scallops</span><!----><!----></a><!----></li></ul></li></ul><div class="tmenu_masonry_row"><ul class="tmenu_masonry_col tmenu_masonry_col-4"><li class="tmenu_item tmenu_item_level_1 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_has_child tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" tmenu-disabled-link="" href="javascript:;" target="_self" title="Mussels &amp; Scallops"><span class="tmenu_item_text">Mussels &amp; Scallops</span><!----><!----></a><!----><ul class="tmenu_submenu_type_automatic tmenu_submenu--desktop tmenu_submenu" type="automatic" masonry="false" masonrycolumn="3"><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/mussels-scallops" target="_self" title="View All Mussels &amp; Scallops"><span class="tmenu_item_text">View All Mussels &amp; Scallops</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/mussels" target="_self" title="Mussels"><span class="tmenu_item_text">Mussels</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/scallops" target="_self" title="Scallops"><span class="tmenu_item_text">Scallops</span><!----><!----></a><!----></li></ul></li></ul><ul class="tmenu_masonry_col tmenu_masonry_col-4"></ul><ul class="tmenu_masonry_col tmenu_masonry_col-4"></ul><ul class="tmenu_masonry_col tmenu_masonry_col-4"></ul></div><!----></div></div><div class="tmenu_submenu_tab_item"><div class="tmenu_masonry tmenu_submenu_type_mega tmenu_submenu--desktop tmenu_submenu_mega_position_fullwidth tmenu_submenu" columnnumber="4" type="mega" lazyload="true" masonry="true" data-id="tmenu-menu-244587"><ul class="tmenu_masonry_placeholder tmenu_masonry_col-4"><li class="tmenu_item tmenu_item_level_1 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_has_child tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/crab-lobster-shrimp" target="_self" title="Crab, Lobster &amp; Shrimp"><span class="tmenu_item_text">Crab, Lobster &amp; Shrimp</span><!----><!----></a><!----><ul class="tmenu_submenu_type_automatic tmenu_submenu--desktop tmenu_submenu" type="automatic" masonry="false" masonrycolumn="3"><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/crab-lobster-shrimp" target="_self" title="View All Crab, Lobster &amp; Shrimp"><span class="tmenu_item_text">View All Crab, Lobster &amp; Shrimp</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/crab" target="_self" title="Crab"><span class="tmenu_item_text">Crab</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/crawfish" target="_self" title="Crawfish"><span class="tmenu_item_text">Crawfish</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/lobster" target="_self" title="Lobster"><span class="tmenu_item_text">Lobster</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/shrimp" target="_self" title="Shrimp"><span class="tmenu_item_text">Shrimp</span><!----><!----></a><!----></li></ul></li></ul><div class="tmenu_masonry_row"><ul class="tmenu_masonry_col tmenu_masonry_col-4"><li class="tmenu_item tmenu_item_level_1 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_has_child tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/crab-lobster-shrimp" target="_self" title="Crab, Lobster &amp; Shrimp"><span class="tmenu_item_text">Crab, Lobster &amp; Shrimp</span><!----><!----></a><!----><ul class="tmenu_submenu_type_automatic tmenu_submenu--desktop tmenu_submenu" type="automatic" masonry="false" masonrycolumn="3"><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/crab-lobster-shrimp" target="_self" title="View All Crab, Lobster &amp; Shrimp"><span class="tmenu_item_text">View All Crab, Lobster &amp; Shrimp</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/crab" target="_self" title="Crab"><span class="tmenu_item_text">Crab</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/crawfish" target="_self" title="Crawfish"><span class="tmenu_item_text">Crawfish</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/lobster" target="_self" title="Lobster"><span class="tmenu_item_text">Lobster</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/shrimp" target="_self" title="Shrimp"><span class="tmenu_item_text">Shrimp</span><!----><!----></a><!----></li></ul></li></ul><ul class="tmenu_masonry_col tmenu_masonry_col-4"></ul><ul class="tmenu_masonry_col tmenu_masonry_col-4"></ul><ul class="tmenu_masonry_col tmenu_masonry_col-4"></ul></div><!----></div></div><div class="tmenu_submenu_tab_item"><div class="tmenu_masonry tmenu_submenu_type_mega tmenu_submenu--desktop tmenu_submenu_mega_position_fullwidth tmenu_submenu" columnnumber="4" type="mega" lazyload="true" masonry="true" data-id="tmenu-menu-263103"><ul class="tmenu_masonry_placeholder tmenu_masonry_col-4"><li class="tmenu_item tmenu_item_level_1 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_has_child tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/octopus" target="_self" title="Octopus"><span class="tmenu_item_text">Octopus</span><!----><!----></a><!----><ul class="tmenu_submenu_type_automatic tmenu_submenu--desktop tmenu_submenu" type="automatic" masonry="false" masonrycolumn="3"><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/octopus" target="_self" title="View All Octopus"><span class="tmenu_item_text">View All Octopus</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/octopus" target="_self" title="Octopus"><span class="tmenu_item_text">Octopus</span><!----><!----></a><!----></li></ul></li></ul><div class="tmenu_masonry_row"><ul class="tmenu_masonry_col tmenu_masonry_col-4"><li class="tmenu_item tmenu_item_level_1 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_has_child tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/octopus" target="_self" title="Octopus"><span class="tmenu_item_text">Octopus</span><!----><!----></a><!----><ul class="tmenu_submenu_type_automatic tmenu_submenu--desktop tmenu_submenu" type="automatic" masonry="false" masonrycolumn="3"><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/octopus" target="_self" title="View All Octopus"><span class="tmenu_item_text">View All Octopus</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/octopus" target="_self" title="Octopus"><span class="tmenu_item_text">Octopus</span><!----><!----></a><!----></li></ul></li></ul><ul class="tmenu_masonry_col tmenu_masonry_col-4"></ul><ul class="tmenu_masonry_col tmenu_masonry_col-4"></ul><ul class="tmenu_masonry_col tmenu_masonry_col-4"></ul></div><!----></div></div><div class="tmenu_submenu_tab_item"><div class="tmenu_masonry tmenu_submenu_type_mega tmenu_submenu--desktop tmenu_submenu_mega_position_fullwidth tmenu_submenu" columnnumber="4" type="mega" lazyload="true" masonry="true" data-id="tmenu-menu-307583"><ul class="tmenu_masonry_placeholder tmenu_masonry_col-4"><li class="tmenu_item tmenu_item_level_1 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_has_child tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/caviar-roe" target="_self" title="Caviar &amp; Roe"><span class="tmenu_item_text">Caviar &amp; Roe</span><!----><!----></a><!----><ul class="tmenu_submenu_type_automatic tmenu_submenu--desktop tmenu_submenu" type="automatic" masonry="false" masonrycolumn="3"><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/caviar-roe" target="_self" title="View All Caviar &amp; Roe"><span class="tmenu_item_text">View All Caviar &amp; Roe</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link tmenu_item_content_alignment_left" role="button" href="/collections/blini-creme-fraiche" target="_self" title="Blini/Crème Fraîche"><span class="tmenu_item_text">Blini/Crème Fraîche</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/caviar" target="_self" title="Caviar"><span class="tmenu_item_text">Caviar</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/uni-sea-urchin" target="_self" title="Uni (Sea Urchin)"><span class="tmenu_item_text">Uni (Sea Urchin)</span><!----><!----></a><!----></li></ul></li></ul><div class="tmenu_masonry_row"><ul class="tmenu_masonry_col tmenu_masonry_col-4"><li class="tmenu_item tmenu_item_level_1 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_has_child tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/caviar-roe" target="_self" title="Caviar &amp; Roe"><span class="tmenu_item_text">Caviar &amp; Roe</span><!----><!----></a><!----><ul class="tmenu_submenu_type_automatic tmenu_submenu--desktop tmenu_submenu" type="automatic" masonry="false" masonrycolumn="3"><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/caviar-roe" target="_self" title="View All Caviar &amp; Roe"><span class="tmenu_item_text">View All Caviar &amp; Roe</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link tmenu_item_content_alignment_left" role="button" href="/collections/blini-creme-fraiche" target="_self" title="Blini/Crème Fraîche"><span class="tmenu_item_text">Blini/Crème Fraîche</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/caviar" target="_self" title="Caviar"><span class="tmenu_item_text">Caviar</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/uni-sea-urchin" target="_self" title="Uni (Sea Urchin)"><span class="tmenu_item_text">Uni (Sea Urchin)</span><!----><!----></a><!----></li></ul></li></ul><ul class="tmenu_masonry_col tmenu_masonry_col-4"></ul><ul class="tmenu_masonry_col tmenu_masonry_col-4"></ul><ul class="tmenu_masonry_col tmenu_masonry_col-4"></ul></div><!----></div></div><div class="tmenu_submenu_tab_item"><div class="tmenu_masonry tmenu_submenu_type_mega tmenu_submenu--desktop tmenu_submenu_mega_position_fullwidth tmenu_submenu" columnnumber="4" type="mega" lazyload="true" masonry="true" data-id="tmenu-menu-264432"><ul class="tmenu_masonry_placeholder tmenu_masonry_col-4"><li class="tmenu_item tmenu_item_level_1 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_has_child tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/pantry-merchandise" target="_self" title="Pantry &amp; Merchandise"><span class="tmenu_item_text">Pantry &amp; Merchandise</span><!----><!----></a><!----><ul class="tmenu_submenu_type_automatic tmenu_submenu--desktop tmenu_submenu" type="automatic" masonry="false" masonrycolumn="3"><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/pantry-merchandise" target="_self" title="View All Pantry &amp; Merchandise"><span class="tmenu_item_text">View All Pantry &amp; Merchandise</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/books" target="_self" title="Books"><span class="tmenu_item_text">Books</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/canned-seafood" target="_self" title="Canned Seafood"><span class="tmenu_item_text">Canned Seafood</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/clothing" target="_self" title="Clothing"><span class="tmenu_item_text">Clothing</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/kitchen-tools-and-tableware" target="_self" title="Kitchen Tools &amp; Tableware"><span class="tmenu_item_text">Kitchen Tools &amp; Tableware</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/sauces-spices" target="_self" title="Sauces / Spices"><span class="tmenu_item_text">Sauces / Spices</span><!----><!----></a><!----></li></ul></li></ul><div class="tmenu_masonry_row"><ul class="tmenu_masonry_col tmenu_masonry_col-4"><li class="tmenu_item tmenu_item_level_1 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_has_child tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/pantry-merchandise" target="_self" title="Pantry &amp; Merchandise"><span class="tmenu_item_text">Pantry &amp; Merchandise</span><!----><!----></a><!----><ul class="tmenu_submenu_type_automatic tmenu_submenu--desktop tmenu_submenu" type="automatic" masonry="false" masonrycolumn="3"><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/pantry-merchandise" target="_self" title="View All Pantry &amp; Merchandise"><span class="tmenu_item_text">View All Pantry &amp; Merchandise</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/books" target="_self" title="Books"><span class="tmenu_item_text">Books</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/canned-seafood" target="_self" title="Canned Seafood"><span class="tmenu_item_text">Canned Seafood</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/clothing" target="_self" title="Clothing"><span class="tmenu_item_text">Clothing</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/kitchen-tools-and-tableware" target="_self" title="Kitchen Tools &amp; Tableware"><span class="tmenu_item_text">Kitchen Tools &amp; Tableware</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/sauces-spices" target="_self" title="Sauces / Spices"><span class="tmenu_item_text">Sauces / Spices</span><!----><!----></a><!----></li></ul></li></ul><ul class="tmenu_masonry_col tmenu_masonry_col-4"></ul><ul class="tmenu_masonry_col tmenu_masonry_col-4"></ul><ul class="tmenu_masonry_col tmenu_masonry_col-4"></ul></div><!----></div></div><div class="tmenu_submenu_tab_item"><div class="tmenu_masonry tmenu_submenu_type_mega tmenu_submenu--desktop tmenu_submenu_mega_position_fullwidth tmenu_submenu" columnnumber="4" type="mega" lazyload="true" masonry="true" data-id="tmenu-menu-926879"><ul class="tmenu_masonry_placeholder tmenu_masonry_col-4"><li class="tmenu_item tmenu_item_level_1 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_has_child tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/prepared-ready-to-eat" target="_self" title="Prepared &amp; Ready to Eat"><span class="tmenu_item_text">Prepared &amp; Ready to Eat</span><!----><!----></a><!----><ul class="tmenu_submenu_type_automatic tmenu_submenu--desktop tmenu_submenu" type="automatic" masonry="false" masonrycolumn="3"><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/prepared-ready-to-eat" target="_self" title="View All Prepared &amp; Ready to Eat"><span class="tmenu_item_text">View All Prepared &amp; Ready to Eat</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/bacon-wrapped" target="_self" title="Bacon Wrapped"><span class="tmenu_item_text">Bacon Wrapped</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/bagels" target="_self" title="Bagels"><span class="tmenu_item_text">Bagels</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/burgers-and-cakes" target="_self" title="Burgers &amp; Cakes"><span class="tmenu_item_text">Burgers &amp; Cakes</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/canned-seafood" target="_self" title="Canned Seafood"><span class="tmenu_item_text">Canned Seafood</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/crab-legs" target="_self" title="Crab Legs"><span class="tmenu_item_text">Crab Legs</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/lobster-meat" target="_self" title="Lobster Meat"><span class="tmenu_item_text">Lobster Meat</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/smoked-seafood" target="_self" title="Smoked Seafood"><span class="tmenu_item_text">Smoked Seafood</span><!----><!----></a><!----></li></ul></li></ul><div class="tmenu_masonry_row"><ul class="tmenu_masonry_col tmenu_masonry_col-4"><li class="tmenu_item tmenu_item_level_1 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_has_child tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/prepared-ready-to-eat" target="_self" title="Prepared &amp; Ready to Eat"><span class="tmenu_item_text">Prepared &amp; Ready to Eat</span><!----><!----></a><!----><ul class="tmenu_submenu_type_automatic tmenu_submenu--desktop tmenu_submenu" type="automatic" masonry="false" masonrycolumn="3"><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/prepared-ready-to-eat" target="_self" title="View All Prepared &amp; Ready to Eat"><span class="tmenu_item_text">View All Prepared &amp; Ready to Eat</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/bacon-wrapped" target="_self" title="Bacon Wrapped"><span class="tmenu_item_text">Bacon Wrapped</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/bagels" target="_self" title="Bagels"><span class="tmenu_item_text">Bagels</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/burgers-and-cakes" target="_self" title="Burgers &amp; Cakes"><span class="tmenu_item_text">Burgers &amp; Cakes</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/canned-seafood" target="_self" title="Canned Seafood"><span class="tmenu_item_text">Canned Seafood</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/crab-legs" target="_self" title="Crab Legs"><span class="tmenu_item_text">Crab Legs</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/lobster-meat" target="_self" title="Lobster Meat"><span class="tmenu_item_text">Lobster Meat</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/smoked-seafood" target="_self" title="Smoked Seafood"><span class="tmenu_item_text">Smoked Seafood</span><!----><!----></a><!----></li></ul></li></ul><ul class="tmenu_masonry_col tmenu_masonry_col-4"></ul><ul class="tmenu_masonry_col tmenu_masonry_col-4"></ul><ul class="tmenu_masonry_col tmenu_masonry_col-4"></ul></div><!----></div></div><div class="tmenu_submenu_tab_item"><div class="tmenu_masonry tmenu_submenu_type_mega tmenu_submenu--desktop tmenu_submenu_mega_position_fullwidth tmenu_submenu" columnnumber="4" type="mega" lazyload="true" masonry="true" data-id="tmenu-menu-947075"><ul class="tmenu_masonry_placeholder tmenu_masonry_col-4"><li class="tmenu_item tmenu_item_level_1 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_has_child tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" tmenu-disabled-link="" href="javascript:;" target="_self" title="Beef"><span class="tmenu_item_text">Beef</span><!----><!----></a><!----><ul class="tmenu_submenu_type_automatic tmenu_submenu--desktop tmenu_submenu" type="automatic" masonry="false" masonrycolumn="3"><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="https://fultonfishmarket.com/pages/lafrieda" target="_self" title="View All Beef"><span class="tmenu_item_text">View All Beef</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="https://fultonfishmarket.com/pages/lafrieda" target="_self" title="Beef"><span class="tmenu_item_text">Beef</span><!----><!----></a><!----></li></ul></li></ul><div class="tmenu_masonry_row"><ul class="tmenu_masonry_col tmenu_masonry_col-4"><li class="tmenu_item tmenu_item_level_1 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_has_child tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" tmenu-disabled-link="" href="javascript:;" target="_self" title="Beef"><span class="tmenu_item_text">Beef</span><!----><!----></a><!----><ul class="tmenu_submenu_type_automatic tmenu_submenu--desktop tmenu_submenu" type="automatic" masonry="false" masonrycolumn="3"><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="https://fultonfishmarket.com/pages/lafrieda" target="_self" title="View All Beef"><span class="tmenu_item_text">View All Beef</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="https://fultonfishmarket.com/pages/lafrieda" target="_self" title="Beef"><span class="tmenu_item_text">Beef</span><!----><!----></a><!----></li></ul></li></ul><ul class="tmenu_masonry_col tmenu_masonry_col-4"></ul><ul class="tmenu_masonry_col tmenu_masonry_col-4"></ul><ul class="tmenu_masonry_col tmenu_masonry_col-4"></ul></div><!----></div></div><div class="tmenu_submenu_tab_item"><div class="tmenu_masonry tmenu_submenu_type_mega tmenu_submenu--desktop tmenu_submenu_mega_position_fullwidth tmenu_submenu" columnnumber="4" type="mega" lazyload="true" masonry="true" data-id="tmenu-menu-541936"><ul class="tmenu_masonry_placeholder tmenu_masonry_col-4"><li class="tmenu_item tmenu_item_level_1 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_has_child tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/curated-by-fulton" target="_self" title="Curated by Fulton"><span class="tmenu_item_text">Curated by Fulton</span><!----><!----></a><!----><ul class="tmenu_submenu_type_automatic tmenu_submenu--desktop tmenu_submenu" type="automatic" masonry="false" masonrycolumn="3"><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/curated-by-fulton" target="_self" title="View All &quot;Curated by Fulton&quot;"><span class="tmenu_item_text">View All "Curated by Fulton"</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/seafood-bundles" target="_self" title="Bundles"><span class="tmenu_item_text">Bundles</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/pages/entertaining-with-seafood" target="_self" title="Entertaining with Seafood"><span class="tmenu_item_text">Entertaining with Seafood</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/pages/featured-seafood" target="_self" title="Featured Seafood"><span class="tmenu_item_text">Featured Seafood</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/fultons-finest" target="_self" title="Fulton's Finest"><span class="tmenu_item_text">Fulton's Finest</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/gift-cards" target="_self" title="Gift Cards"><span class="tmenu_item_text">Gift Cards</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/gift-products-subscriptions" target="_self" title="Gift Products &amp; Subscriptions"><span class="tmenu_item_text">Gift Products &amp; Subscriptions</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/holiday-bundles" target="_self" title="Holiday Bundles"><span class="tmenu_item_text">Holiday Bundles</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="https://fultonfishmarket.com/pages/katie" target="_self" title="Katie Lee Biegel's Picks"><span class="tmenu_item_text">Katie Lee Biegel's Picks</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/wine" target="_self" title="Wine"><span class="tmenu_item_text">Wine</span><!----><!----></a><!----></li></ul></li><li class="tmenu_item tmenu_item_level_1 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_has_child tmenu_item_layout tmenu_item_layout_text tmenu_item_display_header"><a class="tmenu_item_link" role="button" href="/pages/featured-seafood" target="_self" title="Featured Seafood"><span class="tmenu_item_text">Featured Seafood</span><!----><!----></a><!----><ul class="tmenu_submenu_type_automatic tmenu_submenu--desktop tmenu_submenu" type="automatic" masonry="false" masonrycolumn="3"><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_image"><a class="tmenu_item_link tmenu_item_content_alignment_left" role="button" href="/pages/featured-seafood" target="_self" title="Dover Sole"><div class="tmenu_image tmenu_image--above"><img data-srcset="https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_363c4a0f-ba04-4dee-a253-cc6eae6d63e4_180x.jpg?v=1759946784 180w, https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_363c4a0f-ba04-4dee-a253-cc6eae6d63e4_360x.jpg?v=1759946784 360w, https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_363c4a0f-ba04-4dee-a253-cc6eae6d63e4_540x.jpg?v=1759946784 540w, https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_363c4a0f-ba04-4dee-a253-cc6eae6d63e4_720x.jpg?v=1759946784 720w, https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_363c4a0f-ba04-4dee-a253-cc6eae6d63e4_900x.jpg?v=1759946784 900w, https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_363c4a0f-ba04-4dee-a253-cc6eae6d63e4_1080x.jpg?v=1759946784 1080w, https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_363c4a0f-ba04-4dee-a253-cc6eae6d63e4_1296x.jpg?v=1759946784 1296w, https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_363c4a0f-ba04-4dee-a253-cc6eae6d63e4_1512x.jpg?v=1759946784 1512w, https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_363c4a0f-ba04-4dee-a253-cc6eae6d63e4_1728x.jpg?v=1759946784 1728w, https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_363c4a0f-ba04-4dee-a253-cc6eae6d63e4_2048x.jpg?v=1759946784 2048w" alt="Dover Sole" title="Dover Sole" style="width: 250px;" data-src="https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_363c4a0f-ba04-4dee-a253-cc6eae6d63e4_360x.jpg?v=1759946784" src="https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_363c4a0f-ba04-4dee-a253-cc6eae6d63e4_360x.jpg?v=1759946784" lazy="loaded"><span class="tmenu_item_text">Dover Sole</span></div><!----></a><!----></li></ul></li></ul><div class="tmenu_masonry_row"><ul class="tmenu_masonry_col tmenu_masonry_col-4"><li class="tmenu_item tmenu_item_level_1 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_has_child tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/curated-by-fulton" target="_self" title="Curated by Fulton"><span class="tmenu_item_text">Curated by Fulton</span><!----><!----></a><!----><ul class="tmenu_submenu_type_automatic tmenu_submenu--desktop tmenu_submenu" type="automatic" masonry="false" masonrycolumn="3"><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/curated-by-fulton" target="_self" title="View All &quot;Curated by Fulton&quot;"><span class="tmenu_item_text">View All "Curated by Fulton"</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/seafood-bundles" target="_self" title="Bundles"><span class="tmenu_item_text">Bundles</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/pages/entertaining-with-seafood" target="_self" title="Entertaining with Seafood"><span class="tmenu_item_text">Entertaining with Seafood</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/pages/featured-seafood" target="_self" title="Featured Seafood"><span class="tmenu_item_text">Featured Seafood</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/fultons-finest" target="_self" title="Fulton's Finest"><span class="tmenu_item_text">Fulton's Finest</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/gift-cards" target="_self" title="Gift Cards"><span class="tmenu_item_text">Gift Cards</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/gift-products-subscriptions" target="_self" title="Gift Products &amp; Subscriptions"><span class="tmenu_item_text">Gift Products &amp; Subscriptions</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/holiday-bundles" target="_self" title="Holiday Bundles"><span class="tmenu_item_text">Holiday Bundles</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="https://fultonfishmarket.com/pages/katie" target="_self" title="Katie Lee Biegel's Picks"><span class="tmenu_item_text">Katie Lee Biegel's Picks</span><!----><!----></a><!----></li><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_text"><a class="tmenu_item_link" role="button" href="/collections/wine" target="_self" title="Wine"><span class="tmenu_item_text">Wine</span><!----><!----></a><!----></li></ul></li></ul><ul class="tmenu_masonry_col tmenu_masonry_col-4"><li class="tmenu_item tmenu_item_level_1 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_has_child tmenu_item_layout tmenu_item_layout_text tmenu_item_display_header"><a class="tmenu_item_link" role="button" href="/pages/featured-seafood" target="_self" title="Featured Seafood"><span class="tmenu_item_text">Featured Seafood</span><!----><!----></a><!----><ul class="tmenu_submenu_type_automatic tmenu_submenu--desktop tmenu_submenu" type="automatic" masonry="false" masonrycolumn="3"><li class="tmenu_item tmenu_item_level_2 tmenu_col tmenu_item_submenu_type_automatic tmenu_item_layout tmenu_item_layout_image"><a class="tmenu_item_link tmenu_item_content_alignment_left" role="button" href="/pages/featured-seafood" target="_self" title="Dover Sole"><div class="tmenu_image tmenu_image--above"><img data-srcset="https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_363c4a0f-ba04-4dee-a253-cc6eae6d63e4_180x.jpg?v=1759946784 180w, https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_363c4a0f-ba04-4dee-a253-cc6eae6d63e4_360x.jpg?v=1759946784 360w, https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_363c4a0f-ba04-4dee-a253-cc6eae6d63e4_540x.jpg?v=1759946784 540w, https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_363c4a0f-ba04-4dee-a253-cc6eae6d63e4_720x.jpg?v=1759946784 720w, https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_363c4a0f-ba04-4dee-a253-cc6eae6d63e4_900x.jpg?v=1759946784 900w, https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_363c4a0f-ba04-4dee-a253-cc6eae6d63e4_1080x.jpg?v=1759946784 1080w, https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_363c4a0f-ba04-4dee-a253-cc6eae6d63e4_1296x.jpg?v=1759946784 1296w, https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_363c4a0f-ba04-4dee-a253-cc6eae6d63e4_1512x.jpg?v=1759946784 1512w, https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_363c4a0f-ba04-4dee-a253-cc6eae6d63e4_1728x.jpg?v=1759946784 1728w, https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_363c4a0f-ba04-4dee-a253-cc6eae6d63e4_2048x.jpg?v=1759946784 2048w" alt="Dover Sole" title="Dover Sole" style="width: 250px;" data-src="https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_363c4a0f-ba04-4dee-a253-cc6eae6d63e4_720x.jpg?v=1759946784" src="https://cdn.shopify.com/s/files/1/0606/9672/3670/files/featuredseafood_menuimage_600x400_doversole_363c4a0f-ba04-4dee-a253-cc6eae6d63e4_720x.jpg?v=1759946784" lazy="loaded"><span class="tmenu_item_text">Dover Sole</span></div><!----></a><!----></li></ul></li></ul><ul class="tmenu_masonry_col tmenu_masonry_col-4"></ul><ul class="tmenu_masonry_col tmenu_masonry_col-4"></ul></div><!----></div></div></div></div></li></ul></nav>
+	    """
+
+		# Parse the HTML with BeautifulSoup
+		soup = BeautifulSoup(html, 'html.parser')
+
+		# Initialize the navigation structure
+		navigation = {
+			"data": {
+				"categories": []
+			}
+		}
+
+		# Find all root menu items
+		root_items = soup.select('.tmenu_nav > .tmenu_item--root')
+		root_items = soup.select('.tmenu_col.tmenu_submenu_tab_control > li')
+
+		for item in root_items:
+			# Extract main category info
+			link = item.select_one('.tmenu_item_link')
+			if not link:
+				continue
+
+			category = {
+				"id": len(navigation["data"]["categories"]) + 1,
+				"name": link.get('title', '').strip() or link.get_text(strip=True),
+				"url": link.get('href', ''),
+				"subcategories": []
+			}
+
+			# Find submenu if it exists
+			submenu = item.select_one('.tmenu_submenu_type_tab')
+			if submenu:
+				# Find all tab items in the submenu
+				tab_items = submenu.select('.tmenu_submenu_tab_control > li:not(.tmenu_item_display_header)')
+
+				for tab in tab_items:
+					tab_link = tab.select_one('.tmenu_item_link')
+					if not tab_link:
+						continue
+
+					subcategory = {
+						"id": len(category["subcategories"]) + 1,
+						"name": tab_link.get('title', '').strip() or tab_link.get_text(strip=True),
+						"url": tab_link.get('href', ''),
+						"subcategories": []
+					}
+
+					# Add to parent category's subcategories
+					category["subcategories"].append(subcategory)
+
+			navigation["data"]["categories"].append(category)
+
+		return navigation
+
+	def _process_subcategories(self, dropdown, parent_category, start_id):
+		"""
+		Process subcategories from a dropdown menu.
+
+		Args:
+			dropdown: BeautifulSoup dropdown element
+			parent_category: Parent category dictionary
+			start_id: Starting ID for subcategories
+		"""
+		print("Allen->_process_subcategories()")
+		current_id = start_id
+
+		# Find all direct subcategory items
+		# sub_menu = dropdown.find('div', class_='flyout-menu')
+		sub_items = dropdown.find_all(['div'], recursive=False)
+		print("sub_items: ", sub_items)
+		for item in sub_items:
+			print("item: ", item)
+			# Skip if it's not a valid subcategory container
+			if not (item.name == 'li' or (item.name == 'div' and item.find('a', class_='category-heading'))):
+				continue
+
+			# Handle section headings (like "Shop By Cut")
+			section_heading = item.find('a', class_='category-heading')
+			print("section_heading: ", section_heading)
+			if section_heading:
+				section_name = section_heading.get_text(strip=True)
+				section_url = section_heading.get('href', '')
+
+				section = {
+					'id': current_id,
+					'name': section_name,
+					'url': self.BASE_URL.rstrip('/') + section_url if section_url and not section_url.startswith(
+						'http') else section_url,
+					'subcategories': []
+				}
+				current_id += 1
+
+				# Process items in this section
+				subcategory_items = item.find_all('li', class_='category-list-item-navbar')
+				print("subcategory_items: ", subcategory_items)
+				for sub_item in subcategory_items:
+					print("sub_item: ", sub_item)
+					anchor = sub_item.find('a')
+					sub_name = anchor.get_text(strip=True)
+					sub_url = anchor.get('href', '')
+
+					if sub_name and sub_url:
+						section['subcategories'].append({
+							'id': current_id,
+							'name': sub_name,
+							'url': self.BASE_URL.rstrip('/') + sub_url if not sub_url.startswith('http') else sub_url,
+							'subcategories': []
+						})
+						current_id += 1
+
+				if section['subcategories']:
+					parent_category['subcategories'].append(section)
+			else:
+				# Handle regular subcategories
+				sub_link = item.find('a', class_='js-dropdown__btn') or item.find('a', class_='category-list-item')
+				if sub_link:
+					sub_name = sub_link.get_text(strip=True)
+					sub_url = sub_link.get('href', '')
+
+					if sub_name and sub_url and not sub_name.startswith('Shop All'):
+						subcategory = {
+							'id': current_id,
+							'name': sub_name,
+							'url': self.BASE_URL.rstrip('/') + sub_url if not sub_url.startswith('http') else sub_url,
+							'subcategories': []
+						}
+						current_id += 1
+
+						# Check for nested subcategories
+						nested_dropdown = item.find('div', class_='flyout-menu')
+						if nested_dropdown:
+							self._process_subcategories(nested_dropdown, subcategory, current_id)
+							current_id += len(subcategory['subcategories'])
+
+						parent_category['subcategories'].append(subcategory)
+
+	def get_category_page(self, url, category_name, sub_category_name, sub_sub_category_name):
+		print("get_category_page()")
+		detail_urls = []
+		all_urls = []
+		main_window = self.driver.current_window_handle
+		html = ''
+		total_products = 0
+		self.driver.get(url)
+		base_url = url
+		self.wait = WebDriverWait(self.driver, 10)
+		try:
+			# Update URL from the redirect
+			url = self.driver.current_url
+			print(f"Current URl: {self.driver.current_url}")
+
+			# Find all window handles and switch to the new window if it opens in a new tab
+			if len(self.driver.window_handles) > self.TEST_TABS:
+				print("must be a tab...")
+				for handle in self.driver.window_handles:
+					if handle != main_window:
+						self.driver.switch_to.window(handle)
+						break
+			page_count = 0
+			next_page = True
+
+			while next_page:
+				page_count += 1
+				try:
+					# Wait for page to load
+					detail_urls = []
+					if url in self.driver.current_url:
+						print("Found products page")
+						time.sleep(2)
+						html_line, detail_urls = self.get_products_from_html()
+					products_found_count = len(detail_urls)
+					all_urls.extend(detail_urls)
+					html += f"<div>Found {products_found_count} products for category {sub_category_name}</div>"
+					print(f"Found {products_found_count} products for category {sub_category_name}")
+					total_products += products_found_count
+					print(products_found_count % 24)
+					if products_found_count > 0 and products_found_count % 24 == 0:
+						url = base_url + f"?page={page_count + 1}"
+						self.driver.get(url)
+						print(f"Going to page {url}")
+					else:
+						next_page = False
+
+				except Exception as e:
+					print(f"****************** ⛔️⛔️⛔️ Error getting details: {e}")
+					html += f"<div>Name: {sub_category_name} (Error getting details)</div>"
+
+			self.save_urls_to_csv(detail_urls, category_name, sub_category_name, sub_sub_category_name)
+
+		except Exception as e:
+			print(f"⛔️⛔️⛔️Error processing category: {e}")
+
+		return detail_urls, html
+
+	def get_products_from_html(self):
+
+		products = self.wait.until(
+			EC.presence_of_all_elements_located((By.CSS_SELECTOR, 'a.productitem--image-link'))
+		)
+
+		print(f"products found: {len(products)}")
+		detail_urls = [product.get_attribute("href") for product in products]
+		return '', detail_urls

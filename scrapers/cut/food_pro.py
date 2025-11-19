@@ -2,8 +2,12 @@
 import json
 from scrapers.cut.dry import CutScraper
 
-
 class FoodProScraper(CutScraper):
+	# 1280/edit_note/1423/
+	CRM_ID = 1280
+	CRM_NOTE_ID = 1423
+	CRM_PRICE_TYPE = ''
+	CRM_STATUS_OVERRIDE = ''
 
 	DEFAULT_DIRECTORY = '/Users/mark/Downloads/scrapers/food_pro/'
 
@@ -220,6 +224,4 @@ class FoodProScraper(CutScraper):
 
 	def __init__(self, options=None):
 		super().__init__(options)
-		self.options = {**self.DEFAULT_OPTIONS, **(options or {})}
-		self.options['home_directory'] = self.DEFAULT_DIRECTORY
-		self.options['base_url'] = self.BASE_URL
+

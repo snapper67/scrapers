@@ -2,8 +2,12 @@
 import json
 from scrapers.cut.dry import CutScraper
 
-
 class CarusoScraper(CutScraper):
+	# 1288/edit_note/1404/
+	CRM_ID = 1288
+	CRM_NOTE_ID = 1404
+	CRM_PRICE_TYPE = ''
+	CRM_STATUS_OVERRIDE = ''
 
 	DEFAULT_DIRECTORY = '/Users/mark/Downloads/scrapers/caruso/'
 
@@ -536,7 +540,4 @@ class CarusoScraper(CutScraper):
 
 	def __init__(self, options=None):
 		super().__init__(options)
-		self.options = {**self.DEFAULT_OPTIONS, **(options or {})}
-		self.options['home_directory'] = self.DEFAULT_DIRECTORY
-		self.options['base_url'] = self.BASE_URL
 

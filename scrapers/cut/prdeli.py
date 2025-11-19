@@ -1,8 +1,12 @@
 import json
 from .dry import CutScraper
 
-
 class PRDeliScraper(CutScraper):
+    # 1282/edit_note/1398/
+    CRM_ID = 1282
+    CRM_NOTE_ID = 1398
+    CRM_PRICE_TYPE = ''
+    CRM_STATUS_OVERRIDE = ''
     """Scraper for PRDeli on the Cut & Dry platform"""
 
     DEFAULT_DIRECTORY = '/Users/mark/Downloads/scrapers/prdeli/'
@@ -1955,6 +1959,3 @@ class PRDeliScraper(CutScraper):
 
     def __init__(self, options=None):
         super().__init__(options)
-        self.options = {**self.DEFAULT_OPTIONS, **(options or {})}
-        self.options['home_directory'] = self.DEFAULT_DIRECTORY
-        self.options['base_url'] = self.BASE_URL

@@ -1,9 +1,21 @@
-
+import csv
 import json
-from scrapers.cut.dry import CutScraper
+import os
+import sys
+import time
+from operator import truediv
+from urllib.parse import quote
+from seleniumwire.utils import decode
+from scrapers.cut.dry_market import DryMarketScraper
+from scrapers.scraper import ProductNotFound
 
 
-class AllStarSpecialtiesScraper(CutScraper):
+class AllStarSpecialtiesScraper(DryMarketScraper):
+	# 1284/edit_note/1401/
+	CRM_ID = 1284
+	CRM_NOTE_ID = 1401
+	CRM_PRICE_TYPE = ''
+	CRM_STATUS_OVERRIDE = ''
 
 	DEFAULT_DIRECTORY = '/Users/mark/Downloads/scrapers/all_star_specialties/'
 
@@ -14,528 +26,820 @@ class AllStarSpecialtiesScraper(CutScraper):
   "data": {
     "catalogCategoryOptions": [
       {
+        "__typename": "categoryOption",
         "category": {
-          "id": "412165389",
-          "baseName": "fruits",
+          "__typename": "ProductCategory",
+          "baseName": "baked goods",
           "examplePictureUrl": null,
           "iconAltUrl": null,
-          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/55422488ffee9910aee2e8b19f21706f.jpg",
-          "name": "Fruits",
+          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/219503724e9f6ab6e22ffad97df2d55b.jpg",
+          "id": "372855057",
+          "name": "Baked Goods",
           "sortIndex": "0",
           "visibleOnHeader": true,
-          "visibleOnSidebar": true,
-          "__typename": "ProductCategory"
+          "visibleOnSidebar": true
         },
-        "productCount": 400,
+        "productCount": 132,
         "subcategories": [
           {
+            "__typename": "subcategoryOption",
+            "productCount": 23,
             "subcategory": {
-              "id": "412165489",
-              "name": "Conventional Fruits",
-              "sortIndex": 1,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 336,
-            "__typename": "subcategoryOption"
+              "__typename": "ProductSubcategory",
+              "id": "372857059",
+              "name": "Baked Goods",
+              "sortIndex": 1
+            }
           },
           {
+            "__typename": "subcategoryOption",
+            "productCount": 28,
             "subcategory": {
-              "id": "412165490",
-              "name": "Organic Fruits",
-              "sortIndex": 2,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 63,
-            "__typename": "subcategoryOption"
+              "__typename": "ProductSubcategory",
+              "id": "412475061",
+              "name": "Baking Batter & Mix",
+              "sortIndex": 2
+            }
           },
           {
+            "__typename": "subcategoryOption",
+            "productCount": 26,
             "subcategory": {
-              "id": "412249822",
-              "name": "Others",
-              "sortIndex": 7,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 1,
-            "__typename": "subcategoryOption"
+              "__typename": "ProductSubcategory",
+              "id": "412486838",
+              "name": "Baking Supplies",
+              "sortIndex": 3
+            }
+          },
+          {
+            "__typename": "subcategoryOption",
+            "productCount": 21,
+            "subcategory": {
+              "__typename": "ProductSubcategory",
+              "id": "412486840",
+              "name": "Cookies",
+              "sortIndex": 5
+            }
+          },
+          {
+            "__typename": "subcategoryOption",
+            "productCount": 18,
+            "subcategory": {
+              "__typename": "ProductSubcategory",
+              "id": "412486841",
+              "name": "Cookie Dough",
+              "sortIndex": 6
+            }
+          },
+          {
+            "__typename": "subcategoryOption",
+            "productCount": 16,
+            "subcategory": {
+              "__typename": "ProductSubcategory",
+              "id": "412486842",
+              "name": "Pie",
+              "sortIndex": 7
+            }
           }
-        ],
-        "__typename": "categoryOption"
+        ]
       },
       {
+        "__typename": "categoryOption",
         "category": {
-          "id": "412165486",
-          "baseName": "vegetables",
+          "__typename": "ProductCategory",
+          "baseName": "cakes",
           "examplePictureUrl": null,
           "iconAltUrl": null,
-          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/114abbbbeeea28ca919156319f9d8e6c.jpg",
-          "name": "Vegetables",
+          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/665be9562d6c9ed74e36d6e78639ba32.jpg",
+          "id": "372855112",
+          "name": "Cakes",
           "sortIndex": "1",
           "visibleOnHeader": true,
-          "visibleOnSidebar": true,
-          "__typename": "ProductCategory"
+          "visibleOnSidebar": true
         },
-        "productCount": 687,
+        "productCount": 42,
         "subcategories": [
           {
+            "__typename": "subcategoryOption",
+            "productCount": 42,
             "subcategory": {
-              "id": "412258980",
-              "name": "Conventional Vegetables",
-              "sortIndex": 0,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 517,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "412165488",
-              "name": "Organic Vegetables",
-              "sortIndex": 1,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 170,
-            "__typename": "subcategoryOption"
+              "__typename": "ProductSubcategory",
+              "id": "372857017",
+              "name": "Cakes",
+              "sortIndex": 1
+            }
           }
-        ],
-        "__typename": "categoryOption"
+        ]
       },
       {
+        "__typename": "categoryOption",
         "category": {
-          "id": "412165511",
-          "baseName": "herbs",
+          "__typename": "ProductCategory",
+          "baseName": "candy & snacks",
           "examplePictureUrl": null,
           "iconAltUrl": null,
-          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/02b8fa2152214dead65a8a62e7dcfe12.jpg",
-          "name": "Herbs",
+          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/bbe92e3bd8b9909a20bd1f49f2453744.jpg",
+          "id": "372855116",
+          "name": "Candy & Snacks",
           "sortIndex": "2",
           "visibleOnHeader": true,
-          "visibleOnSidebar": true,
-          "__typename": "ProductCategory"
+          "visibleOnSidebar": true
         },
-        "productCount": 90,
+        "productCount": 85,
         "subcategories": [
           {
+            "__typename": "subcategoryOption",
+            "productCount": 62,
             "subcategory": {
-              "id": "412165512",
-              "name": "Herbs",
-              "sortIndex": 0,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 90,
-            "__typename": "subcategoryOption"
+              "__typename": "ProductSubcategory",
+              "id": "372857016",
+              "name": "Candy",
+              "sortIndex": 1
+            }
+          },
+          {
+            "__typename": "subcategoryOption",
+            "productCount": 23,
+            "subcategory": {
+              "__typename": "ProductSubcategory",
+              "id": "412487576",
+              "name": "Chips & Snacks",
+              "sortIndex": 2
+            }
           }
-        ],
-        "__typename": "categoryOption"
+        ]
       },
       {
+        "__typename": "categoryOption",
         "category": {
-          "id": "412165584",
-          "baseName": "bakery, breads, & tortillas",
+          "__typename": "ProductCategory",
+          "baseName": "frozen drink mixes",
           "examplePictureUrl": null,
           "iconAltUrl": null,
-          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/5c4c97404eadb6c4b870e2a24f005ab7.jpg",
-          "name": "Bakery, Breads, & Tortillas",
+          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/d16aa341f0f3da7b6aeb867fc22f8826.jpg",
+          "id": "412490807",
+          "name": "Frozen Drink Mixes",
           "sortIndex": "3",
           "visibleOnHeader": true,
-          "visibleOnSidebar": true,
-          "__typename": "ProductCategory"
+          "visibleOnSidebar": true
+        },
+        "productCount": 21,
+        "subcategories": [
+          {
+            "__typename": "subcategoryOption",
+            "productCount": 21,
+            "subcategory": {
+              "__typename": "ProductSubcategory",
+              "id": "412490808",
+              "name": "Frozen Drink Mixes",
+              "sortIndex": 0
+            }
+          }
+        ]
+      },
+      {
+        "__typename": "categoryOption",
+        "category": {
+          "__typename": "ProductCategory",
+          "baseName": "ice cream tubs",
+          "examplePictureUrl": null,
+          "iconAltUrl": null,
+          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/d5bf2a4180af03f02c24985cd34a1eaa.jpg",
+          "id": "412491292",
+          "name": "Ice Cream Tubs",
+          "sortIndex": "4",
+          "visibleOnHeader": true,
+          "visibleOnSidebar": true
+        },
+        "productCount": 65,
+        "subcategories": [
+          {
+            "__typename": "subcategoryOption",
+            "productCount": 43,
+            "subcategory": {
+              "__typename": "ProductSubcategory",
+              "id": "412491294",
+              "name": "Ice Cream Tubs",
+              "sortIndex": 1
+            }
+          },
+          {
+            "__typename": "subcategoryOption",
+            "productCount": 11,
+            "subcategory": {
+              "__typename": "ProductSubcategory",
+              "id": "412491296",
+              "name": "Haagen Dazs Tubs",
+              "sortIndex": 3
+            }
+          },
+          {
+            "__typename": "subcategoryOption",
+            "productCount": 9,
+            "subcategory": {
+              "__typename": "ProductSubcategory",
+              "id": "412491300",
+              "name": "Mr. Green Tea",
+              "sortIndex": 7
+            }
+          },
+          {
+            "__typename": "subcategoryOption",
+            "productCount": 2,
+            "subcategory": {
+              "__typename": "ProductSubcategory",
+              "id": "412491301",
+              "name": "Non Dairy Products",
+              "sortIndex": 8
+            }
+          }
+        ]
+      },
+      {
+        "__typename": "categoryOption",
+        "category": {
+          "__typename": "ProductCategory",
+          "baseName": "ice cream specialties",
+          "examplePictureUrl": null,
+          "iconAltUrl": null,
+          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/f98eec941ba4622295c04d2f7e5721ce.jpg",
+          "id": "412491642",
+          "name": "Ice Cream Specialties",
+          "sortIndex": "5",
+          "visibleOnHeader": true,
+          "visibleOnSidebar": true
+        },
+        "productCount": 53,
+        "subcategories": [
+          {
+            "__typename": "subcategoryOption",
+            "productCount": 3,
+            "subcategory": {
+              "__typename": "ProductSubcategory",
+              "id": "412491645",
+              "name": "Ice Cream Cake",
+              "sortIndex": 1
+            }
+          },
+          {
+            "__typename": "subcategoryOption",
+            "productCount": 21,
+            "subcategory": {
+              "__typename": "ProductSubcategory",
+              "id": "414359423",
+              "name": "Ice Cream Tartufos",
+              "sortIndex": 4
+            }
+          },
+          {
+            "__typename": "subcategoryOption",
+            "productCount": 29,
+            "subcategory": {
+              "__typename": "ProductSubcategory",
+              "id": "414464530",
+              "name": "Frozen Specialties",
+              "sortIndex": 11
+            }
+          }
+        ]
+      },
+      {
+        "__typename": "categoryOption",
+        "category": {
+          "__typename": "ProductCategory",
+          "baseName": "ice cream cones",
+          "examplePictureUrl": null,
+          "iconAltUrl": null,
+          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/21fe7c692a8680b196c610ad78d1c972.jpg",
+          "id": "412491757",
+          "name": "Ice Cream Cones",
+          "sortIndex": "6",
+          "visibleOnHeader": true,
+          "visibleOnSidebar": true
+        },
+        "productCount": 11,
+        "subcategories": [
+          {
+            "__typename": "subcategoryOption",
+            "productCount": 11,
+            "subcategory": {
+              "__typename": "ProductSubcategory",
+              "id": "412491758",
+              "name": "Ice Cream Cones",
+              "sortIndex": 0
+            }
+          }
+        ]
+      },
+      {
+        "__typename": "categoryOption",
+        "category": {
+          "__typename": "ProductCategory",
+          "baseName": "ice cream mix",
+          "examplePictureUrl": null,
+          "iconAltUrl": null,
+          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/a9c7be08394513a70cd64ab188bbc76b.jpg",
+          "id": "412493184",
+          "name": "Ice Cream Mix",
+          "sortIndex": "7",
+          "visibleOnHeader": true,
+          "visibleOnSidebar": true
         },
         "productCount": 17,
         "subcategories": [
           {
-            "subcategory": {
-              "id": "412165585",
-              "name": "Bakery, Breads, & Tortillas",
-              "sortIndex": 0,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 17,
-            "__typename": "subcategoryOption"
-          }
-        ],
-        "__typename": "categoryOption"
-      },
-      {
-        "category": {
-          "id": "412165623",
-          "baseName": "beverages & juices",
-          "examplePictureUrl": null,
-          "iconAltUrl": null,
-          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/a2a2c0c8f6cb566b41d8f998e5aed0e4.jpg",
-          "name": "Beverages & Juices",
-          "sortIndex": "4",
-          "visibleOnHeader": true,
-          "visibleOnSidebar": true,
-          "__typename": "ProductCategory"
-        },
-        "productCount": 54,
-        "subcategories": [
-          {
-            "subcategory": {
-              "id": "412165624",
-              "name": "Beverages & Juices",
-              "sortIndex": 0,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 54,
-            "__typename": "subcategoryOption"
-          }
-        ],
-        "__typename": "categoryOption"
-      },
-      {
-        "category": {
-          "id": "412165627",
-          "baseName": "condiments & sauces",
-          "examplePictureUrl": null,
-          "iconAltUrl": null,
-          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/6e42eab28246e675e45ed9e897b4b0bc.jpg",
-          "name": "Condiments & Sauces",
-          "sortIndex": "5",
-          "visibleOnHeader": true,
-          "visibleOnSidebar": true,
-          "__typename": "ProductCategory"
-        },
-        "productCount": 60,
-        "subcategories": [
-          {
-            "subcategory": {
-              "id": "412165628",
-              "name": "Condiments & Sauces",
-              "sortIndex": 0,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 60,
-            "__typename": "subcategoryOption"
-          }
-        ],
-        "__typename": "categoryOption"
-      },
-      {
-        "category": {
-          "id": "412165643",
-          "baseName": "cheese, dairy & eggs",
-          "examplePictureUrl": null,
-          "iconAltUrl": null,
-          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/96768152ab944faa2eeac5c5a3ef2b17.jpg",
-          "name": "Cheese, Dairy & Eggs",
-          "sortIndex": "6",
-          "visibleOnHeader": true,
-          "visibleOnSidebar": true,
-          "__typename": "ProductCategory"
-        },
-        "productCount": 104,
-        "subcategories": [
-          {
-            "subcategory": {
-              "id": "412165644",
-              "name": "Cheese, Dairy & Eggs",
-              "sortIndex": 0,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 104,
-            "__typename": "subcategoryOption"
-          }
-        ],
-        "__typename": "categoryOption"
-      },
-      {
-        "category": {
-          "id": "412165692",
-          "baseName": "dry goods",
-          "examplePictureUrl": null,
-          "iconAltUrl": null,
-          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/6a7cb9ae2cf3fd9b18b6ff98976dbc35.jpg",
-          "name": "Dry Goods",
-          "sortIndex": "7",
-          "visibleOnHeader": true,
-          "visibleOnSidebar": true,
-          "__typename": "ProductCategory"
-        },
-        "productCount": 172,
-        "subcategories": [
-          {
-            "subcategory": {
-              "id": "412165693",
-              "name": "Beans, Grains, Legumes & Rice",
-              "sortIndex": 0,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 14,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "412165694",
-              "name": "Canned Goods",
-              "sortIndex": 1,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 31,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "412165695",
-              "name": "Oil & Vinegar",
-              "sortIndex": 2,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 24,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "412165696",
-              "name": "Noodles & Pasta",
-              "sortIndex": 3,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 11,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "412165697",
-              "name": "Flour, Salt & Sugar",
-              "sortIndex": 4,
-              "__typename": "ProductSubcategory"
-            },
+            "__typename": "subcategoryOption",
             "productCount": 13,
-            "__typename": "subcategoryOption"
+            "subcategory": {
+              "__typename": "ProductSubcategory",
+              "id": "412493186",
+              "name": "Ice Cream Mix",
+              "sortIndex": 1
+            }
           },
           {
+            "__typename": "subcategoryOption",
+            "productCount": 4,
             "subcategory": {
-              "id": "412165698",
-              "name": "Spices & Seasonings",
-              "sortIndex": 5,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 79,
-            "__typename": "subcategoryOption"
+              "__typename": "ProductSubcategory",
+              "id": "414466362",
+              "name": "Yogurt",
+              "sortIndex": 15
+            }
           }
-        ],
-        "__typename": "categoryOption"
+        ]
       },
       {
+        "__typename": "categoryOption",
         "category": {
-          "id": "412166028",
-          "baseName": "frozen foods",
+          "__typename": "ProductCategory",
+          "baseName": "ice cream novelties",
           "examplePictureUrl": null,
           "iconAltUrl": null,
-          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/5afa6801143bd01c6a0c0d88de45a2ca.jpg",
-          "name": "Frozen Foods",
+          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/f54c8bc885b201567f9deb8d873960fa.jpg",
+          "id": "455442934",
+          "name": "Ice Cream Novelties",
           "sortIndex": "8",
           "visibleOnHeader": true,
-          "visibleOnSidebar": true,
-          "__typename": "ProductCategory"
+          "visibleOnSidebar": true
         },
-        "productCount": 145,
+        "productCount": 80,
         "subcategories": [
           {
+            "__typename": "subcategoryOption",
+            "productCount": 80,
             "subcategory": {
-              "id": "412166029",
-              "name": "Frozen Foods",
-              "sortIndex": 0,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 145,
-            "__typename": "subcategoryOption"
+              "__typename": "ProductSubcategory",
+              "id": "455442935",
+              "name": "Ice Cream Novelties",
+              "sortIndex": 0
+            }
           }
-        ],
-        "__typename": "categoryOption"
+        ]
       },
       {
+        "__typename": "categoryOption",
         "category": {
-          "id": "412166042",
-          "baseName": "grocery items",
+          "__typename": "ProductCategory",
+          "baseName": "individual dessert",
           "examplePictureUrl": null,
           "iconAltUrl": null,
-          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/fe587ef4a91b7d682ff49e402e71c35f.jpg",
-          "name": "Grocery Items",
+          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/fa7eb85f0aad232b6d81e94455212d51.jpg",
+          "id": "412493427",
+          "name": "Individual Dessert",
           "sortIndex": "9",
           "visibleOnHeader": true,
-          "visibleOnSidebar": true,
-          "__typename": "ProductCategory"
+          "visibleOnSidebar": true
+        },
+        "productCount": 53,
+        "subcategories": [
+          {
+            "__typename": "subcategoryOption",
+            "productCount": 24,
+            "subcategory": {
+              "__typename": "ProductSubcategory",
+              "id": "412493428",
+              "name": "Individual Dessert",
+              "sortIndex": 0
+            }
+          },
+          {
+            "__typename": "subcategoryOption",
+            "productCount": 22,
+            "subcategory": {
+              "__typename": "ProductSubcategory",
+              "id": "412493429",
+              "name": "Individual Mini Dessert",
+              "sortIndex": 1
+            }
+          },
+          {
+            "__typename": "subcategoryOption",
+            "productCount": 8,
+            "subcategory": {
+              "__typename": "ProductSubcategory",
+              "id": "611710637",
+              "name": "Cake Pops",
+              "sortIndex": 20
+            }
+          }
+        ]
+      },
+      {
+        "__typename": "categoryOption",
+        "category": {
+          "__typename": "ProductCategory",
+          "baseName": "other items",
+          "examplePictureUrl": null,
+          "iconAltUrl": null,
+          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/c763ceb6135c546a1100568edb36c962.jpg",
+          "id": "412493871",
+          "name": "Other Items",
+          "sortIndex": "10",
+          "visibleOnHeader": true,
+          "visibleOnSidebar": true
+        },
+        "productCount": 77,
+        "subcategories": [
+          {
+            "__typename": "subcategoryOption",
+            "productCount": 16,
+            "subcategory": {
+              "__typename": "ProductSubcategory",
+              "id": "412493872",
+              "name": "Spices & Seasoning",
+              "sortIndex": 0
+            }
+          },
+          {
+            "__typename": "subcategoryOption",
+            "productCount": 5,
+            "subcategory": {
+              "__typename": "ProductSubcategory",
+              "id": "412493873",
+              "name": "Equipment",
+              "sortIndex": 1
+            }
+          },
+          {
+            "__typename": "subcategoryOption",
+            "productCount": 28,
+            "subcategory": {
+              "__typename": "ProductSubcategory",
+              "id": "414364378",
+              "name": "Paper Goods",
+              "sortIndex": 3
+            }
+          },
+          {
+            "__typename": "subcategoryOption",
+            "productCount": 3,
+            "subcategory": {
+              "__typename": "ProductSubcategory",
+              "id": "414364379",
+              "name": "Dry Ice",
+              "sortIndex": 4
+            }
+          },
+          {
+            "__typename": "subcategoryOption",
+            "productCount": 16,
+            "subcategory": {
+              "__typename": "ProductSubcategory",
+              "id": "414364380",
+              "name": "Gloves",
+              "sortIndex": 5
+            }
+          },
+          {
+            "__typename": "subcategoryOption",
+            "productCount": 9,
+            "subcategory": {
+              "__typename": "ProductSubcategory",
+              "id": "499771329",
+              "name": "Cleaning Supplies",
+              "sortIndex": 19
+            }
+          }
+        ]
+      },
+      {
+        "__typename": "categoryOption",
+        "category": {
+          "__typename": "ProductCategory",
+          "baseName": "fun foods",
+          "examplePictureUrl": null,
+          "iconAltUrl": null,
+          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/93026e949f6128e25c81de075d4ae110.jpg",
+          "id": "412494720",
+          "name": "Fun Foods",
+          "sortIndex": "11",
+          "visibleOnHeader": true,
+          "visibleOnSidebar": true
+        },
+        "productCount": 62,
+        "subcategories": [
+          {
+            "__typename": "subcategoryOption",
+            "productCount": 9,
+            "subcategory": {
+              "__typename": "ProductSubcategory",
+              "id": "412494724",
+              "name": "Pretzel",
+              "sortIndex": 0
+            }
+          },
+          {
+            "__typename": "subcategoryOption",
+            "productCount": 6,
+            "subcategory": {
+              "__typename": "ProductSubcategory",
+              "id": "412494728",
+              "name": "Donuts",
+              "sortIndex": 2
+            }
+          },
+          {
+            "__typename": "subcategoryOption",
+            "productCount": 8,
+            "subcategory": {
+              "__typename": "ProductSubcategory",
+              "id": "412494729",
+              "name": "Candy Apples",
+              "sortIndex": 3
+            }
+          },
+          {
+            "__typename": "subcategoryOption",
+            "productCount": 22,
+            "subcategory": {
+              "__typename": "ProductSubcategory",
+              "id": "412494731",
+              "name": "Sno Kones",
+              "sortIndex": 4
+            }
+          },
+          {
+            "__typename": "subcategoryOption",
+            "productCount": 14,
+            "subcategory": {
+              "__typename": "ProductSubcategory",
+              "id": "414466300",
+              "name": "Churros & Fried Foods",
+              "sortIndex": 13
+            }
+          },
+          {
+            "__typename": "subcategoryOption",
+            "productCount": 3,
+            "subcategory": {
+              "__typename": "ProductSubcategory",
+              "id": "414466343",
+              "name": "Pizza",
+              "sortIndex": 14
+            }
+          }
+        ]
+      },
+      {
+        "__typename": "categoryOption",
+        "category": {
+          "__typename": "ProductCategory",
+          "baseName": "private label",
+          "examplePictureUrl": null,
+          "iconAltUrl": null,
+          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/55313ec3cfccb31b5a48a28b4a3a6927.jpg",
+          "id": "412494866",
+          "name": "Private Label",
+          "sortIndex": "12",
+          "visibleOnHeader": true,
+          "visibleOnSidebar": true
+        },
+        "productCount": 53,
+        "subcategories": [
+          {
+            "__typename": "subcategoryOption",
+            "productCount": 28,
+            "subcategory": {
+              "__typename": "ProductSubcategory",
+              "id": "414365410",
+              "name": "Pints",
+              "sortIndex": 1
+            }
+          },
+          {
+            "__typename": "subcategoryOption",
+            "productCount": 8,
+            "subcategory": {
+              "__typename": "ProductSubcategory",
+              "id": "414365411",
+              "name": "Cookies",
+              "sortIndex": 2
+            }
+          },
+          {
+            "__typename": "subcategoryOption",
+            "productCount": 12,
+            "subcategory": {
+              "__typename": "ProductSubcategory",
+              "id": "414365412",
+              "name": "Popcorn & Cotton Candy",
+              "sortIndex": 3
+            }
+          },
+          {
+            "__typename": "subcategoryOption",
+            "productCount": 5,
+            "subcategory": {
+              "__typename": "ProductSubcategory",
+              "id": "414365413",
+              "name": "Novelties",
+              "sortIndex": 4
+            }
+          }
+        ]
+      },
+      {
+        "__typename": "categoryOption",
+        "category": {
+          "__typename": "ProductCategory",
+          "baseName": "toppings and syrups",
+          "examplePictureUrl": null,
+          "iconAltUrl": null,
+          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/01be1e4d1117e727d475312b903f2ca1.jpg",
+          "id": "412495027",
+          "name": "Toppings and Syrups",
+          "sortIndex": "13",
+          "visibleOnHeader": true,
+          "visibleOnSidebar": true
+        },
+        "productCount": 132,
+        "subcategories": [
+          {
+            "__typename": "subcategoryOption",
+            "productCount": 62,
+            "subcategory": {
+              "__typename": "ProductSubcategory",
+              "id": "412495028",
+              "name": "Toppings",
+              "sortIndex": 0
+            }
+          },
+          {
+            "__typename": "subcategoryOption",
+            "productCount": 40,
+            "subcategory": {
+              "__typename": "ProductSubcategory",
+              "id": "412495029",
+              "name": "Monin Puree & Syrups",
+              "sortIndex": 1
+            }
+          },
+          {
+            "__typename": "subcategoryOption",
+            "productCount": 8,
+            "subcategory": {
+              "__typename": "ProductSubcategory",
+              "id": "412495030",
+              "name": "Chocolate",
+              "sortIndex": 2
+            }
+          },
+          {
+            "__typename": "subcategoryOption",
+            "productCount": 22,
+            "subcategory": {
+              "__typename": "ProductSubcategory",
+              "id": "414466167",
+              "name": "Syrups & Sauces",
+              "sortIndex": 12
+            }
+          }
+        ]
+      },
+      {
+        "__typename": "categoryOption",
+        "category": {
+          "__typename": "ProductCategory",
+          "baseName": "gelato",
+          "examplePictureUrl": null,
+          "iconAltUrl": null,
+          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/8ccfdc7b615d2cc703153d8502cce3e8.jpg",
+          "id": "498722208",
+          "name": "Gelato",
+          "sortIndex": "15",
+          "visibleOnHeader": true,
+          "visibleOnSidebar": true
         },
         "productCount": 20,
         "subcategories": [
           {
-            "subcategory": {
-              "id": "412166043",
-              "name": "Grocery Items",
-              "sortIndex": 0,
-              "__typename": "ProductSubcategory"
-            },
+            "__typename": "subcategoryOption",
             "productCount": 20,
-            "__typename": "subcategoryOption"
+            "subcategory": {
+              "__typename": "ProductSubcategory",
+              "id": "498722209",
+              "name": "Gelato",
+              "sortIndex": 0
+            }
           }
-        ],
-        "__typename": "categoryOption"
+        ]
       },
       {
+        "__typename": "categoryOption",
         "category": {
-          "id": "412166072",
-          "baseName": "protein",
+          "__typename": "ProductCategory",
+          "baseName": "sorbet & italian ice",
           "examplePictureUrl": null,
           "iconAltUrl": null,
-          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/9bdf7430c44ab1227a5d4bcda759e996.jpg",
-          "name": "Protein",
-          "sortIndex": "10",
+          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/e9913c98a9035dbae819aa9810e2541c.jpg",
+          "id": "498722496",
+          "name": "Sorbet & Italian Ice",
+          "sortIndex": "16",
           "visibleOnHeader": true,
-          "visibleOnSidebar": true,
-          "__typename": "ProductCategory"
+          "visibleOnSidebar": true
         },
-        "productCount": 51,
+        "productCount": 12,
         "subcategories": [
           {
+            "__typename": "subcategoryOption",
+            "productCount": 12,
             "subcategory": {
-              "id": "412166073",
-              "name": "Protein",
-              "sortIndex": 0,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 51,
-            "__typename": "subcategoryOption"
+              "__typename": "ProductSubcategory",
+              "id": "498722497",
+              "name": "Sorbet & Italian Ice",
+              "sortIndex": 0
+            }
           }
-        ],
-        "__typename": "categoryOption"
+        ]
       },
       {
+        "__typename": "categoryOption",
         "category": {
-          "id": "412165882",
-          "baseName": "restaurant supplies",
+          "__typename": "ProductCategory",
+          "baseName": "popcorn",
           "examplePictureUrl": null,
           "iconAltUrl": null,
-          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/f160c02bb6f34490719582ffa8df209b.jpg",
-          "name": "Restaurant Supplies",
-          "sortIndex": "11",
+          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/daf6c97f5f4bf115b36b3d54523d2599.jpg",
+          "id": "498722721",
+          "name": "Popcorn",
+          "sortIndex": "17",
           "visibleOnHeader": true,
-          "visibleOnSidebar": true,
-          "__typename": "ProductCategory"
+          "visibleOnSidebar": true
         },
-        "productCount": 159,
+        "productCount": 37,
         "subcategories": [
           {
+            "__typename": "subcategoryOption",
+            "productCount": 37,
             "subcategory": {
-              "id": "412165883",
-              "name": "Food Storage & Packaging Supplies",
-              "sortIndex": 0,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 18,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "412165884",
-              "name": "Paper Products & Disposables",
-              "sortIndex": 1,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 122,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "412165885",
-              "name": "Cleaning Supplies",
-              "sortIndex": 2,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 19,
-            "__typename": "subcategoryOption"
+              "__typename": "ProductSubcategory",
+              "id": "498722722",
+              "name": "Popcorn",
+              "sortIndex": 0
+            }
           }
-        ],
-        "__typename": "categoryOption"
+        ]
       },
       {
+        "__typename": "categoryOption",
         "category": {
-          "id": "412165943",
-          "baseName": "value-add",
+          "__typename": "ProductCategory",
+          "baseName": "cotton candy",
           "examplePictureUrl": null,
           "iconAltUrl": null,
-          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/eb06abc595c604eb4d105ecc07e2005a.jpg",
-          "name": "Value-Add",
-          "sortIndex": "12",
+          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/e24a45aeeb3cf8b904fdeff7de104589.jpg",
+          "id": "498723197",
+          "name": "Cotton Candy",
+          "sortIndex": "18",
           "visibleOnHeader": true,
-          "visibleOnSidebar": true,
-          "__typename": "ProductCategory"
+          "visibleOnSidebar": true
         },
-        "productCount": 482,
+        "productCount": 16,
         "subcategories": [
           {
+            "__typename": "subcategoryOption",
+            "productCount": 16,
             "subcategory": {
-              "id": "412165944",
-              "name": "Fresh Cut Produce",
-              "sortIndex": 0,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 106,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "412165945",
-              "name": "Retail Value-Add",
-              "sortIndex": 1,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 342,
-            "__typename": "subcategoryOption"
-          },
-          {
-            "subcategory": {
-              "id": "412165946",
-              "name": "Retail Supplies",
-              "sortIndex": 2,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 34,
-            "__typename": "subcategoryOption"
+              "__typename": "ProductSubcategory",
+              "id": "498723198",
+              "name": "Cotton Candy",
+              "sortIndex": 0
+            }
           }
-        ],
-        "__typename": "categoryOption"
-      },
-      {
-        "category": {
-          "id": "412249667",
-          "baseName": "others",
-          "examplePictureUrl": null,
-          "iconAltUrl": null,
-          "iconUrl": "https://ordering-supplies-images-1.s3.us-east-2.amazonaws.com/d8d4e2c24f2434a9dcdf1555fc6fbbd4.jpg",
-          "name": "Others",
-          "sortIndex": "13",
-          "visibleOnHeader": true,
-          "visibleOnSidebar": true,
-          "__typename": "ProductCategory"
-        },
-        "productCount": 79,
-        "subcategories": [
-          {
-            "subcategory": {
-              "id": "412249668",
-              "name": "Others",
-              "sortIndex": 6,
-              "__typename": "ProductSubcategory"
-            },
-            "productCount": 79,
-            "__typename": "subcategoryOption"
-          }
-        ],
-        "__typename": "categoryOption"
+        ]
       }
     ]
   }
 }
+
+                    
 		''')
 
 	VENDOR_NAME = 'All Star Specialties'
-	VENDOR_URL_NAME = 'CarusoProduceInc'
+	VENDOR_URL_NAME = 'AllStar/448081160/448081149'
 	VERIFIED_VENDOR_ID = 320450261
 
 	def __init__(self, options=None):
 		super().__init__(options)
-		self.options = {**self.DEFAULT_OPTIONS, **(options or {})}
-		self.options['home_directory'] = self.DEFAULT_DIRECTORY
-		self.options['base_url'] = self.BASE_URL
+

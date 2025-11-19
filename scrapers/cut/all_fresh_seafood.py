@@ -3,6 +3,11 @@ from .dry import CutScraper
 
 
 class AllFreshSeafoodScraper(CutScraper):
+    # 1298/edit_note/1417/
+    CRM_ID = 1298
+    CRM_NOTE_ID = 1417
+    CRM_PRICE_TYPE = ''
+    CRM_STATUS_OVERRIDE = ''
     """Scraper for All Fresh Seafood on the Cut & Dry platform"""
 
     DEFAULT_DIRECTORY = '/Users/mark/Downloads/scrapers/all_fresh_seafood/'
@@ -337,6 +342,4 @@ class AllFreshSeafoodScraper(CutScraper):
 
     def __init__(self, options=None):
         super().__init__(options)
-        self.options = {**self.DEFAULT_OPTIONS, **(options or {})}
-        self.options['home_directory'] = self.DEFAULT_DIRECTORY
-        self.options['base_url'] = self.BASE_URL
+

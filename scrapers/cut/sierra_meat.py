@@ -6,10 +6,15 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from scrapers.cut.dry import CutScraper
 
-
 class SierraMeatScraper(CutScraper):
+	# 1252/edit_note/1383/
+	CRM_ID = 1252
+	CRM_NOTE_ID = 1383
+	CRM_PRICE_TYPE = ''
+	CRM_STATUS_OVERRIDE = ''
 
 	DEFAULT_DIRECTORY = '/Users/mark/Downloads/scrapers/sierra_meat/'
+	# DEFAULT_DIRECTORY = '/Users/mark/Downloads/scrapers/Captain_Alex_Seafood/'
 
 	# Values to change
 	BASE_URL = "https://app.cutanddry.com/catalog/sierra%20meat%20&%20seafood?verifiedVendorId=21262898&categoryId=1&page=1"
@@ -414,6 +419,7 @@ class SierraMeatScraper(CutScraper):
 }
 		''')
 
+	# VENDOR_NAME = 'Captain_Alex_Seafood'
 	VENDOR_NAME = 'Sierra Meat & Seafood'
 	VENDOR_URL_NAME = 'sierra%20meat%20&%20seafood'
 	VERIFIED_VENDOR_ID = 21262898
@@ -422,9 +428,6 @@ class SierraMeatScraper(CutScraper):
 
 	def __init__(self, options=None):
 		super().__init__(options)
-		self.options = {**self.DEFAULT_OPTIONS, **(options or {})}
-		self.options['home_directory'] = self.DEFAULT_DIRECTORY
-		self.options['base_url'] = self.BASE_URL
 
 	def scraping_setup(self):
 		"""Scrape products from the website"""

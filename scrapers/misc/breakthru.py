@@ -37,41 +37,16 @@ from scrapers.scraper import Scraper
 
 
 class BreakthruScraper(Scraper):
-	PRODUCT_DATA_SPEC = {
-		# Fields from IMPORT_SPEC
-		'name': '',
-		'sku': '',
-		'gtin': '',
-		'image': '',
-		'pack': '',
-		'size': '',
-		'retail_price': '',
-		'ordering_unit': '',
-		'is_catch_weight': '',
-		'is_broken_case': '',
-		'average_case_weight': '',
-		'brand': '',
-		'taxonomy': '',
-		'level_1': '',
-		'level_2': '',
-		'level_3': '',
-		'manufacturer_name': '',
-		'manufacturer_sku': '',
-		'distributor_name': '',
-		'content_url': '',
-		'description': '',
-		'unit_price': '',
-		'extra_data_1': '',
-		'extra_data_2': '',
+	# /2171/edit_note/1705/
+	CRM_ID = 2171
+	CRM_NOTE_ID = 1705
+	CRM_PRICE_TYPE = ''
+	CRM_STATUS_OVERRIDE = ''
 
-		# Fields from US_FOODS_SPEC
-		'timestamp': '',
-		'pack_size': '',
-		'category': '',
-		'subcategory': '',
-		'subsubcategory': '',
-		'pricingUnitOfMeasure': '',
+	DISTRIBUTOR_PRODUCT_DATA_SPEC = {
+		'pricingUnitOfMeasure': ''
 	}
+
 
 	TEST_CATEGORIES = 100
 	TEST_PRODUCTS = 20000
@@ -195,6 +170,8 @@ class BreakthruScraper(Scraper):
 		'process_csv': False,
 		'reprocess_csv': False,
 		'dedupe_csv': False,
+		'format_csv': False,
+		'scan_csv': False,
 		'count_csv': False,
 		'process_extra': False,
 		'test_products': TEST_PRODUCTS,
@@ -213,7 +190,10 @@ class BreakthruScraper(Scraper):
 		self.options = {**self.DEFAULT_OPTIONS, **(options or {})}
 		self.options['home_directory'] = self.DEFAULT_DIRECTORY
 		self.options['base_url'] = self.BASE_URL
-
+		self.PRODUCT_DATA_SPEC = self.BASE_PRODUCT_DATA_SPEC.copy()
+		for spec in self.DISTRIBUTOR_PRODUCT_DATA_SPEC:
+			self.PRODUCT_DATA_SPEC[spec] = ''
+		print(self.PRODUCT_DATA_SPEC)
 	def get_category_ids(self):
 		return self.CATEGORY_IDS
 

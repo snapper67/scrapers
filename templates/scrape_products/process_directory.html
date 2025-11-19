@@ -1,0 +1,47 @@
+{% extends "./_scrape_base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Process Distributor Directory</h2>
+    <p>Enter the directory path containing distributor CSV files to process:</p>
+
+    <form method="post" action="{% url 'process_distributor_directory' %}" class="mt-4">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="directory_path">Directory Path:</label>
+            <input type="text" class="form-control" id="directory_path" name="directory_path" required
+                   placeholder="e.g., /Users/mark/Downloads/Files_For_October_2025/ChicagoMarket" value="/Users/mark/Downloads/Files_For_October_2025/ChicagoMarket">
+        </div>
+        <button type="submit" class="btn btn-primary mt-3">Process Directory</button>
+    </form>
+
+    {% if result %}
+    <div class="mt-4">
+        <h4>Processing Results:</h4>
+        <div class="alert alert-info">
+            {{ result|safe }}
+        </div>
+    </div>
+    {% endif %}
+
+    {% for key, data in result.items %}
+        {% if key != 'file_log' %}
+            <li>{{ key }} : {{ data }}</li>
+        {% else %}
+            {% autoescape off %}
+            <div>{{ data }}</div>
+            {% endautoescape %}
+        {% endif %}
+    {% endfor %}
+
+    {% if error %}
+    <div class="mt-4">
+        <h4>Error:</h4>
+        <div class="alert alert-danger">
+            {{ error|safe }}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -17,42 +17,10 @@ from seleniumwire.utils import decode
 from scrapers.scraper import Scraper
 
 class ShopifyScraper(Scraper):
-	PRODUCT_DATA_SPEC = {
-		# Fields from IMPORT_SPEC
-		'name': '',
-		'sku': '',
-		'gtin': '',
-		'image': '',
-		'pack': '',
-		'size': '',
-		'retail_price': '',
-		'ordering_unit': '',
-		'is_catch_weight': '',
-		'is_broken_case': '',
-		'average_case_weight': '',
-		'brand': '',
-		'taxonomy': '',
-		'level_1': '',
-		'level_2': '',
-		'level_3': '',
-		'manufacturer_name': '',
-		'manufacturer_sku': '',
-		'distributor_name': '',
-		'content_url': '',
-		'description': '',
-		'unit_price': '',
-		'extra_data_1': '',
-		'extra_data_2': '',
-
-		# Fields from US_FOODS_SPEC
-		'timestamp': '',
-		'id': '',
-		'pack_size': '',
-		'category': '',
-		'subcategory': '',
-		'subsubcategory': '',
+	SCRAPER_TYPE = 'Shopify'
+	SHOPIFY_PRODUCT_DATA_SPEC = {
 		'shop_id': '',
-		'price': 0,
+		'productId': '',
 	}
 
 	TEST_CATEGORIES = 100
@@ -66,28 +34,10 @@ class ShopifyScraper(Scraper):
 	BASE_PRODUCT_URL = ''
 	VENDOR_NAME = ''
 
-	CATEGORY_IDS = {
-		"FRUIT": 1,
-		"VEGETABLES": 2,
-		"CONVENIENCE": 3,
-		"ASIAN": 4,
-		"LATIN": 5,
-	}
+	CATEGORY_IDS = {}
 	# Category Names (can use category ID as key)
-	CATEGORY_NAMES = {
-		1: "fruits",
-		2: "vegetables",
-		3: "convenience",
-		4: "asian",
-		5: "latin",
-	}
-	CATEGORY_URLS = {
-		1: "fruits",
-		2: "vegetables",
-		3: "convenience",
-		4: "asian",
-		5: "latin",
-	}
+	CATEGORY_NAMES = {}
+	CATEGORY_URLS = {}
 
 	DEDUP_INPUT_FILE = 'dedupe_product_data.csv'
 
@@ -96,6 +46,8 @@ class ShopifyScraper(Scraper):
 		'process_csv': False,
 		'reprocess_csv': False,
 		'dedupe_csv': False,
+		'format_csv': False,
+		'scan_csv': False,
 		'count_csv': False,
 		'test_products': TEST_PRODUCTS,
 		'max_products': 999,
@@ -110,9 +62,10 @@ class ShopifyScraper(Scraper):
 
 	def __init__(self, options=None):
 		super().__init__(options)
-		self.options = {**self.DEFAULT_OPTIONS, **(options or {})}
-		self.options['home_directory'] = self.DEFAULT_DIRECTORY
-		self.options['base_url'] = self.BASE_URL
+		self.PRODUCT_DATA_SPEC = self.BASE_PRODUCT_DATA_SPEC.copy()
+		for spec in self.SHOPIFY_PRODUCT_DATA_SPEC:
+			self.PRODUCT_DATA_SPEC[spec] = ''
+		print(self.PRODUCT_DATA_SPEC)
 
 	def get_category_ids(self):
 		return self.CATEGORY_IDS
@@ -148,6 +101,8 @@ class ShopifyScraper(Scraper):
 
 	# 	Product Scraping Functions
 	# ************************************************************************
+	def get_product_data_additional(self, data, row_spec):
+		return row_spec
 
 	def get_product_data(self, data, row_spec):
 		print("processing product data from response...")
@@ -156,7 +111,7 @@ class ShopifyScraper(Scraper):
 			try:
 				row_spec["name"] = data.get("title", "")
 				row_spec["description"] = data.get("description", "")
-				row_spec["price"] = data.get("price", "")
+				row_spec["retail_price"] = data.get("price", "")
 				row_spec["shop_id"] = data.get("id", "")
 				self.get_pack_size(data, row_spec)
 				row_spec["image"] = self.get_first_image_url(data)
@@ -171,6 +126,7 @@ class ShopifyScraper(Scraper):
 				print(f" ⛔️⛔️⛔️Error processing product data: {e}")
 
 		print("processing get_product_data Complete...")
+		row_spec = self.get_product_data_additional(data, row_spec)
 		return row_spec
 
 	def get_first_image_url(self, response_data):
@@ -223,11 +179,8 @@ class ShopifyScraper(Scraper):
 		return row_spec
 
 	# ************************************************************************
-	def get_category_page(self, url, category_name, sub_category_name, sub_sub_category_name):
-		"""Load a category page"""
-		raise NotImplementedError("scrape_products method not implemented")
 
-	def grab_products(self):
+	def get_products_from_html(self):
 
 		products = self.wait.until(
 			EC.presence_of_all_elements_located((By.CSS_SELECTOR, '.productitem--image-link'))
@@ -265,41 +218,49 @@ class ShopifyScraper(Scraper):
 		loop_counter = 0
 		category_found_count = 1
 
+		# Check to see if we asked for a specific category
 		if category_to_process > 0:
 			print(f"Category to process: {category_to_process}")
 			loop_counter = category_to_process - 1
 			test_categories = category_to_process
 			category_found_count = category_to_process
+
 		for category in categories:
 			category_name = category['name']
 			print(f"category: {category_name}")
 			sub_categories = category['subcategories']
 			sub_category_found_count = len(sub_categories)
 			print(f"Found {sub_category_found_count} sub categories to process...")
-			for sub_category in sub_categories:
-				sub_category_name = sub_category['name']
-				print(f"sub category: {sub_category_name}")
+			if sub_categories:
+				for sub_category in sub_categories:
+					sub_category_name = sub_category['name']
+					print(f"sub category: {sub_category_name}")
 
-				sub_sub_categories = sub_category.get('subcategories', False)
-				if sub_sub_categories:
-					sub_sub_category_found_count = len(sub_sub_categories)
-					print(f"Found {sub_sub_category_found_count} sub categories to process...")
-					for sub_sub_category in sub_category['subcategories']:
-						sub_sub_category_name = sub_sub_category['name']
-						print(f"sub sub category: {sub_sub_category_name}")
-						if loop_counter < test_categories:
-							loop_counter += 1
+					sub_sub_categories = sub_category.get('subcategories', False)
+					if sub_sub_categories:
+						sub_sub_category_found_count = len(sub_sub_categories)
+						print(f"Found {sub_sub_category_found_count} sub categories to process...")
+						for sub_sub_category in sub_category['subcategories']:
+							sub_sub_category_name = sub_sub_category['name']
+							print(f"sub sub category: {sub_sub_category_name}")
+							if loop_counter < test_categories:
+								loop_counter += 1
 
-							url = self.get_category_url(sub_sub_category)
-							print(f"Url: {url}")
-							detail_urls, html = self.get_category_page(url, category_name, sub_category_name, sub_sub_category_name)
-							all_urls.extend(detail_urls)
-						time.sleep(2)
-				else:
-					url = self.get_category_url(sub_category)
-					print(f"Url: {url}")
-					detail_urls, html = self.get_category_page(url, category_name, sub_category_name, '')
-					all_urls.extend(detail_urls)
+								url = self.get_category_url(sub_sub_category)
+								print(f"Url: {url}")
+								detail_urls, html = self.get_category_page(url, category_name, sub_category_name, sub_sub_category_name)
+								all_urls.extend(detail_urls)
+							time.sleep(2)
+					else:
+						url = self.get_category_url(sub_category)
+						print(f"Url: {url}")
+						detail_urls, html = self.get_category_page(url, category_name, sub_category_name, '')
+						all_urls.extend(detail_urls)
+			else:
+				url = self.get_category_url(category)
+				print(f"Url: {url}")
+				detail_urls, html = self.get_category_page(url, category_name, '', '')
+				all_urls.extend(detail_urls)
 
 		# html_table_to_csv(html_table)
 		html += f"<h2>Total products found: {total_products}</h2>"
@@ -351,7 +312,7 @@ class ShopifyScraper(Scraper):
 		#  Wait for the product name element on the product page detail page
 		print("Scraper.get_product_details()")
 		if not row_spec: row_spec = self.PRODUCT_DATA_SPEC.copy()
-		print("processing product detail page")
+		print(f"processing product detail page for target {target}")
 		print(f"Loading page...{url}")
 
 		data = ''
@@ -367,7 +328,7 @@ class ShopifyScraper(Scraper):
 				EC.presence_of_element_located(
 				(By.CSS_SELECTOR, target))
 			)
-
+			print(f"Script Loaded")
 			# Get the page source and parse it with BeautifulSoup
 			soup = BeautifulSoup(self.driver.page_source, 'html.parser')
 
@@ -378,12 +339,14 @@ class ShopifyScraper(Scraper):
 			})
 
 			if not script_tag:
+				print("Looking for Second script tag")
 				script_tag = soup.find('script', {
 					'type': 'application/json',
 					'data-product-json': ''
 				})
 
 			if script_tag and script_tag.string:
+				print("Loading product data")
 				try:
 					# Parse the JSON data from the script tag
 					product_data = json.loads(script_tag.string)

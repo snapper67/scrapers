@@ -2,8 +2,12 @@
 import json
 from scrapers.cut.dry import CutScraper
 
-
 class MansonScraper(CutScraper):
+	# 1246/edit_note/1376/
+	CRM_ID = 1246
+	CRM_NOTE_ID = 1376
+	CRM_PRICE_TYPE = ''
+	CRM_STATUS_OVERRIDE = ''
 
 	DEFAULT_DIRECTORY = '/Users/mark/Downloads/scrapers/manson/'
 
@@ -360,6 +364,3 @@ class MansonScraper(CutScraper):
 
 	def __init__(self, options=None):
 		super().__init__(options)
-		self.options = {**self.DEFAULT_OPTIONS, **(options or {})}
-		self.options['home_directory'] = self.DEFAULT_DIRECTORY
-		self.options['base_url'] = self.BASE_URL

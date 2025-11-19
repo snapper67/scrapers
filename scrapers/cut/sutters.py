@@ -1,8 +1,12 @@
 import json
 from .dry import CutScraper
 
-
 class SuttersScraper(CutScraper):
+    # 1285/edit_note/1402/
+    CRM_ID = 1285
+    CRM_NOTE_ID = 1402
+    CRM_PRICE_TYPE = ''
+    CRM_STATUS_OVERRIDE = ''
     """Scraper for Sutter's Food Group on the Cut & Dry platform"""
 
     DEFAULT_DIRECTORY = '/Users/mark/Downloads/scrapers/sutters/'
@@ -365,6 +369,3 @@ class SuttersScraper(CutScraper):
 
     def __init__(self, options=None):
         super().__init__(options)
-        self.options = {**self.DEFAULT_OPTIONS, **(options or {})}
-        self.options['home_directory'] = self.DEFAULT_DIRECTORY
-        self.options['base_url'] = self.BASE_URL

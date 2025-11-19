@@ -6,7 +6,7 @@
 
     <!-- Search Form -->
     <div class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-6">
-        <form method="post" class="space-y-4">
+        <form method="post" class="space-y-4" id="searchForm">
             {% csrf_token %}
 
             {% if error %}
@@ -18,9 +18,20 @@
 
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
-                    <label class="block text-gray-700 text-sm font-bold mb-2" for="zip_code">
-                        Zip Code
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="market_select">
+                        Select Market or Enter Zip
                     </label>
+                    <select class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mb-2"
+                            id="market_select"
+                            onchange="handleMarketSelect()">
+                        <option value="">-- Select a Market --</option>
+                        {% for market in markets %}
+                            <option value="{{ market.zipcode }}" data-market="{{ market.market }}">
+                                {{ market.market }} ({{ market.zipcode }})
+                            </option>
+                        {% endfor %}
+                        <option value="custom">-- Custom Zip Code --</option>
+                    </select>
                     <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                            id="zip_code"
                            name="zip_code"
@@ -28,6 +39,7 @@
                            placeholder="Enter zip code"
                            value="{{ zip_code }}"
                            required>
+                    <input type="hidden" id="market_name" name="market_name" value="{{ market_name }}">
                 </div>
 
                 <div>
@@ -63,32 +75,80 @@
                 </div>
             </div>
         </form>
+
+        <script>
+        function handleMarketSelect() {
+            const marketSelect = document.getElementById('market_select');
+            const zipInput = document.getElementById('zip_code');
+            const marketNameInput = document.getElementById('market_name');
+            const selectedOption = marketSelect.options[marketSelect.selectedIndex];
+
+            if (marketSelect.value === 'custom') {
+                zipInput.value = '';
+                marketNameInput.value = '';
+                {#zipInput.disabled = false;#}
+                zipInput.focus();
+            } else if (marketSelect.value) {
+                zipInput.value = marketSelect.value;
+                marketNameInput.value = selectedOption.getAttribute('data-market');
+                {#zipInput.disabled = true;#}
+            } else {
+                zipInput.value = '';
+                marketNameInput.value = '';
+                {#zipInput.disabled = false;#}
+            }
+        }
+
+        // Initialize form state on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const zipInput = document.getElementById('zip_code');
+            const marketSelect = document.getElementById('market_select');
+
+            // If zip code is already set, check if it matches any market
+            if (zipInput.value) {
+                const marketOption = marketSelect.querySelector(`option[value="${zipInput.value}"]`);
+                if (marketOption) {
+                    marketSelect.value = zipInput.value;
+                    document.getElementById('market_name').value = marketOption.getAttribute('data-market');
+                    {#zipInput.disabled = true;#}
+                } else {
+                    marketSelect.value = 'custom';
+                    {#zipInput.disabled = false;#}
+                }
+            }
+        });
+        </script>
+
     <!-- In unipro.html, after the search form -->
-{% if distributors %}
-<div class="flex justify-end mb-4">
-    <form method="post" class="inline">
-        {% csrf_token %}
-        <input type="hidden" name="zip_code" value="{{ zip_code }}">
-        <input type="hidden" name="distributor_type" value="{{ distributor_type }}">
-        <input type="hidden" name="radius" value="{{ radius }}">
-        <button type="submit"
-                name="export_csv"
-                value="1"
-                class="btn btn-primary hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
-            <i class="fas fa-download mr-2"></i>Export to CSV
-        </button>
-    </form>
-</div>
-{% endif %}
+    {% if distributors %}
+    <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-semibold">
+            {{ distributors|length }} Distributors Found
+            {% if market_name %}
+                in {{ market_name }}
+            {% else %}
+                Near {{ zip_code }}
+            {% endif %}
+        </h2>
+        <form method="post" class="inline">
+            {% csrf_token %}
+            <input type="hidden" name="zip_code" value="{{ zip_code }}">
+            <input type="hidden" name="market_name" value="{{ market_name }}">
+            <input type="hidden" name="distributor_type" value="{{ distributor_type }}">
+            <input type="hidden" name="radius" value="{{ radius }}">
+            <button type="submit"
+                    name="export_csv"
+                    value="1"
+                    class="btn btn-primary hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+                <i class="fas fa-download mr-2"></i>Export to CSV
+            </button>
+        </form>
     </div>
+    {% endif %}
 
     <!-- Results -->
     {% if distributors %}
         <div class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-6">
-            <h2 class="text-xl font-semibold mb-4">
-                {{ distributors|length }} Distributors Found Near {{ zip_code }}
-            </h2>
-
             <div class="overflow-x-auto">
                 <table class="min-w-full bg-white">
                     <thead class="bg-gray-100">

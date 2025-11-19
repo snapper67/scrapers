@@ -1,7 +1,117 @@
 {% extends '_base.html' %}
 
-{% block title %}About page{% endblock %}
+{% block title %}About the Scrapers{% endblock %}
 
 {% block content %}
-<h1>About page</h1>
+<div class="container mt-5">
+    <h1 class="mb-4">About the Web Scrapers</h1>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h2>Overview</h2>
+        </div>
+        <div class="card-body">
+            <p>This application provides a collection of web scrapers designed to extract product data from various food service and distribution websites. The scrapers are built using Python with Selenium and BeautifulSoup for reliable data extraction.</p>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h2>Features</h2>
+        </div>
+        <div class="card-body">
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item">✓ Extract product details including names, prices, and descriptions</li>
+                <li class="list-group-item">✓ Handle pagination and dynamic content loading</li>
+                <li class="list-group-item">✓ Export data to CSV format for easy analysis</li>
+                <li class="list-group-item">✓ Support for multiple vendors and websites</li>
+                <li class="list-group-item">✓ Web interface for easy access and control</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h2>How to Use</h2>
+        </div>
+        <div class="card-body">
+            <h4>Accessing Scrapers</h4>
+            <ol>
+                <li>Navigate to the <a href="{% url 'scrape_products' %}">Scrapers</a> page</li>
+                <li>Click on the vendor's button to access a specific scraper</li>
+                <li>Select the category. Some scrapers support choosing "All"</li>
+                <li>Click the checkbox of the step you want to run</li>
+                <li>Monitor the progress in the browser</li>
+                <li>Results are saved to a csv file.</li>
+            </ol>
+
+            <h4 class="mt-4">Available Platforms</h4>
+            <div class="row">
+                <div class="col-md-4">
+                    <h5>Platforms</h5>
+                    <ul>
+                        <li>Cut + Dry</li>
+                        <li>Shopify</li>
+                        <li>Pepper</li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h5>Manual Scrapes</h5>
+                    <ul>
+                        <li>Southern Glazier</li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h5>API scrapes</h5>
+                    <ul>
+                        <li>Breakthru</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h2>Requirements</h2>
+        </div>
+        <div class="card-body">
+            <ul>
+                <li>Python 3.8+</li>
+                <li>Chrome or Firefox browser</li>
+                <li>ChromeDriver or GeckoDriver (for Selenium)</li>
+                <li>Required Python packages (see requirements.txt)</li>
+                <li>Ability to run Django on a server</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h2>Process</h2>
+        </div>
+        <div class="card-body">
+            <ul>
+                <li>Collect a list of top categories. These go as deep as possible. The categories are stored in json and hard coded into the scraper class.</li>
+                <li>For each category, collect a list of products. The products are stored in a csv file with a file name normally in the format of [category]_product_urls.csv</li>
+                <li>For each product, collect the details. The details are stored in a csv file with a file name normally in the format of [category]_product_data.csv</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2>Website Format</h2>
+        </div>
+        <div class="card-body">
+            <h2>Most Common</h2>
+            <p>Most websites hava a navigation with 1 to 3 levels of taxonomy.</p>
+            <p>Navigating to a category provides a paged list of products.</p>
+            <p>Product details are accessed by clicking a product in the list. The scraper stores the list of product urls which it visits during the process products step.</p>
+            <h2>Less Common</h2>
+            <p>Website with a page that lists all the products with no detail page.(Not Yet Implemented)</p>
+            <p>Search Only: Cheney Brothers</p>
+        </div>
+    </div>
+</div>
 {% endblock content %}

@@ -26,6 +26,12 @@ from scrapers.scraper import Scraper
 
 
 class CheneyBrothersScraper(Scraper):
+	# 59/edit_note/1752/
+	CRM_ID = 59
+	CRM_NOTE_ID = 1752
+	CRM_PRICE_TYPE = ''
+	CRM_STATUS_OVERRIDE = ''
+
 	PRODUCT_DATA_SPEC = {
 		# Fields from IMPORT_SPEC
 		'name': '',
@@ -185,6 +191,8 @@ class CheneyBrothersScraper(Scraper):
 		'process_csv': False,
 		'reprocess_csv': False,
 		'dedupe_csv': False,
+		'format_csv': False,
+		'scan_csv': False,
 		'count_csv': False,
 		'test_products': TEST_PRODUCTS,
 		'max_products': 999,
@@ -199,9 +207,8 @@ class CheneyBrothersScraper(Scraper):
 
 	def __init__(self, options=None):
 		super().__init__(options)
-		self.options = {**self.DEFAULT_OPTIONS, **(options or {})}
 		self.options['home_directory'] = self.DEFAULT_DIRECTORY
-		self.options['base_url'] = self.BASE_URL
+		# self.options['base_url'] = self.BASE_URL
 
 	def get_category_ids(self):
 		return self.CATEGORY_IDS

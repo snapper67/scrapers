@@ -59,41 +59,16 @@ def format_filter(filter):
 	return final_string
 
 class SouthernGlazierScraper(Scraper):
-	PRODUCT_DATA_SPEC = {
-		# Fields from IMPORT_SPEC
-		'name': '',
-		'sku': '',
-		'gtin': '',
-		'image': '',
-		'pack': '',
-		'size': '',
-		'retail_price': '',
-		'ordering_unit': '',
-		'is_catch_weight': '',
-		'is_broken_case': '',
-		'average_case_weight': '',
-		'brand': '',
-		'taxonomy': '',
-		'level_1': '',
-		'level_2': '',
-		'level_3': '',
-		'manufacturer_name': '',
-		'manufacturer_sku': '',
-		'distributor_name': '',
-		'content_url': '',
-		'description': '',
-		'unit_price': '',
-		'extra_data_1': '',
-		'timestamp': '',
-		# Fields from Southern Glazier
-		'extra_data_2': '',
+	# /2931/edit_note/1708/
+	CRM_ID = 2931
+	CRM_NOTE_ID = 1708
+	CRM_PRICE_TYPE = ''
+	CRM_STATUS_OVERRIDE = 'Ready'
+
+	DISTRIBUTOR_PRODUCT_DATA_SPEC = {
 		'vintage': '',
 		'varietal': '',
 		'appellation': '',
-		'pack_size': '',
-		'category': '',
-		'subcategory': '',
-		'subsubcategory': '',
 		'bpc': '',
 		'supplier': '',
 		'producer': '',
@@ -792,6 +767,8 @@ class SouthernGlazierScraper(Scraper):
 		'process_csv': False,
 		'reprocess_csv': False,
 		'dedupe_csv': False,
+		'format_csv': False,
+		'scan_csv': False,
 		'count_csv': False,
 		'process_extra': False,
 		'search_requests': False,
@@ -810,9 +787,10 @@ class SouthernGlazierScraper(Scraper):
 
 	def __init__(self, options=None):
 		super().__init__(options)
-		self.options = {**self.DEFAULT_OPTIONS, **(options or {})}
-		self.options['home_directory'] = self.DEFAULT_DIRECTORY
-		self.options['base_url'] = self.BASE_URL
+		self.PRODUCT_DATA_SPEC = self.BASE_PRODUCT_DATA_SPEC.copy()
+		for spec in self.DISTRIBUTOR_PRODUCT_DATA_SPEC:
+			self.PRODUCT_DATA_SPEC[spec] = ''
+		print(self.PRODUCT_DATA_SPEC)
 
 	def get_category_ids(self):
 		return self.CATEGORY_IDS
@@ -879,10 +857,10 @@ class SouthernGlazierScraper(Scraper):
 
 	def get_first_image_url(self, row_spec):
 		"""
-		Extract the first available image URL from the product API response.
+		Extract the first available image URL from the product detail page.
 
 		Args:
-			response_data (dict): The parsed JSON response from the API
+			row_spec (dict): the row that will be written to the output file
 
 		Returns:
 			str: URL of the first available image, or None if no image found
@@ -890,7 +868,11 @@ class SouthernGlazierScraper(Scraper):
 		print("get_first_image_url()")
 		try:
 			# product-viewer-image
-			image_url = self.driver.find_element(By.CSS_SELECTOR, 'img.product-viewer-image').get_attribute("src")
+			image_element = self.driver.find_element(By.CSS_SELECTOR, 'img.product-viewer-image')
+			print(f"Image element: {image_element}")
+			self.print_element(element=image_element)
+			image_url = image_element.get_attribute("data-lg-src")
+			print(f"Image URL: {image_url}")
 			if image_url:
 				try:
 					row_spec["image"] = image_url
@@ -1303,7 +1285,7 @@ class SouthernGlazierScraper(Scraper):
 		# https://shop.sgproof.com/sgws/en/usd/p/{sku}
 		print(f"Loading page...{url}")
 		try:
-			row_spec, additional_packages = self.process_details_from_html(url, row_spec=row_spec, follow_anchors=False)
+			row_spec, additional_packages = self.get_product_detail_from_html(url, row_spec=row_spec, follow_anchors=False)
 			# self.write_product_to_csv(row_spec)
 		except Exception as e:
 			print(f"⛔️⛔️⛔️Error processing get_product_details: {type(e)}")
@@ -1311,8 +1293,8 @@ class SouthernGlazierScraper(Scraper):
 
 		return row_spec
 
-	def process_details_from_html(self, url, follow_anchors=False, row_spec=None):
-		print(f"process_details_from_html()")
+	def get_product_detail_from_html(self, url, follow_anchors=False, row_spec=None):
+		print(f"get_product_detail_from_html()")
 		additional_packages = []
 		del self.driver.requests
 		self.driver.get(url)
@@ -1323,7 +1305,7 @@ class SouthernGlazierScraper(Scraper):
 				EC.presence_of_element_located((By.CSS_SELECTOR, '.marketplace-product-card'))
 			)
 		except Exception as e:
-			print(f"⛔️⛔️⛔️Error processing process_details_from_html: {type(e)}")
+			print(f"⛔️⛔️⛔️Error processing get_product_detail_from_html: {type(e)}")
 			raise
 		try:
 			row_spec['content_url'] = self.driver.current_url
@@ -1355,7 +1337,7 @@ class SouthernGlazierScraper(Scraper):
 					print(f"⛔️Error finding variant info sku: {type(e)}")
 					raise SkuNotFound
 		except Exception as e:
-			print(f"⛔️⛔️⛔️Error processing process_details_from_html: {type(e)}")
+			print(f"⛔️⛔️⛔️Error processing get_product_detail_from_html: {type(e)}")
 		return row_spec, additional_packages
 
 	# ************************************************************************

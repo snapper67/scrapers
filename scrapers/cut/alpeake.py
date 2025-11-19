@@ -3,6 +3,11 @@ from .dry import CutScraper
 
 
 class AlpeakeScraper(CutScraper):
+    # 1806/edit_note/1452/
+    CRM_ID = 1806
+    CRM_NOTE_ID = 1452
+    CRM_PRICE_TYPE = ''
+    CRM_STATUS_OVERRIDE = ''
     """Scraper for Alpeake Seafood on the Cut & Dry platform"""
 
     DEFAULT_DIRECTORY = '/Users/mark/Downloads/scrapers/alpeake/'

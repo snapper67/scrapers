@@ -7,6 +7,59 @@ from bs4 import BeautifulSoup
 
 class UniProScraper:
     """Scraper for UniPro Foodservice distributor directory."""
+    MARKETS = [
+  {"market": "New York City, NY", "zipcode": "10001"},
+  {"market": "Los Angeles, CA", "zipcode": "90001"},
+  {"market": "Chicago, IL", "zipcode": "60601"},
+  {"market": "Houston, TX", "zipcode": "77002"},
+  {"market": "Dallas-Fort Worth, TX", "zipcode": "75201"},
+  {"market": "Miami, FL", "zipcode": "33101"},
+  {"market": "Atlanta, GA", "zipcode": "30303"},
+  {"market": "Philadelphia, PA", "zipcode": "19102"},
+  {"market": "Washington, DC", "zipcode": "20001"},
+  {"market": "Phoenix, AZ", "zipcode": "85001"},
+  {"market": "Boston, MA", "zipcode": "02108"},
+  {"market": "Seattle, WA", "zipcode": "98101"},
+  {"market": "Detroit, MI", "zipcode": "48226"},
+  {"market": "San Diego, CA", "zipcode": "92101"},
+  {"market": "San Francisco, CA", "zipcode": "94102"},
+  {"market": "Tampa, FL", "zipcode": "33602"},
+  {"market": "Minneapolis, MN", "zipcode": "55401"},
+  {"market": "Las Vegas, NV", "zipcode": "89101"},
+  {"market": "Denver, CO", "zipcode": "80202"},
+  {"market": "Riverside-San Bernardino, CA", "zipcode": "92501"},
+  {"market": "San Antonio, TX", "zipcode": "78205"},
+  {"market": "Baltimore, MD", "zipcode": "21201"},
+  {"market": "Charlotte, NC", "zipcode": "28202"},
+  {"market": "Austin, TX", "zipcode": "78701"},
+  {"market": "Sacramento, CA", "zipcode": "95814"},
+  {"market": "Portland, OR", "zipcode": "97201"},
+  {"market": "St. Louis, MO", "zipcode": "63101"},
+  {"market": "Orlando, FL", "zipcode": "32801"},
+  {"market": "Indianapolis, IN", "zipcode": "46204"},
+  {"market": "San Jose, CA", "zipcode": "95113"},
+  {"market": "Cincinnati, OH", "zipcode": "45202"},
+  {"market": "Cleveland, OH", "zipcode": "44114"},
+  {"market": "Kansas City, MO", "zipcode": "64106"},
+  {"market": "Columbus, OH", "zipcode": "43215"},
+  {"market": "Pittsburgh, PA", "zipcode": "15222"},
+  {"market": "Raleigh, NC", "zipcode": "27601"},
+  {"market": "Virginia Beach, VA", "zipcode": "23451"},
+  {"market": "Milwaukee, WI", "zipcode": "53202"},
+  {"market": "Jacksonville, FL", "zipcode": "32202"},
+  {"market": "Nashville, TN", "zipcode": "37219"},
+  {"market": "Salt Lake City, UT", "zipcode": "84101"},
+  {"market": "Providence, RI", "zipcode": "02903"},
+  {"market": "Memphis, TN", "zipcode": "38103"},
+  {"market": "Richmond, VA", "zipcode": "23219"},
+  {"market": "Louisville, KY", "zipcode": "40202"},
+  {"market": "McAllen, TX", "zipcode": "78501"},
+  {"market": "Oklahoma City, OK", "zipcode": "73102"},
+  {"market": "Tucson, AZ", "zipcode": "85701"},
+  {"market": "Hartford, CT", "zipcode": "06103"},
+  {"market": "New Orleans, LA", "zipcode": "70112"}
+]
+
 
     def __init__(self):
         self.base_url = "https://www.uniprofoodservice.com"
@@ -56,6 +109,8 @@ class UniProScraper:
             'radius': radius,
             'search': zip_code
         }
+
+        print(params)
         
         try:
             response = self.session.get(
@@ -87,7 +142,8 @@ class UniProScraper:
                     'state': dist_data.get('state', '').strip(),
                     'type': dist_data.get('distributor_type', '').strip(),
                     'distance': dist_data.get('geo_distance', '').strip(),
-                    'details': None
+                    'details': None,
+                    'market': ''
                 }
                 
                 # Fetch additional details if branch_id is available

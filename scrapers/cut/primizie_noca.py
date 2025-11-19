@@ -2,8 +2,12 @@
 import json
 from scrapers.cut.dry import CutScraper
 
-
 class PrimizieNoCaScraper(CutScraper):
+	# 245/edit_note/1453/
+	CRM_ID = 245
+	CRM_NOTE_ID = 1453
+	CRM_PRICE_TYPE = ''
+	CRM_STATUS_OVERRIDE = ''
 
 	DEFAULT_DIRECTORY = '/Users/mark/Downloads/scrapers/primizie_noca'
 
@@ -494,6 +498,8 @@ class PrimizieNoCaScraper(CutScraper):
 		'process_csv': False,
 		'reprocess_csv': False,
 		'dedupe_csv': False,
+		'format_csv': False,
+		'scan_csv': False,
 		'count_csv': False,
 		'process_extra': False,
 		'search_requests': False,
@@ -513,6 +519,3 @@ class PrimizieNoCaScraper(CutScraper):
 
 	def __init__(self, options=None):
 		super().__init__(options)
-		self.options = {**self.DEFAULT_OPTIONS, **(options or {})}
-		self.options['home_directory'] = self.DEFAULT_DIRECTORY
-		self.options['base_url'] = self.BASE_URL

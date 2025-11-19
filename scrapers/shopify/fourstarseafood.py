@@ -18,6 +18,11 @@ from scrapers.shopify.shopify import ShopifyScraper
 from typing import List, Dict, Any, Optional
 
 class FourStarSeafoodScraper(ShopifyScraper):
+	# 109/edit_note/1647/
+	CRM_ID = 109
+	CRM_NOTE_ID = 1647
+	CRM_PRICE_TYPE = ''
+	CRM_STATUS_OVERRIDE = ''
 
 	TEST_CATEGORIES = 100
 	TEST_PRODUCTS = 20000
@@ -25,10 +30,12 @@ class FourStarSeafoodScraper(ShopifyScraper):
 	TEST_TABS = 2
 	MAX_API_PRODUCTS = 999  # Maximum number to change the search request page size
 	DEFAULT_DIRECTORY = '/Users/mark/Downloads/scrapers/four_star_seafood'
+	# DEFAULT_DIRECTORY = '/Users/mark/Downloads/scrapers/eastern_seafood_specialty'
 
 	BASE_URL = 'https://www.fourstarseafood.com/pages/wholesale'
 	BASE_PRODUCT_URL = 'https://www.fourstarseafood.com/products/'
 	VENDOR_NAME = 'Four Star Seafood'
+	# VENDOR_NAME = 'eastern_seafood_specialty'
 
 	DEDUP_INPUT_FILE = 'dedupe_product_data.csv'
 
@@ -380,29 +387,8 @@ class FourStarSeafoodScraper(ShopifyScraper):
                         
 ''')
 
-	DEFAULT_OPTIONS = {
-		'scrape_products': False,
-		'process_csv': False,
-		'reprocess_csv': False,
-		'dedupe_csv': False,
-		'count_csv': False,
-		'test_products': TEST_PRODUCTS,
-		'max_products': 999,
-		'csv_start_row': CSV_START_ROW,
-		'category_to_process': 0,
-		'test_categories': 100,
-		'chosen_category': '10001',
-		'url_output_file': '',
-		'data_output_file': '',
-		'home_directory': DEFAULT_DIRECTORY
-	}
-
-
 	def __init__(self, options=None):
 		super().__init__(options)
-		self.options = {**self.DEFAULT_OPTIONS, **(options or {})}
-		self.options['home_directory'] = self.DEFAULT_DIRECTORY
-		self.options['base_url'] = self.BASE_URL
 
 	def get_categories(self):
 		"""
@@ -434,7 +420,7 @@ class FourStarSeafoodScraper(ShopifyScraper):
 	def get_product_details(self, url, row_spec=None):
 		"""Get Product Details"""
 		print("FourStarSeafoodScraper.get_product_details()")
-		data = self.get_product_details_scrape( url, row_spec)
+		data = self.get_product_details_scrape( url, row_spec, target="script[type='application/json'][data-product-json]")
 		print(data)
 		self.get_product_data(data.get('product', {}), row_spec)
 		return row_spec
@@ -459,7 +445,7 @@ class FourStarSeafoodScraper(ShopifyScraper):
 		return ''
 
 	# ************************************************************************
-	def grab_products(self, start=None):
+	def get_products_from_html(self, start=None):
 
 		if start:
 			products = self.wait.until(
@@ -619,9 +605,9 @@ class FourStarSeafoodScraper(ShopifyScraper):
 						print("Found products page")
 						time.sleep(2)
 						if url.split('#')[1]:
-							html_line, detail_urls = self.grab_products(start=url.split('#')[1])
+							html_line, detail_urls = self.get_products_from_html(start=url.split('#')[1])
 						else:
-							html_line, detail_urls = self.grab_products()
+							html_line, detail_urls = self.get_products_from_html()
 					products_found_count = len(detail_urls)
 					html += f"<div>Found {products_found_count} products for category {sub_category_name}</div>"
 					print(f"Found {products_found_count} products for category {sub_category_name}")

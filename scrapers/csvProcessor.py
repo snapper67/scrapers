@@ -1,11 +1,24 @@
 import csv
 import glob
 import os
+import sys
+
 import pandas as pd
 from bs4 import BeautifulSoup
 from pathlib import Path
 from typing import Dict, List, Tuple, Union
+import os
+import csv
+from typing import List, Dict, Optional
 
+# Increase the field size limit to handle large CSV fields
+maxInt = sys.maxsize
+while True:
+    try:
+        csv.field_size_limit(maxInt)
+        break
+    except OverflowError:
+        maxInt = int(maxInt/10)
 
 class CSVProcessor:
 	"""
@@ -73,6 +86,14 @@ class CSVProcessor:
 				- 'data_rows': total rows in data files
 		"""
 		print(f"Scanning directory: {directory}")
+		# Increase the field size limit to handle large fields
+		maxInt = sys.maxsize
+		while True:
+			try:
+				csv.field_size_limit(maxInt)
+				break
+			except OverflowError:
+				maxInt = int(maxInt / 10)
 		results = {}
 
 		try:
@@ -322,13 +343,17 @@ class CSVProcessor:
 		return output_file
 
 	@staticmethod
-	def update_distributor_in_csvs(directory: str, distributor_name: str) -> dict:
+	def update_distributor_in_csvs(directory: str, distributor_name: str, distributor_address: str, distributor_city: str, distributor_state: str, distributor_zip: str) -> dict:
 		"""
 		Update or add distributor_name column in all CSV files in the specified directory.
 
 		Args:
 			directory (str): Directory containing CSV files to update
 			distributor_name (str): Distributor name to set in the distributor_name column
+			distributor_address (str): Distributor address to set in the distributor_address column
+			distributor_city (str): Distributor city to set in the distributor_city column
+			distributor_state (str): Distributor state to set in the distributor_state column
+			distributor_zip (str): Distributor zip to set in the distributor_zip column
 
 		Returns:
 			dict: Dictionary containing results of the operation
@@ -362,6 +387,10 @@ class CSVProcessor:
 
 				# Add or update distributor_name column
 				df['distributor_name'] = distributor_name
+				df['distributor_address'] = distributor_address
+				df['distributor_city'] = distributor_city
+				df['distributor_state'] = distributor_state
+				df['distributor_zip'] = distributor_zip
 
 				# Save the updated CSV
 				df.to_csv(csv_file, index=False)
@@ -415,10 +444,6 @@ class CSVProcessor:
 				return f"Failed to update '{file_name}': {str(e)}"
 		return "CSV Files Updated."
 
-	import os
-	import csv
-	from typing import List, Dict, Optional
-
 	def find_skus_starting_with_zero(self, directory: str, column: str) -> Dict[str, List[Dict]]:
 		"""
 		Scans all CSV files in the specified directory and checks for SKUs that start with zero.
@@ -470,3 +495,44 @@ class CSVProcessor:
 				continue
 
 		return results
+
+	@staticmethod
+	@staticmethod
+	def add_column_if_missing(csv_file: str, column_name: str, default_value: str = '') -> bool:
+		"""
+		Add a column to a CSV file if it doesn't already exist.
+
+		Args:
+			csv_file (str): Path to the CSV file
+			column_name (str): Name of the column to add
+			default_value (str, optional): Default value to fill the new column with. Defaults to empty string.
+
+		Returns:
+			bool: True if the column was added, False if it already existed or an error occurred
+		"""
+		try:
+			# Read the CSV file with engine='python' to handle large fields
+			df = pd.read_csv(csv_file, dtype=str, keep_default_na=False, engine='python')
+
+			# Check if column already exists
+			if column_name in df.columns:
+				print(f"Column '{column_name}' already exists in {csv_file}")
+				return False
+
+			# Add the new column with default value
+			df[column_name] = default_value
+
+			# Save the updated CSV
+			df.to_csv(csv_file, index=False)
+			print(f"Added column '{column_name}' to {csv_file}")
+			return True
+
+		except FileNotFoundError:
+			print(f"Error: File not found: {csv_file}")
+			return False
+		except pd.errors.EmptyDataError:
+			print(f"Error: File is empty: {csv_file}")
+			return False
+		except Exception as e:
+			print(f"Error adding column to {csv_file}: {str(e)}")
+			return False

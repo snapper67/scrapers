@@ -1,8 +1,12 @@
 import json
 from .dry import CutScraper
 
-
 class PrimeSourceFoodsScraper(CutScraper):
+    # 1345/edit_note/1484/
+    CRM_ID = 1345
+    CRM_NOTE_ID = 1484
+    CRM_PRICE_TYPE = ''
+    CRM_STATUS_OVERRIDE = ''
     """Scraper for Prime Source Foods on the Cut & Dry platform"""
 
     DEFAULT_DIRECTORY = '/Users/mark/Downloads/scrapers/primesourcefoods/'
@@ -2222,9 +2226,6 @@ class PrimeSourceFoodsScraper(CutScraper):
                     
     ''')
 
-
     def __init__(self, options=None):
         super().__init__(options)
-        self.options = {**self.DEFAULT_OPTIONS, **(options or {})}
-        self.options['home_directory'] = self.DEFAULT_DIRECTORY
-        self.options['base_url'] = self.BASE_URL
+

@@ -1,8 +1,12 @@
 import json
 from .dry import CutScraper
 
-
 class TotalFoodsScraper(CutScraper):
+    # 1334/edit_note/1468/
+    CRM_ID = 1334
+    CRM_NOTE_ID = 1468
+    CRM_PRICE_TYPE = ''
+    CRM_STATUS_OVERRIDE = ''
     """Scraper for Total Foods on the Cut & Dry platform"""
 
     DEFAULT_DIRECTORY = '/Users/mark/Downloads/scrapers/totalfoods/'
@@ -19,8 +23,7 @@ class TotalFoodsScraper(CutScraper):
     VENDOR_NAME = "Total Foods"
 
     # Categories will be fetched dynamically
-    CATEGORIES = json.loads('''
-        {
+    CATEGORIES = json.loads('''{
   "data": {
     "catalogCategoryOptions": [
       {
@@ -37,7 +40,7 @@ class TotalFoodsScraper(CutScraper):
           "visibleOnHeader": true,
           "visibleOnSidebar": true
         },
-        "productCount": 164,
+        "productCount": 160,
         "subcategories": [
           {
             "__typename": "subcategoryOption",
@@ -51,7 +54,7 @@ class TotalFoodsScraper(CutScraper):
           },
           {
             "__typename": "subcategoryOption",
-            "productCount": 55,
+            "productCount": 56,
             "subcategory": {
               "__typename": "ProductSubcategory",
               "id": "385748994",
@@ -61,7 +64,7 @@ class TotalFoodsScraper(CutScraper):
           },
           {
             "__typename": "subcategoryOption",
-            "productCount": 5,
+            "productCount": 4,
             "subcategory": {
               "__typename": "ProductSubcategory",
               "id": "385748995",
@@ -71,7 +74,7 @@ class TotalFoodsScraper(CutScraper):
           },
           {
             "__typename": "subcategoryOption",
-            "productCount": 36,
+            "productCount": 37,
             "subcategory": {
               "__typename": "ProductSubcategory",
               "id": "385748996",
@@ -81,7 +84,7 @@ class TotalFoodsScraper(CutScraper):
           },
           {
             "__typename": "subcategoryOption",
-            "productCount": 25,
+            "productCount": 24,
             "subcategory": {
               "__typename": "ProductSubcategory",
               "id": "473520920",
@@ -91,7 +94,7 @@ class TotalFoodsScraper(CutScraper):
           },
           {
             "__typename": "subcategoryOption",
-            "productCount": 5,
+            "productCount": 4,
             "subcategory": {
               "__typename": "ProductSubcategory",
               "id": "477339216",
@@ -121,22 +124,12 @@ class TotalFoodsScraper(CutScraper):
           },
           {
             "__typename": "subcategoryOption",
-            "productCount": 9,
+            "productCount": 8,
             "subcategory": {
               "__typename": "ProductSubcategory",
               "id": "477345025",
               "name": "Non Upc (fda)",
               "sortIndex": 167
-            }
-          },
-          {
-            "__typename": "subcategoryOption",
-            "productCount": 2,
-            "subcategory": {
-              "__typename": "ProductSubcategory",
-              "id": "477349150",
-              "name": "Halls",
-              "sortIndex": 169
             }
           }
         ]
@@ -155,7 +148,7 @@ class TotalFoodsScraper(CutScraper):
           "visibleOnHeader": true,
           "visibleOnSidebar": true
         },
-        "productCount": 289,
+        "productCount": 282,
         "subcategories": [
           {
             "__typename": "subcategoryOption",
@@ -169,7 +162,7 @@ class TotalFoodsScraper(CutScraper):
           },
           {
             "__typename": "subcategoryOption",
-            "productCount": 9,
+            "productCount": 10,
             "subcategory": {
               "__typename": "ProductSubcategory",
               "id": "385749185",
@@ -179,7 +172,7 @@ class TotalFoodsScraper(CutScraper):
           },
           {
             "__typename": "subcategoryOption",
-            "productCount": 44,
+            "productCount": 45,
             "subcategory": {
               "__typename": "ProductSubcategory",
               "id": "385749186",
@@ -189,7 +182,7 @@ class TotalFoodsScraper(CutScraper):
           },
           {
             "__typename": "subcategoryOption",
-            "productCount": 60,
+            "productCount": 55,
             "subcategory": {
               "__typename": "ProductSubcategory",
               "id": "385749187",
@@ -199,7 +192,7 @@ class TotalFoodsScraper(CutScraper):
           },
           {
             "__typename": "subcategoryOption",
-            "productCount": 3,
+            "productCount": 2,
             "subcategory": {
               "__typename": "ProductSubcategory",
               "id": "385749188",
@@ -229,7 +222,7 @@ class TotalFoodsScraper(CutScraper):
           },
           {
             "__typename": "subcategoryOption",
-            "productCount": 62,
+            "productCount": 60,
             "subcategory": {
               "__typename": "ProductSubcategory",
               "id": "473521102",
@@ -329,7 +322,7 @@ class TotalFoodsScraper(CutScraper):
           },
           {
             "__typename": "subcategoryOption",
-            "productCount": 7,
+            "productCount": 6,
             "subcategory": {
               "__typename": "ProductSubcategory",
               "id": "477343621",
@@ -433,11 +426,11 @@ class TotalFoodsScraper(CutScraper):
           "visibleOnHeader": true,
           "visibleOnSidebar": true
         },
-        "productCount": 256,
+        "productCount": 255,
         "subcategories": [
           {
             "__typename": "subcategoryOption",
-            "productCount": 104,
+            "productCount": 108,
             "subcategory": {
               "__typename": "ProductSubcategory",
               "id": "385749436",
@@ -507,7 +500,7 @@ class TotalFoodsScraper(CutScraper):
           },
           {
             "__typename": "subcategoryOption",
-            "productCount": 8,
+            "productCount": 7,
             "subcategory": {
               "__typename": "ProductSubcategory",
               "id": "473523647",
@@ -537,21 +530,11 @@ class TotalFoodsScraper(CutScraper):
           },
           {
             "__typename": "subcategoryOption",
-            "productCount": 2,
+            "productCount": 1,
             "subcategory": {
               "__typename": "ProductSubcategory",
               "id": "473526190",
               "name": "Micro Market Retail",
-              "sortIndex": 194
-            }
-          },
-          {
-            "__typename": "subcategoryOption",
-            "productCount": 7,
-            "subcategory": {
-              "__typename": "ProductSubcategory",
-              "id": "473526181",
-              "name": "Honey Buns",
               "sortIndex": 194
             }
           },
@@ -567,6 +550,16 @@ class TotalFoodsScraper(CutScraper):
           },
           {
             "__typename": "subcategoryOption",
+            "productCount": 7,
+            "subcategory": {
+              "__typename": "ProductSubcategory",
+              "id": "473526181",
+              "name": "Honey Buns",
+              "sortIndex": 194
+            }
+          },
+          {
+            "__typename": "subcategoryOption",
             "productCount": 4,
             "subcategory": {
               "__typename": "ProductSubcategory",
@@ -577,7 +570,7 @@ class TotalFoodsScraper(CutScraper):
           },
           {
             "__typename": "subcategoryOption",
-            "productCount": 7,
+            "productCount": 5,
             "subcategory": {
               "__typename": "ProductSubcategory",
               "id": "477338684",
@@ -617,7 +610,7 @@ class TotalFoodsScraper(CutScraper):
           },
           {
             "__typename": "subcategoryOption",
-            "productCount": 16,
+            "productCount": 15,
             "subcategory": {
               "__typename": "ProductSubcategory",
               "id": "477339539",
@@ -687,7 +680,7 @@ class TotalFoodsScraper(CutScraper):
           },
           {
             "__typename": "subcategoryOption",
-            "productCount": 5,
+            "productCount": 4,
             "subcategory": {
               "__typename": "ProductSubcategory",
               "id": "477345194",
@@ -747,7 +740,7 @@ class TotalFoodsScraper(CutScraper):
           },
           {
             "__typename": "subcategoryOption",
-            "productCount": 4,
+            "productCount": 5,
             "subcategory": {
               "__typename": "ProductSubcategory",
               "id": "477349796",
@@ -831,7 +824,7 @@ class TotalFoodsScraper(CutScraper):
           "visibleOnHeader": true,
           "visibleOnSidebar": true
         },
-        "productCount": 334,
+        "productCount": 336,
         "subcategories": [
           {
             "__typename": "subcategoryOption",
@@ -885,7 +878,7 @@ class TotalFoodsScraper(CutScraper):
           },
           {
             "__typename": "subcategoryOption",
-            "productCount": 7,
+            "productCount": 6,
             "subcategory": {
               "__typename": "ProductSubcategory",
               "id": "385749605",
@@ -895,7 +888,7 @@ class TotalFoodsScraper(CutScraper):
           },
           {
             "__typename": "subcategoryOption",
-            "productCount": 13,
+            "productCount": 12,
             "subcategory": {
               "__typename": "ProductSubcategory",
               "id": "385749606",
@@ -915,7 +908,7 @@ class TotalFoodsScraper(CutScraper):
           },
           {
             "__typename": "subcategoryOption",
-            "productCount": 89,
+            "productCount": 90,
             "subcategory": {
               "__typename": "ProductSubcategory",
               "id": "473520923",
@@ -925,7 +918,7 @@ class TotalFoodsScraper(CutScraper):
           },
           {
             "__typename": "subcategoryOption",
-            "productCount": 10,
+            "productCount": 11,
             "subcategory": {
               "__typename": "ProductSubcategory",
               "id": "473525819",
@@ -965,7 +958,7 @@ class TotalFoodsScraper(CutScraper):
           },
           {
             "__typename": "subcategoryOption",
-            "productCount": 16,
+            "productCount": 15,
             "subcategory": {
               "__typename": "ProductSubcategory",
               "id": "477339058",
@@ -995,7 +988,7 @@ class TotalFoodsScraper(CutScraper):
           },
           {
             "__typename": "subcategoryOption",
-            "productCount": 20,
+            "productCount": 22,
             "subcategory": {
               "__typename": "ProductSubcategory",
               "id": "477339799",
@@ -1035,7 +1028,7 @@ class TotalFoodsScraper(CutScraper):
           },
           {
             "__typename": "subcategoryOption",
-            "productCount": 2,
+            "productCount": 1,
             "subcategory": {
               "__typename": "ProductSubcategory",
               "id": "477341481",
@@ -1055,7 +1048,7 @@ class TotalFoodsScraper(CutScraper):
           },
           {
             "__typename": "subcategoryOption",
-            "productCount": 17,
+            "productCount": 16,
             "subcategory": {
               "__typename": "ProductSubcategory",
               "id": "477347348",
@@ -1071,6 +1064,16 @@ class TotalFoodsScraper(CutScraper):
               "id": "477347366",
               "name": "Bright Tea Co. Brand",
               "sortIndex": 202
+            }
+          },
+          {
+            "__typename": "subcategoryOption",
+            "productCount": 3,
+            "subcategory": {
+              "__typename": "ProductSubcategory",
+              "id": "477347382",
+              "name": "Peets Brand",
+              "sortIndex": 203
             }
           },
           {
@@ -1109,7 +1112,7 @@ class TotalFoodsScraper(CutScraper):
           "visibleOnHeader": true,
           "visibleOnSidebar": true
         },
-        "productCount": 31,
+        "productCount": 44,
         "subcategories": [
           {
             "__typename": "subcategoryOption",
@@ -1123,7 +1126,7 @@ class TotalFoodsScraper(CutScraper):
           },
           {
             "__typename": "subcategoryOption",
-            "productCount": 12,
+            "productCount": 25,
             "subcategory": {
               "__typename": "ProductSubcategory",
               "id": "473521909",
@@ -1157,11 +1160,11 @@ class TotalFoodsScraper(CutScraper):
           "visibleOnHeader": true,
           "visibleOnSidebar": true
         },
-        "productCount": 33,
+        "productCount": 32,
         "subcategories": [
           {
             "__typename": "subcategoryOption",
-            "productCount": 27,
+            "productCount": 26,
             "subcategory": {
               "__typename": "ProductSubcategory",
               "id": "385749696",
@@ -1215,7 +1218,7 @@ class TotalFoodsScraper(CutScraper):
           "visibleOnHeader": true,
           "visibleOnSidebar": true
         },
-        "productCount": 415,
+        "productCount": 407,
         "subcategories": [
           {
             "__typename": "subcategoryOption",
@@ -1229,7 +1232,7 @@ class TotalFoodsScraper(CutScraper):
           },
           {
             "__typename": "subcategoryOption",
-            "productCount": 17,
+            "productCount": 15,
             "subcategory": {
               "__typename": "ProductSubcategory",
               "id": "385750127",
@@ -1259,7 +1262,7 @@ class TotalFoodsScraper(CutScraper):
           },
           {
             "__typename": "subcategoryOption",
-            "productCount": 7,
+            "productCount": 6,
             "subcategory": {
               "__typename": "ProductSubcategory",
               "id": "385750130",
@@ -1289,7 +1292,7 @@ class TotalFoodsScraper(CutScraper):
           },
           {
             "__typename": "subcategoryOption",
-            "productCount": 31,
+            "productCount": 30,
             "subcategory": {
               "__typename": "ProductSubcategory",
               "id": "385750134",
@@ -1319,7 +1322,7 @@ class TotalFoodsScraper(CutScraper):
           },
           {
             "__typename": "subcategoryOption",
-            "productCount": 11,
+            "productCount": 12,
             "subcategory": {
               "__typename": "ProductSubcategory",
               "id": "385750137",
@@ -1329,7 +1332,7 @@ class TotalFoodsScraper(CutScraper):
           },
           {
             "__typename": "subcategoryOption",
-            "productCount": 107,
+            "productCount": 104,
             "subcategory": {
               "__typename": "ProductSubcategory",
               "id": "385750138",
@@ -1339,7 +1342,7 @@ class TotalFoodsScraper(CutScraper):
           },
           {
             "__typename": "subcategoryOption",
-            "productCount": 18,
+            "productCount": 19,
             "subcategory": {
               "__typename": "ProductSubcategory",
               "id": "385750140",
@@ -1369,7 +1372,7 @@ class TotalFoodsScraper(CutScraper):
           },
           {
             "__typename": "subcategoryOption",
-            "productCount": 7,
+            "productCount": 8,
             "subcategory": {
               "__typename": "ProductSubcategory",
               "id": "385750143",
@@ -1399,7 +1402,7 @@ class TotalFoodsScraper(CutScraper):
           },
           {
             "__typename": "subcategoryOption",
-            "productCount": 65,
+            "productCount": 63,
             "subcategory": {
               "__typename": "ProductSubcategory",
               "id": "385750146",
@@ -1409,7 +1412,7 @@ class TotalFoodsScraper(CutScraper):
           },
           {
             "__typename": "subcategoryOption",
-            "productCount": 69,
+            "productCount": 68,
             "subcategory": {
               "__typename": "ProductSubcategory",
               "id": "473520990",
@@ -1419,7 +1422,7 @@ class TotalFoodsScraper(CutScraper):
           },
           {
             "__typename": "subcategoryOption",
-            "productCount": 25,
+            "productCount": 24,
             "subcategory": {
               "__typename": "ProductSubcategory",
               "id": "477338948",
@@ -1501,11 +1504,11 @@ class TotalFoodsScraper(CutScraper):
           "visibleOnHeader": true,
           "visibleOnSidebar": true
         },
-        "productCount": 239,
+        "productCount": 233,
         "subcategories": [
           {
             "__typename": "subcategoryOption",
-            "productCount": 8,
+            "productCount": 7,
             "subcategory": {
               "__typename": "ProductSubcategory",
               "id": "473521516",
@@ -1565,7 +1568,7 @@ class TotalFoodsScraper(CutScraper):
           },
           {
             "__typename": "subcategoryOption",
-            "productCount": 60,
+            "productCount": 58,
             "subcategory": {
               "__typename": "ProductSubcategory",
               "id": "477339054",
@@ -1585,7 +1588,7 @@ class TotalFoodsScraper(CutScraper):
           },
           {
             "__typename": "subcategoryOption",
-            "productCount": 45,
+            "productCount": 44,
             "subcategory": {
               "__typename": "ProductSubcategory",
               "id": "477340571",
@@ -1645,7 +1648,7 @@ class TotalFoodsScraper(CutScraper):
           },
           {
             "__typename": "subcategoryOption",
-            "productCount": 2,
+            "productCount": 1,
             "subcategory": {
               "__typename": "ProductSubcategory",
               "id": "477341321",
@@ -1665,7 +1668,7 @@ class TotalFoodsScraper(CutScraper):
           },
           {
             "__typename": "subcategoryOption",
-            "productCount": 8,
+            "productCount": 7,
             "subcategory": {
               "__typename": "ProductSubcategory",
               "id": "477341833",
@@ -1727,6 +1730,34 @@ class TotalFoodsScraper(CutScraper):
         "__typename": "categoryOption",
         "category": {
           "__typename": "ProductCategory",
+          "baseName": "candy, fum & mints",
+          "examplePictureUrl": null,
+          "iconAltUrl": null,
+          "iconUrl": null,
+          "id": "477338607",
+          "name": "Candy, Fum & Mints",
+          "sortIndex": "22",
+          "visibleOnHeader": true,
+          "visibleOnSidebar": true
+        },
+        "productCount": 1,
+        "subcategories": [
+          {
+            "__typename": "subcategoryOption",
+            "productCount": 1,
+            "subcategory": {
+              "__typename": "ProductSubcategory",
+              "id": "477338608",
+              "name": "Candy, Fum & Mints",
+              "sortIndex": 0
+            }
+          }
+        ]
+      },
+      {
+        "__typename": "categoryOption",
+        "category": {
+          "__typename": "ProductCategory",
           "baseName": "cups/lids",
           "examplePictureUrl": null,
           "iconAltUrl": null,
@@ -1754,11 +1785,10 @@ class TotalFoodsScraper(CutScraper):
     ]
   }
 }
-                    
+
+                               
         ''')
 
     def __init__(self, options=None):
         super().__init__(options)
-        self.options = {**self.DEFAULT_OPTIONS, **(options or {})}
-        self.options['home_directory'] = self.DEFAULT_DIRECTORY
-        self.options['base_url'] = self.BASE_URL
+

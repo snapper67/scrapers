@@ -5,10 +5,12 @@
         {% block common %}
             <div class="container mt-4">
                 <h2>{% block name %}{% endblock name %}</h2>
-                <div><a href="{{ defaults.base_url }}">Website</a></div>
+                <div><a href="{{ defaults.base_url }}">Website</a> {{ defaults.crm_url|safe }}</div>
                 {% block top %}{% endblock top %}
                 <form method="post" class="mt-4" id="scraperForm" onsubmit="return handleFormSubmit(event)">
                     {% csrf_token %}
+                    <input type="hidden" id="scraper_class" name="scraper_class" value="{{ scraper_class }}">
+                    <input type="hidden" id="module_name" name="module_name" value="{{ module_name }}">
                     <!-- Scraping Functions Card -->
                     <div class="row mt-1">
                         <div class="col-md-12">
@@ -77,6 +79,11 @@
                                         <div class="col-md-6">
                                             <button type="submit" class="btn btn-primary mt-3">Run</button>
                                         </div>
+                                        <div class="col-md-6">
+                                            <button type="button" class="btn btn-info mt-3" id="viewSampleDataBtn">
+                                                <i class="fas fa-eye"></i> View Sample Product Data
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -98,6 +105,22 @@
                                                 <label class="form-check-label" for="dedupe_csv"
                                                        title="Remove duplicate entries from the specified CSV file (use URL Filename field)">
                                                     Dedupe a CSV
+                                                </label>
+                                            </div>
+                                            <div class="form-check mb-3">
+                                                <input class="form-check-input" type="checkbox" id="format_csv" name="format_csv"
+                                                       {% if defaults.format_csv %}checked{% endif %}>
+                                                <label class="form-check-label" for="format_csv"
+                                                       title="Update file to have all of the needed columns">
+                                                    Format a CSV
+                                                </label>
+                                            </div>
+                                            <div class="form-check mb-3">
+                                                <input class="form-check-input" type="checkbox" id="scan_csv" name="scan_csv"
+                                                       {% if defaults.scan_csv %}checked{% endif %}>
+                                                <label class="form-check-label" for="scan_csv"
+                                                       title="Update file to have all of the needed columns">
+                                                    Scan a directory
                                                 </label>
                                             </div>
                                             <div class="form-check mb-3">
@@ -161,6 +184,24 @@
 {#                                            </div>#}
                                         </div>
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card mt-3">
+                        <div class="card-header">
+                            <h5 class="mb-0">Add Column to CSV</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <div class="input-group mb-3">
+                                        <input type="text" class="form-control" id="columnName" placeholder="Enter column name">
+                                        <button class="btn btn-primary" type="button" id="addColumnBtn" onclick="addColumnToCsv()">
+                                            Add Column
+                                        </button>
+                                    </div>
+                                    <small class="text-muted">Column will be added to the data file with empty values</small>
                                 </div>
                             </div>
                         </div>
@@ -257,13 +298,34 @@
                                                             <div class="col-md-8">
                                                                 <div class="form-group">
                                                                     <label for="distributor_name" class="form-label">Distributor Name:</label>
-                                                                    <div class="input-group">
+
                                                                         <input type="text" class="form-control" id="distributor_name"
                                                                                placeholder="Enter distributor name">
-                                                                        <button type="button" class="btn btn-primary" id="update_distributor_btn">
+                                                                    <label for="distributor_address" class="form-label">Distributor Address:</label>
+                                                                        <input type="text" class="form-control" id="distributor_address"
+                                                                               placeholder="Enter distributor address">
+                                                                    <div class="row">
+                                                                        <div class="col">
+                                                                        <label for="distributor_city" class="form-label">Distributor City:</label>
+                                                                            <input type="text" class="form-control" id="distributor_city"
+                                                                                   placeholder="">
+                                                                            </div>
+                                                                        <div class="col">
+                                                                        <label for="distributor_state" class="form-label">Distributor State:</label>
+                                                                            <input type="text" class="form-control" id="distributor_state"
+                                                                                   placeholder="">
+                                                                            </div>
+                                                                        <div class="col">
+                                                                        <label for="distributor_zip" class="form-label">Distributor Zip:</label>
+                                                                            <input type="text" class="form-control" id="distributor_zip"
+                                                                                   placeholder="">
+                                                                            </div>
+
+
+                                                                    </div>
+                                                                    <button type="button" class="btn btn-primary" id="update_distributor_btn">
                                                                             <i class="bi bi-tag"></i> Update Distributor
                                                                         </button>
-                                                                    </div>
                                                                     <small class="form-text text-muted">
                                                                         This will update/add the 'distributor_name' column in all CSV files in the home directory.
                                                                     </small>
@@ -448,7 +510,7 @@
                                                                             <th>File</th>
                                                                             <th>Row</th>
                                                                             <th>SKU</th>
-                                                                            <th>Data</th>
+{#                                                                            <th>Data</th>#}
                                                                         </tr>
                                                                     </thead>
                                                                     <tbody id="zero_sku_results_body"></tbody>
@@ -521,9 +583,170 @@
                     </div>
                 </div>
             </div>
+            <!-- Sample Data Modal -->
+            <div class="modal fade" id="sampleDataModal" tabindex="-1" aria-labelledby="sampleDataModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-xl">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="sampleDataModalLabel">Sample Product Data</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div id="sampleDataContent" class="pre-scrollable">
+                                <!-- Sample data will be loaded here -->
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         {% endblock common %}
     {% endblock scrape_content %}
     {% block scripts %}
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add click handler for the view sample data button
+            const viewSampleBtn = document.getElementById('viewSampleDataBtn');
+            const sampleDataModal = new bootstrap.Modal(document.getElementById('sampleDataModal'));
+            const sampleDataContent = document.getElementById('sampleDataContent');
+
+              // Function to handle image loading errors
+            function handleImageError(img) {
+                img.onerror = null;
+                img.src = '/static/images/no-image.png';
+                img.style.maxHeight = '150px';
+                img.className = 'img-fluid rounded';
+                img.alt = 'Image not available';
+            }
+
+            if (viewSampleBtn) {
+                viewSampleBtn.addEventListener('click', function() {
+                    // Show loading state
+                    sampleDataContent.innerHTML = '<div class="text-center p-4"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div><p class="mt-2">Loading sample data...</p></div>';
+                    sampleDataModal.show();
+
+                    // Get all form data
+                    const form = document.querySelector('form#scraperForm');
+                    const formData = new FormData(form);
+                    const filePath = formData.get('data_file');
+
+                    // Convert form data to URL-encoded string
+                    const params = new URLSearchParams();
+                    for (const [key, value] of formData.entries()) {
+                        params.append(key, value);
+                    }
+
+                    // Make AJAX call to get sample data with all form data
+                    fetch(`/display_sample_data/?file=${encodeURIComponent(filePath)}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: params
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.error) {
+                            sampleDataContent.innerHTML = `
+                                <div class="alert alert-danger" role="alert">
+                                    <h5 class="alert-heading">Error</h5>
+                                    <p>${data.error}</p>
+                                    <hr>
+                                    <p class="mb-0">Please check the file path and try again.</p>
+                                </div>`;
+                        } else if (data.html) {
+                            sampleDataContent.innerHTML = data.html;
+
+                            // Set up image error handlers after content is loaded
+                            const images = sampleDataContent.querySelectorAll('img');
+                            images.forEach(img => {
+                                img.onerror = function() {
+                                    handleImageError(this);
+                                };
+                            });
+                        } else {
+                            throw new Error('No data returned');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        sampleDataContent.innerHTML = `
+                            <div class="alert alert-danger" role="alert">
+                                <h5 class="alert-heading">Error Loading Sample Data</h5>
+                                <p>Could not load sample data. Please try again later.</p>
+                                <hr>
+                                <p class="mb-0">${error.message || 'Unknown error occurred'}</p>
+                            </div>`;
+                    });
+                });
+            }
+
+            // Reset modal content when hidden
+            document.getElementById('sampleDataModal').addEventListener('hidden.bs.modal', function () {
+                sampleDataContent.innerHTML = '';
+            });
+        });
+        </script>
+        <script>
+            function addColumnToCsv() {
+                const columnName = document.getElementById('columnName').value.trim();
+                const csvFile = document.getElementById('data_file').value.trim();
+
+                if (!columnName) {
+                    alert('Please enter a column name');
+                    return;
+                }
+
+                if (!csvFile) {
+                    alert('Please select a data file first');
+                    return;
+                }
+
+                const btn = document.getElementById('addColumnBtn');
+                const originalText = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Adding...';
+
+                fetch('/add-column-to-csv/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFTTOKEN': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({
+                        csv_file: csvFile,
+                        column_name: columnName,
+                        scraper_class: "{{ scraper_class }}",
+                        module_name: "{{ module_name }}"
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(data.message);
+                        document.getElementById('columnName').value = '';
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while adding the column');
+                })
+                .finally(() => {
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                });
+            }
+        </script>
         <script>
             {% block file_mapping %}
                 // Define the file name mappings
@@ -715,9 +938,9 @@
                     // Update processed SKUs list
                     const processedList = document.getElementById('processedSkusList');
                     if (progress.processed_skus?.length > 0) {
-                        processedList.innerHTML = progress.processed_skus
-                            .map(sku => `<li class="list-group-item py-1">${sku}</li>`)
-                            .join('');
+                        {#processedList.innerHTML = progress.processed_skus#}
+                        {#    .map(sku => `<li class="list-group-item py-1">${sku}</li>`)#}
+                        {#    .join('');#}
                     } else {
                         processedList.innerHTML = '<li class="list-group-item py-1 text-muted">No SKUs processed yet</li>';
                     }
@@ -927,7 +1150,12 @@
             'Content-Type': 'application/x-www-form-urlencoded',
             'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value
         },
-        body: `directory=${encodeURIComponent(directory)}`
+
+        body: JSON.stringify({
+            directory: `${encodeURIComponent(directory)}`,
+            module_name: '{{ module_name }}',
+            scraper_class: '{{ scraper_class }}'
+        })
     })
     .then(response => {
         if (!response.ok) {
@@ -1165,6 +1393,10 @@
             // Add event listener for the update distributor button
             document.getElementById('update_distributor_btn').addEventListener('click', function() {
                 const distributorName = document.getElementById('distributor_name').value.trim();
+                const distributorAddress = document.getElementById('distributor_address').value.trim();
+                const distributorCity = document.getElementById('distributor_city').value.trim();
+                const distributorState = document.getElementById('distributor_state').value.trim();
+                const distributorZip = document.getElementById('distributor_zip').value.trim();
                 const homeDirectory = document.getElementById('home_directory').value.trim();
                 const resultsDiv = document.getElementById('distributor_results');
                 const successDiv = document.getElementById('distributor_success');
@@ -1209,7 +1441,7 @@
                         'Content-Type': 'application/x-www-form-urlencoded',
                         'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
                     },
-                    body: `directory=${encodeURIComponent(homeDirectory)}&distributor_name=${encodeURIComponent(distributorName)}`
+                    body: `directory=${encodeURIComponent(homeDirectory)}&distributor_name=${encodeURIComponent(distributorName)}&distributor_address=${encodeURIComponent(distributorAddress)}&distributor_city=${encodeURIComponent(distributorCity)}&distributor_state=${encodeURIComponent(distributorState)}&distributor_zip=${encodeURIComponent(distributorZip)}`
                 })
                 .then(response => response.json())
                 .then(data => {
@@ -1296,7 +1528,7 @@
                                 'Content-Type': 'application/x-www-form-urlencoded',
                                 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
                             },
-                            body: `directory=${encodeURIComponent(directory)}&column=${encodeURIComponent(column)}`
+                            body: `directory=${encodeURIComponent(directory)}&column=${encodeURIComponent(column)}&scraper_class={{ scraper_class }}&module_name={{ module_name }}`
                         })
                         .then(response => response.json())
                         .then(data => {
@@ -1317,7 +1549,7 @@
                                         <td>${filename}</td>
                                         <td>${row.row_number}</td>
                                         <td>${row[column] || ''}</td>
-                                        <td><pre class="mb-0" style="white-space: pre-wrap;">${JSON.stringify(row.row_data, null, 2)}</pre></td>
+{#                                        <td><pre class="mb-0" style="white-space: pre-wrap;">${JSON.stringify(row.row_data, null, 2)}</pre></td>#}
                                     `;
                                     resultsBody.appendChild(tr);
                                 });

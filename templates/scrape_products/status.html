@@ -76,7 +76,7 @@
                         <th>Distributor</th>
                         <th class="text-end">URLs</th>
                         <th class="text-end">Scraped</th>
-                        <th class="text-center">Status</th>
+                        <th class="text-center">Type</th>
                         <th style="width: 30%;">Progress</th>
                     </tr>
                 </thead>
@@ -85,6 +85,9 @@
                     <tr>
                         <td class="align-middle">
                             <strong>{{ scraper.name }}</strong>
+                            {% if scraper.has_prices %}
+                                <span class="tex-bold text-success">$</span>
+                            {% endif %}
                             <div class="text-muted small scraper-details" style="display: none;">
                                 <div><strong>Class:</strong> {{ scraper.class_name }}</div>
                                 <div><strong>Directory:</strong> {{ scraper.directory }}</div>
@@ -97,8 +100,8 @@
                             {{ scraper.data_rows|intcomma }}
                         </td>
                         <td class="text-center align-middle">
-                            <span class="badge rounded-pill {% if scraper.status == 'Complete' %}bg-success{% else %}bg-warning{% endif %}">
-                                {{ scraper.status }}
+                            <span class="text-end align-middle">
+                                {{ scraper.scraper_type }}
                             </span>
                         </td>
                         <td class="align-middle">

@@ -3,6 +3,11 @@ from .dry import CutScraper
 
 
 class DWCSpecialtiesScraper(CutScraper):
+    # 1307/edit_note/1436/
+    CRM_ID = 1307
+    CRM_NOTE_ID = 1436
+    CRM_PRICE_TYPE = ''
+    CRM_STATUS_OVERRIDE = ''
     """Scraper for DWC Specialties on the Cut & Dry platform"""
 
     DEFAULT_DIRECTORY = '/Users/mark/Downloads/scrapers/dwcspecialties/'
@@ -393,6 +398,3 @@ class DWCSpecialtiesScraper(CutScraper):
 
     def __init__(self, options=None):
         super().__init__(options)
-        self.options = {**self.DEFAULT_OPTIONS, **(options or {})}
-        self.options['home_directory'] = self.DEFAULT_DIRECTORY
-        self.options['base_url'] = self.BASE_URL

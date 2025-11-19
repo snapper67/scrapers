@@ -4,9 +4,13 @@ from scrapers.cut.dry import CutScraper
 
 
 class BiRiteScraper(CutScraper):
+	# 1488/edit_note/1379/
+	CRM_ID = 1488
+	CRM_NOTE_ID = 1379
+	CRM_PRICE_TYPE = ''
+	CRM_STATUS_OVERRIDE = ''
 
 	DEFAULT_DIRECTORY = '/Users/mark/Downloads/scrapers/birite'
-
 
 	BASE_URL = 'https://app.cutanddry.com/catalog/BiRite%20Foodservice%20Distributors?verifiedVendorId=120984264&categoryId=1&categoryName=All+Items&page=1'
 	SUB_DOMAIN = "https://app.cutanddry.com"
@@ -1875,6 +1879,3 @@ class BiRiteScraper(CutScraper):
 
 	def __init__(self, options=None):
 		super().__init__(options)
-		self.options = {**self.DEFAULT_OPTIONS, **(options or {})}
-		self.options['home_directory'] = self.DEFAULT_DIRECTORY
-		self.options['base_url'] = self.BASE_URL

@@ -4,6 +4,11 @@ from scrapers.cut.dry import CutScraper
 
 
 class ApitoScraper(CutScraper):
+	# 1305/edit_note/1413/
+	CRM_ID = 1305
+	CRM_NOTE_ID = 1413
+	CRM_PRICE_TYPE = ''
+	CRM_STATUS_OVERRIDE = ''
 
 	DEFAULT_DIRECTORY = '/Users/mark/Downloads/scrapers/apito/'
 
