@@ -77,8 +77,23 @@ class ShopifyScraper(Scraper):
 		return self.CATEGORY_URLS
 
 	def get_taxonomy(self):
-		"""Load a category page"""
-		raise NotImplementedError("get_taxonomy method not implemented")
+		categories = self.CATEGORIES.get('data', {}).get('categories', [])
+		print(f"Categories: {categories}")
+		return categories
+
+	def get_categories(self):
+		"""
+		Returns a list of category dictionaries from the CATEGORIES data.
+
+		Returns:
+			list: A list of dictionaries, each containing 'id' and 'name' of a category
+		"""
+		category_options = self.CATEGORIES.get('data', {}).get('categories', {})
+		return [
+			{'id': option['id'], 'name': option['name']}
+			for option in category_options
+			if option.get('id') and option.get('name')
+		]
 
 	def scraping_setup(self):
 		"""Scrape products from the website"""
@@ -98,97 +113,15 @@ class ShopifyScraper(Scraper):
 		return keys
 
 	# ************************************************************************
-
-	# 	Product Scraping Functions
-	# ************************************************************************
-	def get_product_data_additional(self, data, row_spec):
-		return row_spec
-
-	def get_product_data(self, data, row_spec):
-		print("processing product data from response...")
-		# print(data)
-		if data:
-			try:
-				row_spec["name"] = data.get("title", "")
-				row_spec["description"] = data.get("description", "")
-				row_spec["retail_price"] = data.get("price", "")
-				row_spec["shop_id"] = data.get("id", "")
-				self.get_pack_size(data, row_spec)
-				row_spec["image"] = self.get_first_image_url(data)
-
-				# move sku - which was just a unique identifier to id
-				row_spec['id'] = row_spec['sku']
-				row_spec['sku'] = data.get('variants', [{}])[0].get('sku', '')
-
-				row_spec["extra_data_1"] = json.dumps(data)
-
-			except Exception as e:
-				print(f" ⛔️⛔️⛔️Error processing product data: {e}")
-
-		print("processing get_product_data Complete...")
-		row_spec = self.get_product_data_additional(data, row_spec)
-		return row_spec
-
-	def get_first_image_url(self, response_data):
-		"""
-		Extract the first available image URL from the product API response.
-
-		Args:
-			response_data (dict): The parsed JSON response from the API
-
-		Returns:
-			str: URL of the first available image, or None if no image found
-		"""
-		try:
-			images = response_data.get('images', [])
-
-			# If there are assets, get the first one's URL
-			if images and isinstance(images, list) and len(images) > 0:
-				# Get the first asset and extract the URL
-				first_asset = images[0]
-				return "https:" + first_asset
-
-		except Exception as e:
-			print(f"Error extracting image from viewModel.assets: {str(e)}")
-
-		return ''
-
-	def get_pack_size(self, data, row_spec):
-		print("get_pack_size()")
-		try:
-			options = data.get('options', None)
-			# Find the specification with displayName "Manufacturer Name"
-			if options:
-				pack_size = next(
-					(option for option in options
-					 if isinstance(option, dict) and option.get('name') == 'Quantity/Pack:'),
-					None
-				)
-
-				if pack_size and 'values' in pack_size:
-					row_spec['pack_size'] = pack_size['values'][0]
-					print(f"Found pack size: {pack_size['values'][0]}")
-				else:
-					row_spec['pack_size'] = ''
-					print("⚠️ pack size name not found in specifications")
-
-		except Exception as e:
-			print(f"⛔️ Error processing pack size information: {type(e).__name__} - {str(e)}")
-
-		print("Processing pack size information complete...")
-		return row_spec
-
+	# Core Functions
+	# These are overrides of the core functions
 	# ************************************************************************
 
-	def get_products_from_html(self):
-
-		products = self.wait.until(
-			EC.presence_of_all_elements_located((By.CSS_SELECTOR, '.productitem--image-link'))
-		)
-
-		print(f"products found: {len(products)}")
-		detail_urls = [product.get_attribute("href") for product in products]
-		return '', detail_urls
+	def build_categories_list(self):
+		url = self.BASE_URL
+		navigation = self.get_navigation_structure(url)
+		# self.print_navigation_structure(navigation)
+		return f"<div>{navigation}</div>"
 
 	def build_products_list(self):
 		"""Scrape products from the website"""
@@ -268,101 +201,6 @@ class ShopifyScraper(Scraper):
 		print(f"Total products found: {len(all_urls)}")
 		return html
 
-	def get_product_details(self, url, row_spec=None):
-		"""Get Product Details"""
-		raise NotImplementedError("scrape_products method not implemented")
-
-	def get_product_details_json(self, url, row_spec=None):
-		#  Wait for the product name element on the product page detail page
-		if not row_spec: row_spec = self.PRODUCT_DATA_SPEC.copy()
-		print("processing product detail page")
-		print(f"Loading page...{url}")
-
-		data = ''
-		sku = row_spec['sku']
-		request_filter = f"{self.BASE_PRODUCT_URL}{sku}.js"
-
-		self.driver.get(url)
-		print(f"Sent Request {request_filter}")
-		try:
-			request = self.driver.wait_for_request(request_filter)
-			if request.response and request_filter in request.url:  # Filter for API requests
-				print(f"URL: {request.url}")
-				print(f"Status Code: {request.response.status_code}")
-				print(f"Content Type: {request.response.headers.get('Content-Type')}")
-
-				# Decode the response body (it's bytes by default)
-				try:
-					body = decode(request.response.body, request.response.headers.get('Content-Encoding', 'identity'))
-
-					# If the body is JSON, parse it
-					data = json.loads(body)
-					print(f"Response Body (Text): {data}")
-
-				except Exception as e:
-					print(f"⛔️⛔️⛔️Error decoding detail response body: {e}")
-
-		except Exception as e:
-			print(f"⛔️⛔️⛔️Error waiting for request: {e}")
-
-		del self.driver.requests
-		return data
-
-	def get_product_details_scrape(self, url, row_spec=None, target="script[type='application/json']"):
-		#  Wait for the product name element on the product page detail page
-		print("Scraper.get_product_details()")
-		if not row_spec: row_spec = self.PRODUCT_DATA_SPEC.copy()
-		print(f"processing product detail page for target {target}")
-		print(f"Loading page...{url}")
-
-		data = ''
-		sku = row_spec['sku']
-		request_filter = url
-
-		self.driver.get(url)
-		print(f"Sent Request")
-		product_data = ''
-		try:
-			# Wait for the page to load
-			WebDriverWait(self.driver, 10).until(
-				EC.presence_of_element_located(
-				(By.CSS_SELECTOR, target))
-			)
-			print(f"Script Loaded")
-			# Get the page source and parse it with BeautifulSoup
-			soup = BeautifulSoup(self.driver.page_source, 'html.parser')
-
-			# Find the script tag with the product data
-			script_tag = soup.find('script', {
-				'type': 'application/json',
-				'data-section-type': 'static-product'
-			})
-
-			if not script_tag:
-				print("Looking for Second script tag")
-				script_tag = soup.find('script', {
-					'type': 'application/json',
-					'data-product-json': ''
-				})
-
-			if script_tag and script_tag.string:
-				print("Loading product data")
-				try:
-					# Parse the JSON data from the script tag
-					product_data = json.loads(script_tag.string)
-
-				except json.JSONDecodeError as e:
-					print(f"Error parsing JSON data: {e}")
-			else:
-				print("Could not find the product data script tag")
-
-		except Exception as e:
-			print(f"Error getting product details: {e}")
-		finally:
-			del self.driver.requests
-
-		return product_data
-
 	def process_extra_data_from_csv(self):
 		"""
 		Process extra data from a CSV file by reading the extra_data column and passing it to get_product_data.
@@ -437,6 +275,48 @@ class ShopifyScraper(Scraper):
 
 		except Exception as e:
 			return f"Error in process_extra_data_from_csv: {str(e)}"
+
+	# ************************************************************************
+	# Core Function Hooks
+	# These are the methods called by the core functions
+	# ************************************************************************
+
+	def get_category_page(self, url, category_name, sub_category_name, sub_sub_category_name):
+		"""Each Site has a unique navigation setup"""
+		raise NotImplementedError("get_category_page method not implemented")
+
+	def get_product_details(self, url, row_spec=None):
+		"""Get Product Details"""
+		raise NotImplementedError("scrape_products method not implemented")
+
+	def get_product_data(self, data, row_spec):
+		print("processing product data from response...")
+		# print(data)
+		if data:
+			try:
+				row_spec["name"] = data.get("title", "")
+				row_spec["description"] = data.get("description", "")
+				row_spec["retail_price"] = data.get("price", "")
+				row_spec["shop_id"] = data.get("id", "")
+				self.get_pack_size(data, row_spec)
+				row_spec["image"] = self.get_first_image_url(data)
+
+				# move sku - which was just a unique identifier to id
+				row_spec['id'] = row_spec['sku']
+				row_spec['sku'] = data.get('variants', [{}])[0].get('sku', '')
+
+				row_spec["extra_data_1"] = json.dumps(data)
+
+			except Exception as e:
+				print(f" ⛔️⛔️⛔️Error processing product data: {e}")
+
+		print("processing get_product_data Complete...")
+		row_spec = self.get_product_data_additional(data, row_spec)
+		return row_spec
+
+	# ************************************************************************
+	# Category URL retrieval Functions
+	# ************************************************************************
 
 	def get_navigation_structure(self, url: str, headers: Optional[Dict] = None, pretty: bool = True) -> str:
 		"""
@@ -573,7 +453,173 @@ class ShopifyScraper(Scraper):
 			print(f"Error parsing navigation: {str(e)}")
 			return {}
 
-	def print_navigation_structure(self, navigation: Dict):
+	# ************************************************************************
+	# Product List Functions
+	# ************************************************************************
+
+	def get_products_from_html(self):
+
+		products = self.wait.until(
+			EC.presence_of_all_elements_located((By.CSS_SELECTOR, '.productitem--image-link'))
+		)
+
+		print(f"products found: {len(products)}")
+		detail_urls = [product.get_attribute("href") for product in products]
+		return '', detail_urls
+
+	# ************************************************************************
+	# Product Detail Functions
+	# ************************************************************************
+
+	def get_product_data_additional(self, data, row_spec):
+		return row_spec
+
+	def get_first_image_url(self, response_data):
+		"""
+		Extract the first available image URL from the product API response.
+
+		Args:
+			response_data (dict): The parsed JSON response from the API
+
+		Returns:
+			str: URL of the first available image, or None if no image found
+		"""
+		try:
+			images = response_data.get('images', [])
+
+			# If there are assets, get the first one's URL
+			if images and isinstance(images, list) and len(images) > 0:
+				# Get the first asset and extract the URL
+				first_asset = images[0]
+				return "https:" + first_asset
+
+		except Exception as e:
+			print(f"Error extracting image from viewModel.assets: {str(e)}")
+
+		return ''
+
+	def get_pack_size(self, data, row_spec):
+		print("get_pack_size()")
+		try:
+			options = data.get('options', None)
+			# Find the specification with displayName "Manufacturer Name"
+			if options:
+				pack_size = next(
+					(option for option in options
+					 if isinstance(option, dict) and option.get('name') == 'Quantity/Pack:'),
+					None
+				)
+
+				if pack_size and 'values' in pack_size:
+					row_spec['pack_size'] = pack_size['values'][0]
+					print(f"Found pack size: {pack_size['values'][0]}")
+				else:
+					row_spec['pack_size'] = ''
+					print("⚠️ pack size name not found in specifications")
+
+		except Exception as e:
+			print(f"⛔️ Error processing pack size information: {type(e).__name__} - {str(e)}")
+
+		print("Processing pack size information complete...")
+		return row_spec
+
+	def get_product_details_json(self, url, row_spec=None):
+		#  Wait for the product name element on the product page detail page
+		if not row_spec: row_spec = self.PRODUCT_DATA_SPEC.copy()
+		print("processing product detail page")
+		print(f"Loading page...{url}")
+
+		data = ''
+		sku = row_spec['sku']
+		request_filter = f"{self.BASE_PRODUCT_URL}{sku}.js"
+
+		self.driver.get(url)
+		print(f"Sent Request {request_filter}")
+		try:
+			request = self.driver.wait_for_request(request_filter)
+			if request.response and request_filter in request.url:  # Filter for API requests
+				print(f"URL: {request.url}")
+				print(f"Status Code: {request.response.status_code}")
+				print(f"Content Type: {request.response.headers.get('Content-Type')}")
+
+				# Decode the response body (it's bytes by default)
+				try:
+					body = decode(request.response.body, request.response.headers.get('Content-Encoding', 'identity'))
+
+					# If the body is JSON, parse it
+					data = json.loads(body)
+					print(f"Response Body (Text): {data}")
+
+				except Exception as e:
+					print(f"⛔️⛔️⛔️Error decoding detail response body: {e}")
+
+		except Exception as e:
+			print(f"⛔️⛔️⛔️Error waiting for request: {e}")
+
+		del self.driver.requests
+		return data
+
+	def get_product_details_scrape(self, url, row_spec=None, target="script[type='application/json']"):
+		#  Wait for the product name element on the product page detail page
+		print("Scraper.get_product_details()")
+		if not row_spec: row_spec = self.PRODUCT_DATA_SPEC.copy()
+		print(f"processing product detail page for target {target}")
+		print(f"Loading page...{url}")
+
+		data = ''
+		sku = row_spec['sku']
+		request_filter = url
+
+		self.driver.get(url)
+		print(f"Sent Request")
+		product_data = ''
+		try:
+			# Wait for the page to load
+			WebDriverWait(self.driver, 10).until(
+				EC.presence_of_element_located(
+				(By.CSS_SELECTOR, target))
+			)
+			print(f"Script Loaded")
+			# Get the page source and parse it with BeautifulSoup
+			soup = BeautifulSoup(self.driver.page_source, 'html.parser')
+
+			# Find the script tag with the product data
+			script_tag = soup.find('script', {
+				'type': 'application/json',
+				'data-section-type': 'static-product'
+			})
+
+			if not script_tag:
+				print("Looking for Second script tag")
+				script_tag = soup.find('script', {
+					'type': 'application/json',
+					'data-product-json': ''
+				})
+
+			if script_tag and script_tag.string:
+				print("Loading product data")
+				try:
+					# Parse the JSON data from the script tag
+					product_data = json.loads(script_tag.string)
+
+				except json.JSONDecodeError as e:
+					print(f"Error parsing JSON data: {e}")
+			else:
+				print("Could not find the product data script tag")
+
+		except Exception as e:
+			print(f"Error getting product details: {e}")
+		finally:
+			del self.driver.requests
+
+		return product_data
+
+	# ************************************************************************
+	# Utility Functions
+	# ************************************************************************
+
+	@staticmethod
+	def print_navigation_structure(navigation: Dict):
 		"""Prints the navigation structure in a readable format."""
 		for category, data in navigation.items():
 			print(f"- {category} ({data['url']})")

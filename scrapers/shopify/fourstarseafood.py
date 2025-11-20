@@ -37,8 +37,6 @@ class FourStarSeafoodScraper(ShopifyScraper):
 	VENDOR_NAME = 'Four Star Seafood'
 	# VENDOR_NAME = 'eastern_seafood_specialty'
 
-	DEDUP_INPUT_FILE = 'dedupe_product_data.csv'
-
 	CATEGORIES = json.loads('''{
   "data": {
     "categories": [
@@ -390,32 +388,90 @@ class FourStarSeafoodScraper(ShopifyScraper):
 	def __init__(self, options=None):
 		super().__init__(options)
 
-	def get_categories(self):
-		"""
-		Returns a list of category dictionaries from the CATEGORIES data.
-
-		Returns:
-			list: A list of dictionaries, each containing 'id' and 'name' of a category
-		"""
-		category_options = self.CATEGORIES.get('data', {}).get('categories', {})
-		return [
-			{'id': option['id'], 'name': option['name']}
-			for option in category_options
-			if option.get('id') and option.get('name')
-		]
-
-	def get_taxonomy(self):
-		categories = self.CATEGORIES.get('data', {}).get('categories', [])
-		print(f"Categories: {categories}")
-		return categories
-
 	def get_category_url(self, category):
 		return f"https://www.fourstarseafood.com{category['url']}"
 
+
+	# ************************************************************************
+	# Core Functions
+	# These are overrides of the core functions
 	# ************************************************************************
 
-	# 	Product Scraping Functions
 	# ************************************************************************
+	# Core Function Hooks
+	# These are the methods called by the core functions
+	# ************************************************************************
+
+	def get_category_page(self, url, category_name, sub_category_name, sub_sub_category_name):
+		print("get_category_page()")
+		detail_urls = []
+		main_window = self.driver.current_window_handle
+		html = ''
+		total_products = 0
+		self.driver.get(url)
+		self.wait = WebDriverWait(self.driver, 10)
+		try:
+			# Update URL from the redirect
+			url = self.driver.current_url
+			print(f"Current URl: {self.driver.current_url}")
+
+			# Find all window handles and switch to the new window if it opens in a new tab
+			if len(self.driver.window_handles) > self.TEST_TABS:
+				print("must be a tab...")
+				for handle in self.driver.window_handles:
+					if handle != main_window:
+						self.driver.switch_to.window(handle)
+						break
+			page_count = 1
+			next_page = True
+
+			while next_page:
+				try:
+					# Wait for page to load
+					detail_urls = []
+					if url in self.driver.current_url:
+						print("Found products page")
+						time.sleep(2)
+						if url.split('#')[1]:
+							html_line, detail_urls = self.get_products_from_html(start=url.split('#')[1])
+						else:
+							html_line, detail_urls = self.get_products_from_html()
+					products_found_count = len(detail_urls)
+					html += f"<div>Found {products_found_count} products for category {sub_category_name}</div>"
+					print(f"Found {products_found_count} products for category {sub_category_name}")
+					total_products += products_found_count
+					self.save_urls_to_csv(detail_urls, category_name, sub_category_name, sub_sub_category_name)
+
+				except Exception as e:
+					print(f"****************** ⛔️⛔️⛔️ Error getting details: {e}")
+					html += f"<div>Name: {sub_category_name} (Error getting details)</div>"
+
+				try:
+					paging = self.wait.until(
+						EC.presence_of_element_located((By.CSS_SELECTOR, '.page_c'))
+					)
+					print("Checking 1")
+					next_disabled = paging.find_element(By.CSS_SELECTOR, 'a.next')
+					class_attribute = next_disabled.get_attribute("class")
+					classes = class_attribute.split()
+					print(next_disabled)
+					print("Checking 2")
+					if not 'disabled'  in classes:
+						paging.find_element(By.CLASS_NAME, 'next').click()
+						print("Going to next page")
+						next_page = True
+					else:
+						print("Next is disabled")
+						next_page = False
+				except Exception as e:
+					print("There is no next page")
+					next_page = False
+
+
+		except Exception as e:
+			print(f"⛔️⛔️⛔️Error processing category: {e}")
+
+		return detail_urls, html
 
 	def get_product_details(self, url, row_spec=None):
 		"""Get Product Details"""
@@ -425,46 +481,9 @@ class FourStarSeafoodScraper(ShopifyScraper):
 		self.get_product_data(data.get('product', {}), row_spec)
 		return row_spec
 
-	def get_first_image_url(self, response_data):
-		"""
-		Extract the first available image URL from the product API response.
-
-		Args:
-			response_data (dict): The parsed JSON response from the API
-
-		Returns:
-			str: URL of the first available image, or None if no image found
-		"""
-		try:
-			image = response_data.get('image', {})
-			return image.get('src', '')
-
-		except Exception as e:
-			print(f"Error extracting image from viewModel.assets: {str(e)}")
-
-		return ''
-
 	# ************************************************************************
-	def get_products_from_html(self, start=None):
-
-		if start:
-			products = self.wait.until(
-				EC.presence_of_all_elements_located((By.CSS_SELECTOR, f'#{start} a.ProductItem__ImageWrapper' ))
-			)
-		else:
-			products = self.wait.until(
-				EC.presence_of_all_elements_located((By.CSS_SELECTOR, 'a.ProductItem__ImageWrapper'))
-			)
-
-		print(f"products found: {len(products)}")
-		detail_urls = [product.get_attribute("href") for product in products]
-		return '', detail_urls
-
-	def build_categories_list(self):
-		url = self.BASE_URL
-		navigation = self.get_navigation_structure(url)
-		# self.print_navigation_structure(navigation)
-		return f"<div>{navigation}</div>"
+	# Category URL retrieval Functions
+	# ************************************************************************
 
 	def get_navigation_dict(self, url: str, headers: Optional[Dict] = None) -> Dict[str, Any]:
 		"""
@@ -574,73 +593,44 @@ class FourStarSeafoodScraper(ShopifyScraper):
 			print(f"Error getting navigation structure: {e}")
 			return {'data': {'categories': []}}
 
-	def get_category_page(self, url, category_name, sub_category_name, sub_sub_category_name):
-		print("get_category_page()")
-		detail_urls = []
-		main_window = self.driver.current_window_handle
-		html = ''
-		total_products = 0
-		self.driver.get(url)
-		self.wait = WebDriverWait(self.driver, 10)
+	# ************************************************************************
+	# Product List Functions
+	# ************************************************************************
+
+	def get_products_from_html(self, start=None):
+
+		if start:
+			products = self.wait.until(
+				EC.presence_of_all_elements_located((By.CSS_SELECTOR, f'#{start} a.ProductItem__ImageWrapper' ))
+			)
+		else:
+			products = self.wait.until(
+				EC.presence_of_all_elements_located((By.CSS_SELECTOR, 'a.ProductItem__ImageWrapper'))
+			)
+
+		print(f"products found: {len(products)}")
+		detail_urls = [product.get_attribute("href") for product in products]
+		return '', detail_urls
+
+	# ************************************************************************
+	# Product Detail Functions
+	# ************************************************************************
+
+	def get_first_image_url(self, response_data):
+		"""
+		Extract the first available image URL from the product API response.
+
+		Args:
+			response_data (dict): The parsed JSON response from the API
+
+		Returns:
+			str: URL of the first available image, or None if no image found
+		"""
 		try:
-			# Update URL from the redirect
-			url = self.driver.current_url
-			print(f"Current URl: {self.driver.current_url}")
-
-			# Find all window handles and switch to the new window if it opens in a new tab
-			if len(self.driver.window_handles) > self.TEST_TABS:
-				print("must be a tab...")
-				for handle in self.driver.window_handles:
-					if handle != main_window:
-						self.driver.switch_to.window(handle)
-						break
-			page_count = 1
-			next_page = True
-
-			while next_page:
-				try:
-					# Wait for page to load
-					detail_urls = []
-					if url in self.driver.current_url:
-						print("Found products page")
-						time.sleep(2)
-						if url.split('#')[1]:
-							html_line, detail_urls = self.get_products_from_html(start=url.split('#')[1])
-						else:
-							html_line, detail_urls = self.get_products_from_html()
-					products_found_count = len(detail_urls)
-					html += f"<div>Found {products_found_count} products for category {sub_category_name}</div>"
-					print(f"Found {products_found_count} products for category {sub_category_name}")
-					total_products += products_found_count
-					self.save_urls_to_csv(detail_urls, category_name, sub_category_name, sub_sub_category_name)
-
-				except Exception as e:
-					print(f"****************** ⛔️⛔️⛔️ Error getting details: {e}")
-					html += f"<div>Name: {sub_category_name} (Error getting details)</div>"
-
-				try:
-					paging = self.wait.until(
-						EC.presence_of_element_located((By.CSS_SELECTOR, '.page_c'))
-					)
-					print("Checking 1")
-					next_disabled = paging.find_element(By.CSS_SELECTOR, 'a.next')
-					class_attribute = next_disabled.get_attribute("class")
-					classes = class_attribute.split()
-					print(next_disabled)
-					print("Checking 2")
-					if not 'disabled'  in classes:
-						paging.find_element(By.CLASS_NAME, 'next').click()
-						print("Going to next page")
-						next_page = True
-					else:
-						print("Next is disabled")
-						next_page = False
-				except Exception as e:
-					print("There is no next page")
-					next_page = False
-
+			image = response_data.get('image', {})
+			return image.get('src', '')
 
 		except Exception as e:
-			print(f"⛔️⛔️⛔️Error processing category: {e}")
+			print(f"Error extracting image from viewModel.assets: {str(e)}")
 
-		return detail_urls, html
+		return ''

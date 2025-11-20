@@ -180,27 +180,14 @@ class MeatsByLinzScraper(BigCommerceScraper):
 		super().__init__(options)
 
 	# ************************************************************************
-
-	# 	Product Scraping Functions
+	# Core Functions
+	# These are overrides of the core functions
 	# ************************************************************************
-	def get_packs_sizes(self, row_spec):
-		"""
-		Get the packs sizes from the product page
-		Convert row_spec into a list of row_specs
-		Allow the calling function to write the last one
-		"""
-		return row_spec
 
-	def get_price(self, data, row_spec):
-		print("get_price()")
-		try:
-			price = data.get('offers', {}).get('price', '')
-			row_spec['retail_price'] = price
-		except Exception as e:
-			print(f"⛔️ Error processing price information: {type(e).__name__} - {str(e)}")
-
-		print("Processing price information complete...")
-		return row_spec
+	# ************************************************************************
+	# Core Function Hooks
+	# These are the methods called by the core functions
+	# ************************************************************************
 
 	def get_more_data(self, data, row_spec):
 		print("get_more_data()")
@@ -236,53 +223,9 @@ class MeatsByLinzScraper(BigCommerceScraper):
 		print(f"Pack Size: {row_spec.get('pack_size', 'N/A')}")
 		return row_spec
 
-	@staticmethod
-	def process_json_product(json_str):
-		"""
-		Allow a scraper to modify the product schema data prior to processing
-		"""
-		print("process_json_product()")
-		if not isinstance(json_str, str):
-			print("converting to string")
-			json_str = str(json_str)
-		json_str.replace('%0A', '<br>')
-		import urllib
-		json_str = urllib.parse.unquote(json_str)
-		cleaned = []
-		for char in json_str:
-			if char in "\n":
-				cleaned.append("\n")
-			else:
-				cleaned.append(char)
-		json_str = "".join(cleaned)
-		print(json_str)
-		return json_str
 	# ************************************************************************
-	def get_next_page(self):
-		print("meat->get_next_page()")
-		try:
-			paging = self.wait.until(
-				EC.presence_of_element_located((By.CSS_SELECTOR, '.pagination-list'))
-			)
-			print("Checking 1")
-			next_disabled = paging.find_element(By.CSS_SELECTOR, '.pagination-item.pagination-item--next')
-			class_attribute = next_disabled.get_attribute("class")
-			classes = class_attribute.split()
-
-			print("Checking 2")
-			if not 'disabled' in classes:
-				print("Clicking next")
-				url = next_disabled.find_element(By.CLASS_NAME, 'pagination-link').get_attribute('href')
-				print(f"Going to next page {url}")
-				self.driver.get(url)
-				return True
-			else:
-				print("Next is disabled")
-				return False
-		except Exception as e:
-			print("There is no next page")
-			print(e)
-			return False
+	# Category URL retrieval Functions
+	# ************************************************************************
 
 	def get_navigation_dict(self, url: str, headers: Optional[Dict] = None) -> Dict:
 		"""
@@ -423,3 +366,78 @@ class MeatsByLinzScraper(BigCommerceScraper):
 			import traceback
 			traceback.print_exc()
 			return {'data': {'categories': []}}
+
+	# ************************************************************************
+	# Product List Functions
+	# ************************************************************************
+
+	def get_next_page(self):
+		print("meat->get_next_page()")
+		try:
+			paging = self.wait.until(
+				EC.presence_of_element_located((By.CSS_SELECTOR, '.pagination-list'))
+			)
+			print("Checking 1")
+			next_disabled = paging.find_element(By.CSS_SELECTOR, '.pagination-item.pagination-item--next')
+			class_attribute = next_disabled.get_attribute("class")
+			classes = class_attribute.split()
+
+			print("Checking 2")
+			if not 'disabled' in classes:
+				print("Clicking next")
+				url = next_disabled.find_element(By.CLASS_NAME, 'pagination-link').get_attribute('href')
+				print(f"Going to next page {url}")
+				self.driver.get(url)
+				return True
+			else:
+				print("Next is disabled")
+				return False
+		except Exception as e:
+			print("There is no next page")
+			print(e)
+			return False
+
+	# ************************************************************************
+	# Product Detail Functions
+	# ************************************************************************
+
+	def get_packs_sizes(self, row_spec):
+		"""
+		Get the packs sizes from the product page
+		Convert row_spec into a list of row_specs
+		Allow the calling function to write the last one
+		"""
+		return row_spec
+
+	def get_price(self, data, row_spec):
+		print("get_price()")
+		try:
+			price = data.get('offers', {}).get('price', '')
+			row_spec['retail_price'] = price
+		except Exception as e:
+			print(f"⛔️ Error processing price information: {type(e).__name__} - {str(e)}")
+
+		print("Processing price information complete...")
+		return row_spec
+
+	@staticmethod
+	def process_json_product(json_str):
+		"""
+		Allow a scraper to modify the product schema data prior to processing
+		"""
+		print("process_json_product()")
+		if not isinstance(json_str, str):
+			print("converting to string")
+			json_str = str(json_str)
+		json_str.replace('%0A', '<br>')
+		import urllib
+		json_str = urllib.parse.unquote(json_str)
+		cleaned = []
+		for char in json_str:
+			if char in "\n":
+				cleaned.append("\n")
+			else:
+				cleaned.append(char)
+		json_str = "".join(cleaned)
+		print(json_str)
+		return json_str

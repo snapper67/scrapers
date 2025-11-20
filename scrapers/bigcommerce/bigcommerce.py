@@ -95,39 +95,19 @@ class BigCommerceScraper(Scraper):
 		return keys
 
 	# ************************************************************************
-
-	# 	Product Scraping Functions
+	# Core Functions
+	# These are overrides of the core functions
 	# ************************************************************************
-	def get_next_page(self):
-		try:
-			paging = self.wait.until(
-				EC.presence_of_element_located((By.CSS_SELECTOR, '.pagination-list'))
-			)
-			print("Checking 1")
-			next_disabled = paging.find_element(By.CSS_SELECTOR, '.pagination-item.pagination-item--next')
-			class_attribute = next_disabled.get_attribute("class")
-			classes = class_attribute.split()
-			print(next_disabled)
-			print("Checking 2")
-			if not 'disabled' in classes:
-				print("Clicking next")
-				next_disabled.find_element(By.TAG_NAME, 'a').click()
-				print("Going to next page")
-				return True
-			else:
-				print("Next is disabled")
-				return False
-		except Exception as e:
-			print("There is no next page")
-			return False
 
-	def get_price(self, data, row_spec):
-		print("get_price()")
-		return row_spec
+	def build_categories_list(self):
+		url = self.BASE_URL
+		navigation = self.get_navigation_structure(url)
+		return f"<div>{navigation}</div>"
 
-	def get_more_data(self, data, row_spec):
-		print("get_more_data()")
-		return row_spec
+	# ************************************************************************
+	# Core Function Hooks
+	# These are the methods called by the core functions
+	# ************************************************************************
 
 	def get_category_page(self, url, category_name, sub_category_name, sub_sub_category_name):
 		print("get_category_page()")
@@ -183,114 +163,6 @@ class BigCommerceScraper(Scraper):
 		# return results to results page
 		return all_urls, html
 
-	def get_products_from_html(self):
-		print("get_products_from_html")
-
-		container = self.wait.until(
-			EC.presence_of_element_located((By.CSS_SELECTOR, '.productGrid'))
-		)
-		print("got container")
-		products = container.find_elements(By.CSS_SELECTOR, ".product")
-
-		print(f"products found: {len(products)}")
-		detail_urls = [product.find_element(By.CSS_SELECTOR, '.card-figure__link').get_attribute("href") for product in products]
-		return '', detail_urls
-
-	def get_product_data(self, data, row_spec):
-		print("processing product data from response...")
-		print(data)
-		if data:
-			try:
-				row_spec['sku'] = ''
-				row_spec = self.parse_product_schema(data, row_spec)
-				row_spec = self.get_price(data, row_spec)
-				row_spec = self.get_more_data(data, row_spec)
-			except Exception as e:
-				print(f" ⛔️⛔️⛔️Error processing product data: {e}")
-
-		print("processing get_product_data Complete...")
-		return row_spec
-
-	def get_packs_sizes(self, row_spec):
-		"""
-		Get the packs sizes from the product page
-		Convert row_spec into a list of row_specs
-		Allow the calling function to write the last one
-		"""
-		print("get_packs_sizes()")
-		specs = []
-		try:
-			for request in self.driver.requests:
-				category_url_part = "/remote/v1/product-attributes/"
-				row_spec_base = row_spec.copy()
-				if request.response and category_url_part in request.url:
-					print(f"URL: {request.url}")
-					print(f"Status Code: {request.response.status_code}")
-					content_type = request.response.headers.get('Content-Type', '')
-					print(f"Content Type: {content_type}")
-
-					try:
-						# Decode the response body
-						body = decode(
-							request.response.body,
-							request.response.headers.get('Content-Encoding', 'identity')
-						)
-
-						if not body:
-							print("Empty response body")
-							continue
-
-						# Clean the JSON string before parsing
-						if 'application/json' in content_type:
-							try:
-								# Try to parse the JSON directly first
-								data = json.loads(body)
-							except json.JSONDecodeError as e:
-								print(f"Initial JSON parse failed, attempting to clean and retry: {str(e)}")
-								try:
-									# Clean the JSON string and try again
-									cleaned_body = self.clean_json_string(body)
-									data = json.loads(cleaned_body)
-								except json.JSONDecodeError as e2:
-									print(f"❌ Failed to parse JSON even after cleaning: {str(e2)}")
-									print(f"Problematic JSON (first 500 chars): {cleaned_body[:500]}")
-									return specs  # Return empty list if we can't parse the JSON
-
-							print("Successfully parsed JSON data")
-							data = data.get('data', {})
-
-							if not data:
-								print("No data found in response")
-								continue
-
-							price = data.get('price', {})
-							row_spec_base['sku'] = data.get('sku', '')
-							row_spec_base['retail_price'] = price.get('without_tax', {}).get('value', '')
-							row_spec_base['pack_size'] = data.get('weight', {}).get('formatted', '')
-
-							if row_spec_base['sku']:  # Only add if we have a valid SKU
-								specs.append(row_spec_base)
-								print(f"Added product: {row_spec_base['sku']}")
-							else:
-								print("Skipping product - missing SKU")
-
-					except json.JSONDecodeError as e:
-						print(f"❌ JSON decode error: {str(e)}")
-						print(f"Response body (first 500 chars): {str(body)[:500]}")
-					except Exception as e:
-						print(f"❌ Error processing response: {str(e)}")
-						import traceback
-						traceback.print_exc()
-
-		except Exception as e:
-			print(f"❌ Unexpected error in get_packs_sizes: {str(e)}")
-			import traceback
-			traceback.print_exc()
-
-		print(f"Found {len(specs)} pack sizes")
-		return specs
-
-
 	def get_product_details(self, url, row_spec=None):
 		"""
 		Product detail pages are rendered server-side. Page must be manually scraped.
@@ -323,12 +195,28 @@ class BigCommerceScraper(Scraper):
 			raise
 		return row_spec
 
+	def get_product_data(self, data, row_spec):
+		print("processing product data from response...")
+		print(data)
+		if data:
+			try:
+				row_spec['sku'] = ''
+				row_spec = self.parse_product_schema(data, row_spec)
+				row_spec = self.get_price(data, row_spec)
+				row_spec = self.get_more_data(data, row_spec)
+			except Exception as e:
+				print(f" ⛔️⛔️⛔️Error processing product data: {e}")
+
+		print("processing get_product_data Complete...")
+		return row_spec
+
+	def get_more_data(self, data, row_spec):
+		print("get_more_data()")
+		return row_spec
+
 	# ************************************************************************
-	def build_categories_list(self):
-		url = self.BASE_URL
-		navigation = self.get_navigation_structure(url)
-		# self.print_navigation_structure(navigation)
-		return f"<div>{navigation}</div>"
+	# Category URL retrieval Functions
+	# ************************************************************************
 
 	def get_navigation_structure(self, url: str, headers: Optional[Dict] = None, pretty: bool = True) -> str:
 		"""
@@ -354,4 +242,26 @@ class BigCommerceScraper(Scraper):
 			error_msg = f"Error in get_navigation_structure: {str(e)}"
 			print(error_msg)
 			return json.dumps({"error": error_msg}, indent=2 if pretty else None)
+
+	# ************************************************************************
+	# Product List Functions
+	# ************************************************************************
+
+	def get_products_from_html(self):
+		print("get_products_from_html")
+
+		container = self.wait.until(
+			EC.presence_of_element_located((By.CSS_SELECTOR, '.productGrid'))
+		)
+		print("got container")
+		products = container.find_elements(By.CSS_SELECTOR, ".product")
+
+		print(f"products found: {len(products)}")
+		detail_urls = [product.find_element(By.CSS_SELECTOR, '.card-figure__link').get_attribute("href") for product in products]
+		return '', detail_urls
+
+	# ************************************************************************
+	# Product Detail Functions
+	# ************************************************************************
+
 

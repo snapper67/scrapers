@@ -21,9 +21,10 @@ from selenium.webdriver.support import expected_conditions as EC
 from seleniumwire import webdriver as seleniumwire_webdriver
 from seleniumwire.utils import decode
 
+from typing import List, Dict, Any, Optional
+
 from scrapers.scraper import Scraper
 from scrapers.shopify.shopify import ShopifyScraper
-
 
 class MelissasScraper(ShopifyScraper):
 	# 203/edit_note/1499/
@@ -44,24 +45,348 @@ class MelissasScraper(ShopifyScraper):
 	BASE_PRODUCT_URL = 'https://www.melissas.com/products/'
 	VENDOR_NAME = 'Melissa\'s Produce'
 
-	DEDUP_INPUT_FILE = 'dedupe_product_data.csv'
+	CATEGORIES = json.loads('''{
+  "data": {
+    "categories": [
+      {
+        "id": 1,
+        "name": "Shop",
+        "subcategories": [
+          {
+            "name": "Fruits",
+            "subcategories": [
+              {
+                "name": "Apples",
+                "url": "/collections/apples"
+              },
+              {
+                "name": "Bananas",
+                "url": "/collections/bananas"
+              },
+              {
+                "name": "Berries",
+                "url": "/collections/berries"
+              },
+              {
+                "name": "Citrus",
+                "url": "/collections/citrus"
+              },
+              {
+                "name": "Dates & Figs",
+                "url": "/collections/dates-figs"
+              },
+              {
+                "name": "Grapes",
+                "url": "/collections/grapes"
+              },
+              {
+                "name": "Mangos",
+                "url": "/collections/mangoes"
+              },
+              {
+                "name": "Melons",
+                "url": "/collections/melons"
+              },
+              {
+                "name": "Organic Fruit",
+                "url": "/collections/organic-fruit"
+              },
+              {
+                "name": "Pears",
+                "url": "/collections/pears"
+              },
+              {
+                "name": "Pineapples",
+                "url": "/collections/pineapples"
+              },
+              {
+                "name": "Stone Fruit",
+                "url": "/collections/stone-fruit"
+              },
+              {
+                "name": "Tropicals",
+                "url": "/collections/tropical-exotic-fruit"
+              },
+              {
+                "name": "Season's Best",
+                "url": "/collections/seasons-best"
+              },
+              {
+                "name": "All Fruit",
+                "url": "/collections/all-fruit"
+              },
+              {
+                "name": "Fruit Gifts",
+                "url": "/collections/fruit-gifts"
+              }
+            ],
+            "url": "/pages/fruits"
+          },
+          {
+            "name": "Vegetables",
+            "subcategories": [
+              {
+                "name": "Eggplants",
+                "url": "/collections/eggplant"
+              },
+              {
+                "name": "Herbs",
+                "url": "/collections/herbs"
+              },
+              {
+                "name": "Lettuce & Greens",
+                "url": "/collections/lettuce-greens"
+              },
+              {
+                "name": "Mushrooms",
+                "url": "/collections/all-mushrooms"
+              },
+              {
+                "name": "Onions & Garlic",
+                "url": "/collections/onions-garlic"
+              },
+              {
+                "name": "Organic Vegetables",
+                "url": "/collections/organic-vegetables"
+              },
+              {
+                "name": "Peppers",
+                "url": "/collections/peppers"
+              },
+              {
+                "name": "Potatoes & Yams",
+                "url": "/collections/potatoes"
+              },
+              {
+                "name": "Radishes",
+                "url": "/collections/radishes"
+              },
+              {
+                "name": "Squash",
+                "url": "/collections/squash"
+              },
+              {
+                "name": "Tomatoes",
+                "url": "/collections/tomatoes"
+              },
+              {
+                "name": "Truffles",
+                "url": "/collections/truffles"
+              },
+              {
+                "name": "Season's Best",
+                "url": "/collections/seasons-best"
+              },
+              {
+                "name": "All Vegetables",
+                "url": "/collections/all-vegetables"
+              },
+              {
+                "name": "Vegetable Gifts",
+                "url": "/collections/vegetable-gifts"
+              }
+            ],
+            "url": "/pages/vegetables"
+          },
+          {
+            "name": "Convenience",
+            "subcategories": [
+              {
+                "name": "Clean Snax\u00ae",
+                "url": "/collections/clean-snax"
+              },
+              {
+                "name": "Condiments",
+                "url": "/collections/condiments"
+              },
+              {
+                "name": "Dried",
+                "url": "/collections/all-dried-items"
+              },
+              {
+                "name": "Grains & Seeds",
+                "url": "/collections/grains-seeds"
+              },
+              {
+                "name": "Jarred",
+                "url": "/collections/jarred-items"
+              },
+              {
+                "name": "Kits",
+                "url": "/collections/culinary-kits"
+              },
+              {
+                "name": "Nuts",
+                "url": "/collections/nuts"
+              },
+              {
+                "name": "Snacks",
+                "url": "/collections/snacks"
+              },
+              {
+                "name": "Soy",
+                "url": "/collections/soy"
+              },
+              {
+                "name": "Spices",
+                "url": "/collections/spices"
+              },
+              {
+                "name": "Steamed Line",
+                "url": "/collections/steamed-line"
+              },
+              {
+                "name": "All Convenience",
+                "url": "/collections/packaged-items"
+              }
+            ],
+            "url": "/pages/convenience"
+          },
+          {
+            "name": "Asian",
+            "subcategories": [
+              {
+                "name": "Asian Fruit",
+                "url": "/collections/asian-fruit"
+              },
+              {
+                "name": "Asian Vegetables",
+                "url": "/collections/asian-vegetables"
+              },
+              {
+                "name": "Asian Snacks",
+                "url": "/collections/asian-snacks"
+              },
+              {
+                "name": "Asian Organics",
+                "url": "/collections/asian-organics"
+              },
+              {
+                "name": "Asian Convenience",
+                "url": "/collections/asian-convenience"
+              },
+              {
+                "name": "Asian Gifts",
+                "url": "/collections/asian-gifts"
+              },
+              {
+                "name": "Asian Kits",
+                "url": "/collections/asian-kits"
+              }
+            ],
+            "url": "/pages/asian"
+          },
+          {
+            "name": "Latin",
+            "subcategories": [
+              {
+                "name": "Latin Fruit",
+                "url": "/collections/latin-fruit"
+              },
+              {
+                "name": "Latin Vegetables",
+                "url": "/collections/latin-vegetables"
+              },
+              {
+                "name": "Latin Snacks",
+                "url": "/collections/latin-snacks"
+              },
+              {
+                "name": "Latin Organics",
+                "url": "/collections/latin-organics"
+              },
+              {
+                "name": "Latin Condiments",
+                "url": "/collections/latin-condiments"
+              },
+              {
+                "name": "Latin Kits",
+                "url": "/collections/culinary-kits"
+              }
+            ],
+            "url": "/pages/latin"
+          },
+          {
+            "name": "Organics",
+            "subcategories": [
+              {
+                "name": "Organic Mixed Boxes & Subscriptions",
+                "url": "/collections/organic-mixed-boxes"
+              },
+              {
+                "name": "Organic Dried Fruit",
+                "url": "/collections/organic-dried-fruit"
+              },
+              {
+                "name": "Organic Gifts",
+                "url": "/collections/organic-gifts"
+              }
+            ],
+            "url": "/collections/organics"
+          },
+          {
+            "name": "All Items",
+            "subcategories": [],
+            "url": "/collections/all-items"
+          },
+          {
+            "name": "Hatch Essentials",
+            "subcategories": [],
+            "url": "/collections/hatch-pepper-essentials"
+          }
+        ],
+        "url": "/pages/shop"
+      },
+      {
+        "id": 2,
+        "name": "Recipes",
+        "subcategories": [],
+        "url": "/pages/recipe-categories"
+      },
+      {
+        "id": 3,
+        "name": "Blogs",
+        "subcategories": [],
+        "url": "/pages/melissas-blogs"
+      },
+      {
+        "id": 4,
+        "name": "About Us",
+        "subcategories": [],
+        "url": "/pages/about-us"
+      },
+      {
+        "id": 5,
+        "name": "Shipping FAQ",
+        "subcategories": [],
+        "url": "/pages/shipping-information"
+      }
+    ]
+  }
+}                  
+	''')
 
 	def __init__(self, options=None):
 		super().__init__(options)
 
 
+	def get_categories(self):
+		"""
+		Returns a list of category dictionaries from the CATEGORIES data. This is the preferred way to store the categories
+
+		Returns:
+			list: A list of dictionaries, each containing 'id' and 'name' of a category
+		"""
+		category_options = self.CATEGORIES.get('data', {}).get('categories', {})
+		return [
+			{'id': option['id'], 'name': option['name'], 'url': option['url'], 'subcategories': option['subcategories']}
+			for option in category_options
+			if option.get('id') and option.get('name')
+		]
+
 	# ************************************************************************
-
-	# 	Product Scraping Functions
-	# ************************************************************************
-
-
-	def get_product_details(self, url, row_spec=None):
-		"""Get Product Details"""
-		data = self.get_product_details_json( url, row_spec)
-		row_spec = self.get_product_data(data, row_spec)
-		return row_spec
-
+	# Core Functions
+	# These are overrides of the core functions
 	# ************************************************************************
 
 	def build_products_list(self):
@@ -196,3 +521,130 @@ class MelissasScraper(ShopifyScraper):
 		print(f"Total products found: {len(all_urls)}")
 		return html
 
+	# ************************************************************************
+	# Core Function Hooks
+	# These are the methods called by the core functions
+	# ************************************************************************
+
+	def get_product_details(self, url, row_spec=None):
+		"""Get Product Details"""
+		data = self.get_product_details_json( url, row_spec)
+		row_spec = self.get_product_data(data, row_spec)
+		return row_spec
+
+	# ************************************************************************
+	# Category URL retrieval Functions
+	# ************************************************************************
+
+	def get_navigation_dict(self, url: str, headers: Optional[Dict] = None) -> Dict[str, Any]:
+		"""
+		Scrapes and parses the navigation structure from the Melissa's website.
+
+		Args:
+			url: The URL of the page containing the navigation menu
+			headers: Optional headers for the request
+
+		Returns:
+			A dictionary representing the navigation structure with categories and subcategories
+		"""
+		try:
+			self.driver.get(url)
+			time.sleep(3)  # Allow page to load
+
+			# Get the page source and parse with BeautifulSoup
+			soup = BeautifulSoup(self.driver.page_source, 'html.parser')
+
+			# Find the main navigation menu
+			nav = soup.find('nav', {'class': 'site-navigation'})
+			if not nav:
+				print("Navigation menu not found")
+				return {'data': {'categories': []}}
+
+			# Initialize the navigation structure
+			navigation = {'data': {'categories': []}}
+			category_id = 1
+
+			# Find all top-level menu items
+			top_level_items = nav.find('ul', class_='navmenu-depth-1').find_all('li', recursive=False)
+
+			for item in top_level_items:
+				# Skip items without links (like dividers)
+				link = item.find('a', class_='navmenu-link')
+				if not link:
+					continue
+
+				category_name = link.get_text(strip=True)
+				category_url = link.get('href', '')
+
+				# Skip non-shop categories
+				if not category_url.startswith(('/collections/', '/pages/')):
+					continue
+
+				# Initialize category data
+				category_data = {
+					'id': category_id,
+					'name': category_name,
+					'url': category_url,
+					'subcategories': []
+				}
+				category_id += 1
+
+				# Check for megamenu content
+				megamenu = item.find('div', class_='navmenu-meganav')
+				if megamenu:
+					# Process megamenu items
+					megamenu_items = megamenu.find_all('li', class_='navmenu-meganav-item')
+					for megamenu_item in megamenu_items:
+						subcategory_link = megamenu_item.find('a', class_='navmenu-item-text')
+						if not subcategory_link:
+							continue
+
+						subcategory_name = subcategory_link.get_text(strip=True)
+						subcategory_url = subcategory_link.get('href', '')
+
+						# Skip if it's not a collection or page
+						if not subcategory_url.startswith(('/collections/', '/pages/')):
+							continue
+
+						subcategory_data = {
+							'name': subcategory_name,
+							'url': subcategory_url,
+							'subcategories': []
+						}
+
+						# Check for third level subcategories
+						submenu = megamenu_item.find('ul', class_='navmenu-depth-3')
+						if submenu:
+							for submenu_item in submenu.find_all('li', class_='navmenu-item'):
+								submenu_link = submenu_item.find('a', class_='navmenu-link')
+								if not submenu_link:
+									continue
+
+								submenu_name = submenu_link.get_text(strip=True)
+								submenu_url = submenu_link.get('href', '')
+
+								if not submenu_url.startswith(('/collections/', '/pages/')):
+									continue
+
+								subcategory_data['subcategories'].append({
+									'name': submenu_name,
+									'url': submenu_url
+								})
+
+						category_data['subcategories'].append(subcategory_data)
+
+				navigation['data']['categories'].append(category_data)
+
+			return navigation
+
+		except Exception as e:
+			print(f"Error getting navigation structure: {e}")
+			return {'data': {'categories': []}}
+
+	# ************************************************************************
+	# Product List Functions
+	# ************************************************************************
+
+	# ************************************************************************
+	# Product Detail Functions
+	# ************************************************************************

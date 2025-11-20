@@ -34,8 +34,6 @@ class SavoryGourmetScraper(ShopifyScraper):
 	BASE_URL = 'https://savorygourmet.com/'
 	VENDOR_NAME = 'Savory Gourmet'
 
-	DEDUP_INPUT_FILE = 'dedupe_product_data.csv'
-
 	CATEGORIES = json.loads('''{
   "data": {
     "categories": [
@@ -628,27 +626,19 @@ class SavoryGourmetScraper(ShopifyScraper):
 			if option.get('id') and option.get('name')
 		]
 
-	def get_taxonomy(self):
-		categories = self.CATEGORIES.get('data', {}).get('categories', [])
-		print(f"Categories: {categories}")
-		return categories
-
 	def get_category_url(self, category):
 		return category['url']
 
-	# ************************************************************************
-
-	# 	Product Scraping Functions
-	# ************************************************************************
-
-
 
 	# ************************************************************************
-	def build_categories_list(self):
-		url = self.BASE_URL
-		navigation = self.get_navigation_structure(url)
-		# self.print_navigation_structure(navigation)
-		return f"<div>{navigation}</div>"
+	# Core Functions
+	# These are overrides of the core functions
+	# ************************************************************************
+
+	# ************************************************************************
+	# Core Function Hooks
+	# These are the methods called by the core functions
+	# ************************************************************************
 
 	def get_category_page(self, url, category_name, sub_category_name, sub_sub_category_name):
 		print("get_category_page()")
@@ -735,3 +725,14 @@ class SavoryGourmetScraper(ShopifyScraper):
 		row_spec = self.get_product_data(data.get('product', {}), row_spec)
 		return row_spec
 
+	# ************************************************************************
+	# Category URL retrieval Functions
+	# ************************************************************************
+
+	# ************************************************************************
+	# Product List Functions
+	# ************************************************************************
+
+	# ************************************************************************
+	# Product Detail Functions
+	# ************************************************************************

@@ -34,6 +34,7 @@ from .pepper.primesource import PrimeSourceScraper
 from .pepper.sirnasonsproduce import SirnaSonsProduceScraper
 from .shopify.allenbrothers import AllenBrothersScraper
 from .shopify.alma import AlmaScraper
+from .shopify.chicagogamegourmet import ChicagoMeatGourmetScraper
 from .shopify.fultonfish import FultonFishScraper
 from .thread_manager import thread_manager
 
@@ -1268,6 +1269,9 @@ def scrape_alma(request):
     return scrape_shopify(request, scraper_class)
 def scrape_allen_brothers(request):
     scraper_class = AllenBrothersScraper
+    return scrape_shopify(request, scraper_class)
+def scrape_chicago_game(request):
+    scraper_class = ChicagoMeatGourmetScraper
     return scrape_shopify(request, scraper_class)
 def scrape_fulton_fish(request):
     scraper_class = FultonFishScraper

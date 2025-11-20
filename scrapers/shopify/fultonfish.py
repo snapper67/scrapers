@@ -53,8 +53,6 @@ class FultonFishScraper(ShopifyScraper):
 	BASE_PRODUCT_URL = 'https://fultonfishmarket.com/products'
 	VENDOR_NAME = 'Fulton Fish'
 
-	DEDUP_INPUT_FILE = 'dedupe_product_data.csv'
-
 	CATEGORIES = json.loads('''{
   "data": {
     "categories": [
@@ -146,25 +144,6 @@ class FultonFishScraper(ShopifyScraper):
 	def __init__(self, options=None):
 		super().__init__(options)
 
-	def get_categories(self):
-		"""
-		Returns a list of category dictionaries from the CATEGORIES data.
-
-		Returns:
-			list: A list of dictionaries, each containing 'id' and 'name' of a category
-		"""
-		category_options = self.CATEGORIES.get('data', {}).get('categories', {})
-		return [
-			{'id': option['id'], 'name': option['name']}
-			for option in category_options
-			if option.get('id') and option.get('name')
-		]
-
-	def get_taxonomy(self):
-		categories = self.CATEGORIES.get('data', {}).get('categories', [])
-		print(f"Categories: {categories}")
-		return categories
-
 	def get_category_url(self, category):
 		print(f"get_category_url: {category}")
 		if ("http" in category['url']):
@@ -172,112 +151,16 @@ class FultonFishScraper(ShopifyScraper):
 		else:
 			return f"https://fultonfishmarket.com{category['url']}"
 
+
+	# ************************************************************************
+	# Core Functions
+	# These are overrides of the core functions
 	# ************************************************************************
 
-	# 	Product Scraping Functions
 	# ************************************************************************
-	def get_first_image_url(self, response_data):
-		"""
-		Extract the first available image URL from the product API response.
-
-		Args:
-			response_data (dict): The parsed JSON response from the API
-
-		Returns:
-			str: URL of the first available image, or None if no image found
-		"""
-		try:
-			image = response_data.get('image', {})
-
-			# If there are assets, get the first one's URL
-			if image:
-				# Get the first asset and extract the URL
-				return image.get('url', '')
-
-		except Exception as e:
-			print(f"Error extracting image from viewModel.assets: {str(e)}")
-
-		return ''
-
-	def get_product_data(self, data, row_spec):
-		print("processing product data from response...")
-		print(data)
-		if data:
-			try:
-				row_spec["name"] = data.get("displayName", "")
-				print(f"name: {row_spec['name']}")
-				row_spec["description"] = data.get("description", "")
-				row_spec["productId"] = data.get("productId", "")
-
-				sku_details = data.get('skuDetails', {})
-				row_spec["retail_price"] = sku_details.get("price", {}).get("ListPrice", {}).get("price", "").replace('.','')
-				row_spec["pack_size"] = sku_details.get("skuOptions", [])[0].get("optionValue", "")
-				print(f"pack_size: {row_spec['pack_size']}")
-				# self.get_pack_size(data, row_spec)
-				# row_spec["image"] = self.get_first_image_url(data)
-
-				# move sku - which was just a unique identifier to id
-				row_spec['id'] = row_spec['sku']
-				row_spec['sku'] = data.get('skuId', '')
-
-				row_spec["extra_data_1"] = json.dumps(data)
-
-			except Exception as e:
-				print(f" ⛔️⛔️⛔️Error processing product data: {e}")
-
-		print("processing get_product_data Complete...")
-		# row_spec = self.get_product_data_additional(data, row_spec)
-		return row_spec
-
-	def get_product_details_scrape(self, url, row_spec=None, target="script[type='application/json']"):
-		#  Wait for the product name element on the product page detail page
-		print("AlmaScraper.get_product_details_scrape()")
-		if not row_spec: row_spec = self.PRODUCT_DATA_SPEC.copy()
-		print(f"processing product detail page for target {target}")
-		print(f"Loading page...{url}")
-
-		data = ''
-		sku = row_spec['sku']
-		request_filter = url
-
-		self.driver.get(url)
-		print(f"Sent Request")
-		product_data = ''
-		try:
-			# Wait for the page to load
-			WebDriverWait(self.driver, 10).until(
-				EC.presence_of_element_located(
-				(By.CSS_SELECTOR, target))
-			)
-			print(f"Script Loaded")
-			# Get the page source and parse it with BeautifulSoup
-			soup = BeautifulSoup(self.driver.page_source, 'html.parser')
-
-			scripts = soup.find_all('script', {'id': '__NEXT_DATA__'})
-			for script in scripts:
-				# print(script.string)
-				if script and script.string:
-					print("Loading product data")
-					try:
-						# Parse the JSON data from the script tag
-						product_data = json.loads(script.string)
-						try:
-							if product_data.get('@type') == "Product":
-								del self.driver.requests
-								return product_data
-						except Exception as e:
-							print(f"Error getting product data: {type(e)}")
-					except json.JSONDecodeError as e:
-						print(f"Error parsing JSON data: {e}")
-				else:
-					print("Could not find the product data script tag")
-
-		except Exception as e:
-			print(f"Error getting product details: {e}")
-		finally:
-			del self.driver.requests
-
-		return product_data
+	# Core Function Hooks
+	# These are the methods called by the core functions
+	# ************************************************************************
 
 	def get_product_details(self, url, row_spec=None):
 		"""Get Product Details"""
@@ -310,6 +193,36 @@ class FultonFishScraper(ShopifyScraper):
 			specs.append(row_spec)
 		return specs
 
+	def get_product_data(self, data, row_spec):
+		print("processing product data from response...")
+		print(data)
+		if data:
+			try:
+				row_spec["name"] = data.get("displayName", "")
+				print(f"name: {row_spec['name']}")
+				row_spec["description"] = data.get("description", "")
+				row_spec["productId"] = data.get("productId", "")
+
+				sku_details = data.get('skuDetails', {})
+				row_spec["retail_price"] = sku_details.get("price", {}).get("ListPrice", {}).get("price", "").replace('.','')
+				row_spec["pack_size"] = sku_details.get("skuOptions", [])[0].get("optionValue", "")
+				print(f"pack_size: {row_spec['pack_size']}")
+				# self.get_pack_size(data, row_spec)
+				# row_spec["image"] = self.get_first_image_url(data)
+
+				# move sku - which was just a unique identifier to id
+				row_spec['id'] = row_spec['sku']
+				row_spec['sku'] = data.get('skuId', '')
+
+				row_spec["extra_data_1"] = json.dumps(data)
+
+			except Exception as e:
+				print(f" ⛔️⛔️⛔️Error processing product data: {e}")
+
+		print("processing get_product_data Complete...")
+		# row_spec = self.get_product_data_additional(data, row_spec)
+		return row_spec
+
 	def get_product_data_additional(self, data, row_spec):
 		row_spec["name"] = data.get("name", "")
 		row_spec['sku'] = data.get('sku', '')
@@ -317,11 +230,67 @@ class FultonFishScraper(ShopifyScraper):
 		row_spec["retail_price"] = "" if price == 0 else price
 		return row_spec
 
-	def build_categories_list(self):
-		url = self.BASE_URL
-		navigation = self.get_navigation_structure(url)
-		# self.print_navigation_structure(navigation)
-		return f"<div>{navigation}</div>"
+	# ************************************************************************
+	# Category URL retrieval Functions
+	# ************************************************************************
+
+	def get_category_page(self, url, category_name, sub_category_name, sub_sub_category_name):
+		print("get_category_page()")
+		detail_urls = []
+		all_urls = []
+		main_window = self.driver.current_window_handle
+		html = ''
+		total_products = 0
+		self.driver.get(url)
+		base_url = url
+		self.wait = WebDriverWait(self.driver, 10)
+		try:
+			# Update URL from the redirect
+			url = self.driver.current_url
+			print(f"Current URl: {self.driver.current_url}")
+
+			# Find all window handles and switch to the new window if it opens in a new tab
+			if len(self.driver.window_handles) > self.TEST_TABS:
+				print("must be a tab...")
+				for handle in self.driver.window_handles:
+					if handle != main_window:
+						self.driver.switch_to.window(handle)
+						break
+			page_count = 0
+			next_page = True
+
+			while next_page:
+				page_count += 1
+				try:
+					# Wait for page to load
+					detail_urls = []
+					if url in self.driver.current_url:
+						print("Found products page")
+						time.sleep(2)
+						html_line, detail_urls = self.get_products_from_html()
+					products_found_count = len(detail_urls)
+					all_urls.extend(detail_urls)
+					html += f"<div>Found {products_found_count} products for category {sub_category_name}</div>"
+					print(f"Found {products_found_count} products for category {sub_category_name}")
+					total_products += products_found_count
+					print(products_found_count % 24)
+					if products_found_count > 0 and products_found_count % 24 == 0:
+						url = base_url + f"?page={page_count + 1}"
+						self.driver.get(url)
+						print(f"Going to page {url}")
+					else:
+						next_page = False
+
+				except Exception as e:
+					print(f"****************** ⛔️⛔️⛔️ Error getting details: {e}")
+					html += f"<div>Name: {sub_category_name} (Error getting details)</div>"
+
+			self.save_urls_to_csv(detail_urls, category_name, sub_category_name, sub_sub_category_name)
+
+		except Exception as e:
+			print(f"⛔️⛔️⛔️Error processing category: {e}")
+
+		return detail_urls, html
 
 	def get_navigation_dict(self, url: str, headers: Optional[Dict] = None) -> Dict:
 		"""
@@ -475,63 +444,9 @@ class FultonFishScraper(ShopifyScraper):
 
 						parent_category['subcategories'].append(subcategory)
 
-	def get_category_page(self, url, category_name, sub_category_name, sub_sub_category_name):
-		print("get_category_page()")
-		detail_urls = []
-		all_urls = []
-		main_window = self.driver.current_window_handle
-		html = ''
-		total_products = 0
-		self.driver.get(url)
-		base_url = url
-		self.wait = WebDriverWait(self.driver, 10)
-		try:
-			# Update URL from the redirect
-			url = self.driver.current_url
-			print(f"Current URl: {self.driver.current_url}")
-
-			# Find all window handles and switch to the new window if it opens in a new tab
-			if len(self.driver.window_handles) > self.TEST_TABS:
-				print("must be a tab...")
-				for handle in self.driver.window_handles:
-					if handle != main_window:
-						self.driver.switch_to.window(handle)
-						break
-			page_count = 0
-			next_page = True
-
-			while next_page:
-				page_count += 1
-				try:
-					# Wait for page to load
-					detail_urls = []
-					if url in self.driver.current_url:
-						print("Found products page")
-						time.sleep(2)
-						html_line, detail_urls = self.get_products_from_html()
-					products_found_count = len(detail_urls)
-					all_urls.extend(detail_urls)
-					html += f"<div>Found {products_found_count} products for category {sub_category_name}</div>"
-					print(f"Found {products_found_count} products for category {sub_category_name}")
-					total_products += products_found_count
-					print(products_found_count % 24)
-					if products_found_count > 0 and products_found_count % 24 == 0:
-						url = base_url + f"?page={page_count + 1}"
-						self.driver.get(url)
-						print(f"Going to page {url}")
-					else:
-						next_page = False
-
-				except Exception as e:
-					print(f"****************** ⛔️⛔️⛔️ Error getting details: {e}")
-					html += f"<div>Name: {sub_category_name} (Error getting details)</div>"
-
-			self.save_urls_to_csv(detail_urls, category_name, sub_category_name, sub_sub_category_name)
-
-		except Exception as e:
-			print(f"⛔️⛔️⛔️Error processing category: {e}")
-
-		return detail_urls, html
+	# ************************************************************************
+	# Product List Functions
+	# ************************************************************************
 
 	def get_products_from_html(self):
 
@@ -542,3 +457,82 @@ class FultonFishScraper(ShopifyScraper):
 		print(f"products found: {len(products)}")
 		detail_urls = [product.get_attribute("href") for product in products]
 		return '', detail_urls
+
+	# ************************************************************************
+	# Product Detail Functions
+	# ************************************************************************
+
+	def get_first_image_url(self, response_data):
+		"""
+		Extract the first available image URL from the product API response.
+
+		Args:
+			response_data (dict): The parsed JSON response from the API
+
+		Returns:
+			str: URL of the first available image, or None if no image found
+		"""
+		try:
+			image = response_data.get('image', {})
+
+			# If there are assets, get the first one's URL
+			if image:
+				# Get the first asset and extract the URL
+				return image.get('url', '')
+
+		except Exception as e:
+			print(f"Error extracting image from viewModel.assets: {str(e)}")
+
+		return ''
+
+	def get_product_details_scrape(self, url, row_spec=None, target="script[type='application/json']"):
+		#  Wait for the product name element on the product page detail page
+		print("AlmaScraper.get_product_details_scrape()")
+		if not row_spec: row_spec = self.PRODUCT_DATA_SPEC.copy()
+		print(f"processing product detail page for target {target}")
+		print(f"Loading page...{url}")
+
+		data = ''
+		sku = row_spec['sku']
+		request_filter = url
+
+		self.driver.get(url)
+		print(f"Sent Request")
+		product_data = ''
+		try:
+			# Wait for the page to load
+			WebDriverWait(self.driver, 10).until(
+				EC.presence_of_element_located(
+				(By.CSS_SELECTOR, target))
+			)
+			print(f"Script Loaded")
+			# Get the page source and parse it with BeautifulSoup
+			soup = BeautifulSoup(self.driver.page_source, 'html.parser')
+
+			scripts = soup.find_all('script', {'id': '__NEXT_DATA__'})
+			for script in scripts:
+				# print(script.string)
+				if script and script.string:
+					print("Loading product data")
+					try:
+						# Parse the JSON data from the script tag
+						product_data = json.loads(script.string)
+						try:
+							if product_data.get('@type') == "Product":
+								del self.driver.requests
+								return product_data
+						except Exception as e:
+							print(f"Error getting product data: {type(e)}")
+					except json.JSONDecodeError as e:
+						print(f"Error parsing JSON data: {e}")
+				else:
+					print("Could not find the product data script tag")
+
+		except Exception as e:
+			print(f"Error getting product details: {e}")
+		finally:
+			del self.driver.requests
+
+		return product_data
+
+

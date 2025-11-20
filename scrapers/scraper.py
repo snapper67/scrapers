@@ -739,7 +739,12 @@ class Scraper:
 
 		# Step Two: Get links to products
 	def build_products_list(self):
-		"""Scrape products from the website"""
+		"""
+		Scrape product urls from the website
+		Description: Cycles through the category urls and calls get_category_page
+		Calls: get_category_page
+		Built in Sleep: Yes - 2 seconds between categories
+		"""
 		html = ""
 		all_urls = []
 		self.scraping_setup()
@@ -1111,6 +1116,9 @@ class Scraper:
 
 		The CSV file should have at least these columns: 'sku' and 'extra_data_1'.
 		The method will update the product data using the extra data.
+
+		Calls: get_product_data
+		Calls: get_more_extra_data
 		"""
 		try:
 			# Get file paths from options with fallbacks
@@ -1337,7 +1345,7 @@ class Scraper:
 	# ************************************************************************
 	def get_category_page(self, url, category_name, sub_category_name, sub_sub_category_name):
 		"""Load a category page, handle all paging and return a list of product urls"""
-		raise NotImplementedError("scrape_products method not implemented")
+		raise NotImplementedError("get_category_page method not implemented")
 
 	def get_products_from_html(self):
 		"""Scrape products from the website"""
@@ -1688,3 +1696,27 @@ class Scraper:
 		except Exception as e:
 			print(f"❌ Error updating CRM note {crm_note_id}: {str(e)}")
 			return False
+
+
+
+	# ************************************************************************
+	# Core Functions
+	# These are overrides of the core functions
+	# ************************************************************************
+
+	# ************************************************************************
+	# Core Function Hooks
+	# These are the methods called by the core functions
+	# ************************************************************************
+
+	# ************************************************************************
+	# Category URL retrieval Functions
+	# ************************************************************************
+
+	# ************************************************************************
+	# Product List Functions
+	# ************************************************************************
+
+	# ************************************************************************
+	# Product Detail Functions
+	# ************************************************************************

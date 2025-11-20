@@ -97,6 +97,7 @@ urlpatterns = [
     path("totalfoods/", views.scrape_totalfoods, name="totalfoods"),
     path("alma/", views.scrape_alma, name="alma"),
     path("allen_brothers/", views.scrape_allen_brothers, name="allen_brothers"),
+    path("chicago_game/", views.scrape_chicago_game, name="chicago_game"),
     path("fulton_fish/", views.scrape_fulton_fish, name="fulton_fish"),
     path("melissas/", views.scrape_melissas, name="melissas"),
     path("bitters_bottles/", views.scrape_bitters_bottles, name="bitters_bottles"),

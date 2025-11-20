@@ -35,8 +35,6 @@ class BittersBottlesScraper(ShopifyScraper):
 	BASE_URL = 'https://www.bittersandbottles.com/collections/spirits'
 	VENDOR_NAME = 'Bitters and Bottles'
 
-	DEDUP_INPUT_FILE = 'dedupe_product_data.csv'
-
 	CATEGORIES = json.loads('''{
   "data":
     {
@@ -963,136 +961,18 @@ class BittersBottlesScraper(ShopifyScraper):
 	def __init__(self, options=None):
 		super().__init__(options)
 
-	def get_categories(self):
-		"""
-		Returns a list of category dictionaries from the CATEGORIES data.
-
-		Returns:
-			list: A list of dictionaries, each containing 'id' and 'name' of a category
-		"""
-		category_options = self.CATEGORIES.get('data', {}).get('categories', {})
-		return [
-			{'id': option['id'], 'name': option['name']}
-			for option in category_options
-			if option.get('id') and option.get('name')
-		]
-
-	def get_taxonomy(self):
-		categories = self.CATEGORIES.get('data', {}).get('categories', [])
-		print(f"Categories: {categories}")
-		return categories
-
 	def get_category_url(self, category):
 		return category['url']
 
 	# ************************************************************************
-
-	# 	Product Scraping Functions
+	# Core Functions
+	# These are overrides of the core functions
 	# ************************************************************************
 
-	def get_pack_size(self, data, row_spec):
-		print("get_pack_size()")
-		data = data.get('variants', None)
-		if data:
-			data = data[0]
-			try:
-				options = data.get('options', None)
-				# Find the specification with displayName "Manufacturer Name"
-				print(options)
-				if options:
-
-					if len(options) == 1:
-						row_spec['pack_size'] = options[0].replace('Default Title','')
-						print(f"Found pack size: {options[0]}")
-					else:
-						row_spec['pack_size'] = options[0].replace('Default Title','')
-						print(f"Found pack size: {options[0]}")
-						print("⚠️ need to handle multiple pack sizes")
-
-			except Exception as e:
-				print(f"⛔️ Error processing pack size information: {type(e).__name__} - {str(e)}")
-
-			print("Processing pack size information complete...")
-		return row_spec
-
-	def get_product_details(self, url, row_spec=None):
-		"""Get Product Details"""
-		print("BittersBottlesScraper.get_product_details()")
-		data = self.get_product_details_scrape(url, row_spec, target="script[type='application/json'][data-section-type='static-product']")
-		row_spec = self.get_product_data(data.get('product', {}), row_spec)
-		return row_spec
-
 	# ************************************************************************
-	def build_categories_list(self):
-		url = "https://www.bittersandbottles.com/"
-		navigation = self.get_navigation_structure(url)
-		# self.print_navigation_structure(navigation)
-		return f"<div>{navigation}</div>"
-
-	# def build_products_list(self):
-	# 	"""Scrape products from the website"""
-	# 	html = ""
-	# 	all_urls = []
-	# 	# Use the options with fallback to module-level variables
-	# 	max_products = self.options.get('max_products', self.MAX_API_PRODUCTS)
-	# 	category_to_process = self.options.get('category_to_process', 0)
-	# 	chosen_category = int(self.options.get('chosen_category', 0))
-	# 	test_categories = self.options.get('test_categories', 100)
-	# 	category_count = 0
-	# 	if int(self.options['chosen_category']) == 0:
-	# 		categories = self.get_taxonomy()
-	# 		print(f"All Categories ")
-	# 	else:
-	# 		for category in self.get_taxonomy():
-	# 			print(f"category : {category.get('name', '')}")
-	# 			if int(category.get('id', '')) == chosen_category:
-	# 				categories = [category]  # Only process the chosen category
-	# 				print(f"Category found : {categories}")
-	# 				break
-	# 	url_output_file = self.options.get('url_output_file', '')
-	#
-	# 	# Wait for the page to be fully loaded
-	# 	print(f"Output File Name: {url_output_file}")
-	# 	total_products = 0
-	# 	loop_counter = 0
-	# 	category_found_count = 1
-	#
-	# 	if category_to_process > 0:
-	# 		print(f"Category to process: {category_to_process}")
-	# 		loop_counter = category_to_process - 1
-	# 		test_categories = category_to_process
-	# 		category_found_count = category_to_process
-	# 	for category in categories:
-	# 		category_name = category['name']
-	# 		print(f"category: {category_name}")
-	# 		sub_categories = category['subcategories']
-	# 		category_found_count = len(sub_categories)
-	# 		print(f"Found {category_found_count} categories to process...")
-	# 		for sub_category in sub_categories:
-	# 			sub_category_name = sub_category['name']
-	# 			print(f"sub category: {sub_category_name}")
-	# 			if sub_category.get('subcategories', False):
-	# 				for sub_sub_category in sub_category['subcategories']:
-	# 					sub_sub_category_name = sub_sub_category['name']
-	# 					print(f"sub sub category: {sub_sub_category_name}")
-	# 					if loop_counter < category_found_count and loop_counter < test_categories:
-	# 						loop_counter += 1
-	# 						url = sub_sub_category['url']
-	# 						print(f"Url: {url}")
-	# 						detail_urls, html = self.get_category_page(url, category_name, sub_category_name, sub_sub_category_name)
-	# 						all_urls.extend(detail_urls)
-	# 					time.sleep(3)
-	# 			else:
-	# 				url = sub_category['url']
-	# 				print(f"Url: {url}")
-	# 				detail_urls, html = self.get_category_page(url, category_name, sub_category_name, '')
-	# 				all_urls.extend(detail_urls)
-	#
-	# 	# html_table_to_csv(html_table)
-	# 	html += f"<h2>Total products found: {total_products}</h2>"
-	#
-	# 	print(f"Total products found: {len(all_urls)}")
-	# 	return html
+	# Core Function Hooks
+	# These are the methods called by the core functions
+	# ************************************************************************
 
 	def get_category_page(self, url, category_name, sub_category_name, sub_sub_category_name):
 		print("get_category_page()")
@@ -1147,4 +1027,48 @@ class BittersBottlesScraper(ShopifyScraper):
 			print(f"⛔️⛔️⛔️Error processing category: {e}")
 
 		return detail_urls, html
+
+	# ************************************************************************
+	# Category URL retrieval Functions
+	# ************************************************************************
+
+	# ************************************************************************
+	# Product List Functions
+	# ************************************************************************
+
+	# ************************************************************************
+	# Product Detail Functions
+	# ************************************************************************
+
+	def get_pack_size(self, data, row_spec):
+		print("get_pack_size()")
+		data = data.get('variants', None)
+		if data:
+			data = data[0]
+			try:
+				options = data.get('options', None)
+				# Find the specification with displayName "Manufacturer Name"
+				print(options)
+				if options:
+
+					if len(options) == 1:
+						row_spec['pack_size'] = options[0].replace('Default Title','')
+						print(f"Found pack size: {options[0]}")
+					else:
+						row_spec['pack_size'] = options[0].replace('Default Title','')
+						print(f"Found pack size: {options[0]}")
+						print("⚠️ need to handle multiple pack sizes")
+
+			except Exception as e:
+				print(f"⛔️ Error processing pack size information: {type(e).__name__} - {str(e)}")
+
+			print("Processing pack size information complete...")
+		return row_spec
+
+	def get_product_details(self, url, row_spec=None):
+		"""Get Product Details"""
+		print("BittersBottlesScraper.get_product_details()")
+		data = self.get_product_details_scrape(url, row_spec, target="script[type='application/json'][data-section-type='static-product']")
+		row_spec = self.get_product_data(data.get('product', {}), row_spec)
+		return row_spec
 
